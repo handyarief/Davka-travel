@@ -3,9 +3,9 @@
 /* === BASE RESET & TYPOGRAPHY === */
 html {
     height: 100%; 
-    overflow: hidden; /* UPDATE: Kunci HTML agar tidak ada double scrollbar */
+    overflow: hidden; /* PENTING: Mengunci HTML agar scroll hanya terjadi di Body (App-Like Feel) */
     -webkit-text-size-adjust: 100%;
-    touch-action: pan-y; /* Optimization for touch devices */
+    touch-action: pan-y;
 }
 
 body {
@@ -15,13 +15,17 @@ body {
     -webkit-tap-highlight-color: transparent;
     -webkit-font-smoothing: antialiased; 
     -moz-osx-font-smoothing: grayscale;
+    text-rendering: optimizeLegibility; /* Font lebih tajam dan jelas */
     
     /* UPDATE: ULTRA SMOOTH SCROLLING PHYSICS (APP SHELL) */
     height: 100%;
-    overflow-y: auto; /* Scroll hanya terjadi di Body */
+    overflow-y: auto; /* Scroll container utama pindah ke body */
     -webkit-overflow-scrolling: touch; /* Momentum Scrolling iOS */
     scroll-behavior: smooth;
-    overscroll-behavior-y: none; /* Mencegah bounce effect native browser (feel lebih native app) */
+    overscroll-behavior-y: none; /* Mencegah bounce effect native browser */
+    
+    /* Performance Booster untuk Scroll */
+    will-change: scroll-position;
 }
 
 /* Custom Scrollbar - Hidden but functional */

@@ -3,6 +3,7 @@
 /* === BASE RESET & TYPOGRAPHY === */
 html {
     scroll-behavior: smooth; /* Memastikan scroll via anchor/JS halus secara global */
+    height: 100%; /* UPDATE: Penting untuk momentum scrolling yang konsisten */
 }
 
 body {
@@ -11,8 +12,11 @@ body {
     font-family: 'Plus Jakarta Sans', sans-serif;
     -webkit-tap-highlight-color: transparent;
     overflow-x: hidden;
+    
     /* UPDATE: Smooth scrolling global & Momentum Scrolling untuk Mobile */
     scroll-behavior: smooth;
+    min-height: 100%; /* Memastikan body memenuhi viewport */
+    overflow-y: auto; /* Mengaktifkan native scroll behavior yang optimal */
     -webkit-overflow-scrolling: touch; /* Kunci agar scroll di iOS terasa "licin" dan tidak kaku */
 }
 

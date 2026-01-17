@@ -117,6 +117,11 @@ window.handleUploadZoneClick = function(zoneId, inputId) {
         activeUploadZone = zoneId;
         zone.classList.add('upload-zone-active');
         if(hint) hint.classList.remove('hidden');
+
+        // UPDATE: Auto scroll to center agar user nyaman saat upload
+        setTimeout(() => {
+            zone.scrollIntoView({ behavior: "smooth", block: "center", inline: "nearest" });
+        }, 300);
     }
 }
 

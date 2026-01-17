@@ -1,14 +1,19 @@
 @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&family=Cinzel:wght@400;700&family=Courier+Prime:wght@400;700&display=swap');
 
 /* === BASE RESET & TYPOGRAPHY === */
+html {
+    scroll-behavior: smooth; /* Memastikan scroll via anchor/JS halus secara global */
+}
+
 body {
     background-color: #00040f; /* Deepest Navy/Black */
     color: #f1f5f9;
     font-family: 'Plus Jakarta Sans', sans-serif;
     -webkit-tap-highlight-color: transparent;
     overflow-x: hidden;
-    /* UPDATE: Smooth scrolling global */
+    /* UPDATE: Smooth scrolling global & Momentum Scrolling untuk Mobile */
     scroll-behavior: smooth;
+    -webkit-overflow-scrolling: touch; /* Kunci agar scroll di iOS terasa "licin" dan tidak kaku */
 }
 
 /* Custom Scrollbar */
@@ -79,7 +84,7 @@ body {
     text-transform: uppercase; 
 }
 
-/* Memastikan placeholder tetap normal (opsional, tapi biasanya lebih rapi jika placeholder sentence case) */
+/* Memastikan placeholder tetap normal */
 .input-modern::placeholder {
     color: rgba(255, 255, 255, 0.3);
     font-weight: 400;
@@ -100,7 +105,8 @@ input::placeholder, textarea::placeholder {
     background-color: rgba(255, 255, 255, 0.1) !important;
     border-color: #ff5400 !important;
     box-shadow: 0 0 20px rgba(255, 84, 0, 0.2); /* Glow lebih halus */
-    transform: translateY(-2px); /* Sedikit naik saat fokus */
+    /* Kita hilangkan transform translateY saat focus agar kalkulasi scroll center di JS akurat */
+    transform: none; 
 }
 
 /* === LOADING SYSTEM === */

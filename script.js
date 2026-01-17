@@ -96,11 +96,11 @@ function initializeAppLogic() {
         }
     });
 
-    updatePassengerForms(); 
+    updatePassengerForms(); // Init awal form
     setupImageUploader('inpFileTransfer', 'inpTransferData', 'imgTransfer', 'previewTransfer');
     setupImageUploader('inpFileChat', 'inpChatData', 'imgChat', 'previewChat');
     setupHistoryUploader();
-    setupFocusMode();
+    // setupFocusMode dipanggil di dalam updatePassengerForms agar dinamis
 }
 
 // --- LOGIC UPLOAD ---
@@ -130,9 +130,7 @@ function resetUploadZones() {
 }
 
 // --- JALAN TIKUS: BYPASS STORAGE ---
-// Fungsi ini pura-pura upload, padahal cuma mengoper data gambar (Text)
 async function uploadBase64ToStorage(base64String, path) {
-    // KITA LANGSUNG KEMBALIKAN DATANYA (TIDAK KE STORAGE)
     return base64String; 
 }
 
@@ -146,18 +144,16 @@ orderForm.addEventListener('submit', async (e) => {
     const existingOrder = editIndex !== -1 ? orders[editIndex] : null;
     const orderId = existingOrder ? existingOrder.id.toString() : Date.now().toString();
 
-    // Ambil data gambar (Text Base64 Panjang)
     let transferUrl = document.getElementById('inpTransferData').value;
     let chatUrl = document.getElementById('inpChatData').value;
 
     try {
-        // UPDATE: PAKSA HURUF BESAR (UPPERCASE) SAAT SIMPAN KE DATABASE
         const newOrder = {
             id: parseInt(orderId), 
             contactName: document.getElementById('inpContactName').value.toUpperCase(),
             contactPhone: document.getElementById('inpContactPhone').value,
             address: document.getElementById('inpAddress').value.toUpperCase(),
-            passengers: getPassengersFromForm(), // Function ini sudah di-update di bawah agar return uppercase
+            passengers: getPassengersFromForm(), 
             origin: document.getElementById('inpOrigin').value.toUpperCase(),
             dest: document.getElementById('inpDest').value.toUpperCase(),
             date: document.getElementById('inpDate').value,
@@ -172,7 +168,6 @@ orderForm.addEventListener('submit', async (e) => {
             fee: parseFloat(document.getElementById('inpFee').value), 
             settlementMethod: existingOrder ? (existingOrder.settlementMethod || '-') : '-',
             
-            // SIMPAN GAMBAR SEBAGAI TEXT DI SINI
             transferScreenshot: transferUrl || (existingOrder ? existingOrder.transferScreenshot : null), 
             chatScreenshot: chatUrl || (existingOrder ? existingOrder.chatScreenshot : null),
             
@@ -213,10 +208,8 @@ function toggleLoader(show) {
 
 window.navTo = function(pageId) {
     const currentPages = document.querySelectorAll('main > section:not(.hidden)');
-    // UPDATE: Menggunakan class animasi fade-out yang baru
     currentPages.forEach(page => { page.classList.add('fade-out'); page.classList.remove('fade-in'); });
 
-    // UPDATE TIMING: Dinaikkan ke 400ms agar sesuai dengan CSS transition smooth (sebelumnya 250ms terlalu cepat)
     setTimeout(() => {
         document.querySelectorAll('main > section').forEach(el => {
             el.classList.add('hidden');
@@ -236,7 +229,7 @@ window.navTo = function(pageId) {
             if(document.getElementById('editIndex').value === "-1") resetForm();
         }
         window.scrollTo(0,0);
-    }, 400); // SYNC DENGAN CSS ANIMATION
+    }, 400); 
 }
 
 window.deleteOrder = async function(id) {
@@ -366,7 +359,6 @@ function setupHistoryUploader() {
             const orderIndex = orders.findIndex(o => o.id === currentUploadOrderId);
             if (orderIndex !== -1) {
                 try {
-                    // BYPASS: Simpan Text Base64 langsung ke DB
                     if (currentUploadType === 'settlement') orders[orderIndex].settlementProof = dataUrl;
                     else if (currentUploadType === 'kai_ticket') orders[orderIndex].kaiTicketFile = dataUrl;
                     
@@ -385,25 +377,66 @@ function setupHistoryUploader() {
     });
 }
 
+// UPDATE: REWRITE FOCUS MODE TO SUPPORT ENTER NAVIGATION & AUTO-CENTER
 function setupFocusMode() {
-    const inputs = document.querySelectorAll('input, textarea, select');
+    // Ambil semua input yang visible dan relevan
+    // Filter out hidden inputs atau file inputs
+    const rawInputs = document.querySelectorAll('input:not([type="hidden"]):not([type="file"]), textarea, select');
+    // Konversi ke array untuk indexing
+    const inputs = Array.from(rawInputs).filter(el => !el.closest('.hidden'));
+
     const header = document.querySelector('header');
     const nav = document.querySelector('nav');
-    inputs.forEach(el => {
-        if(el.type === 'file') return; 
-        el.addEventListener('focus', () => {
+
+    inputs.forEach((el, index) => {
+        // Hapus listener lama untuk mencegah duplikasi (Clean State)
+        el.removeEventListener('focus', el._fnFocus);
+        el.removeEventListener('blur', el._fnBlur);
+        el.removeEventListener('keydown', el._fnKey);
+
+        // --- 1. AUTO CENTER LOGIC ---
+        el._fnFocus = () => {
             if(header) header.classList.add('opacity-0', '-translate-y-full', 'absolute');
             if(nav) nav.classList.add('translate-y-[200%]', 'opacity-0');
-            setTimeout(() => { el.scrollIntoView({behavior: "smooth", block: "center"}); }, 300);
-        });
-        el.addEventListener('blur', () => {
+            
+            // Timeout sedikit lebih lama (400ms) untuk menunggu keyboard mobile naik sepenuhnya
+            // Menggunakan block: 'center' agar input pas di tengah layar
+            setTimeout(() => { 
+                el.scrollIntoView({behavior: "smooth", block: "center", inline: "nearest"}); 
+            }, 400);
+        };
+
+        el._fnBlur = () => {
             setTimeout(() => {
                 const activeTag = document.activeElement.tagName;
+                // Jika user pindah ke input lain, jangan munculkan header/nav dulu
                 if (activeTag === 'INPUT' || activeTag === 'TEXTAREA' || activeTag === 'SELECT') return;
+                
                 if(header) header.classList.remove('opacity-0', '-translate-y-full', 'absolute');
                 if(nav) nav.classList.remove('translate-y-[200%]', 'opacity-0');
             }, 100);
-        });
+        };
+
+        // --- 2. ENTER KEY NAVIGATION LOGIC ---
+        el._fnKey = (e) => {
+            if (e.key === 'Enter') {
+                e.preventDefault(); // Mencegah submit form
+                
+                // Cari elemen berikutnya
+                const nextInput = inputs[index + 1];
+                if (nextInput) {
+                    nextInput.focus(); // Pindah fokus ke kolom selanjutnya
+                    // Event listener 'focus' di nextInput akan otomatis trigger scroll center
+                } else {
+                    el.blur(); // Jika habis, tutup keyboard
+                }
+            }
+        };
+
+        // Pasang Listener Baru
+        el.addEventListener('focus', el._fnFocus);
+        el.addEventListener('blur', el._fnBlur);
+        el.addEventListener('keydown', el._fnKey);
     });
 }
 
@@ -421,7 +454,6 @@ function setupImageUploader(inputId, hiddenDataId, imgId, containerId) {
     });
 }
 
-// KOMPRESI GAMBAR (PENTING AGAR DATABASE TIDAK BERAT)
 function processFile(file, callback) {
     if (!file) { toggleLoader(false); return; }
     const reader = new FileReader();
@@ -431,7 +463,6 @@ function processFile(file, callback) {
         img.onload = function() {
             const canvas = document.createElement('canvas');
             const ctx = canvas.getContext('2d');
-            // Ukuran diperkecil agar Text-nya tidak terlalu panjang
             const MAX_WIDTH = 600; 
             let width = img.width;
             let height = img.height;
@@ -442,7 +473,6 @@ function processFile(file, callback) {
             canvas.width = width;
             canvas.height = height;
             ctx.drawImage(img, 0, 0, width, height);
-            // Kualitas 0.5 (Cukup untuk HP)
             callback(canvas.toDataURL('image/jpeg', 0.5));
         }
         img.src = event.target.result;
@@ -469,6 +499,8 @@ window.toggleTripType = function() {
         returnTrain.value = '';
         document.getElementById('inpReturnWarDate').value = ''; 
     }
+    // Re-run setupFocusMode karena visibilitas input berubah (agar urutan Enter benar)
+    setTimeout(setupFocusMode, 100); 
 }
 
 window.updatePassengerForms = function() {
@@ -496,6 +528,8 @@ window.updatePassengerForms = function() {
             </div>`;
     }
     container.innerHTML = html;
+    // Re-run setupFocusMode agar input penumpang baru bisa di-klik center & enter navigation
+    setTimeout(setupFocusMode, 100);
 }
 
 window.calcH45 = function() {
@@ -532,7 +566,6 @@ function getPassengersFromForm() {
     const paxNiks = document.querySelectorAll('.pax-nik');
     let paxList = [];
     paxNames.forEach((input, i) => {
-        // UPDATE: PAKSA UPPERCASE UNTUK NAMA PENUMPANG
         paxList.push({ 
             name: input.value.toUpperCase() || 'PASSENGER NAME', 
             nik: paxNiks[i] ? paxNiks[i].value : '-' 
@@ -542,7 +575,6 @@ function getPassengersFromForm() {
 }
 
 window.generateAndPreviewTicket = function() {
-    // UPDATE: Ambil value dan langsung UPPERCASE
     const contactName = document.getElementById('inpContactName').value.toUpperCase();
     if(!contactName) { alert("Isi nama kontak dulu!"); return; }
     toggleLoader(true);
@@ -587,7 +619,6 @@ function renderReceiptToDOM(order) {
     document.getElementById('rec-date').innerText = now.toLocaleDateString('id-ID');
     document.getElementById('rec-time').innerText = now.toLocaleTimeString('id-ID', {hour:'2-digit', minute:'2-digit'});
     document.getElementById('rec-id').innerText = "#" + order.id.toString().slice(-6);
-    // PASTIKAN DISPLAY JUGA UPPERCASE
     document.getElementById('rec-full-name').innerText = (order.contactName || order.name).toUpperCase();
     document.getElementById('rec-phone').innerText = order.contactPhone || order.phone || '-';
     document.getElementById('rec-address').innerText = (order.address || '-').toUpperCase();

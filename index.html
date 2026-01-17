@@ -198,7 +198,7 @@
                     <div class="space-y-4">
                         <div class="space-y-1">
                             <label class="text-[10px] font-bold text-davka-orange uppercase tracking-wider pl-2 block">Nama Kontak</label>
-                            <input type="text" id="inpContactName" required class="input-modern w-full outline-none" placeholder="Masukkan Nama Lengkap">
+                            <input type="text" id="inpContactName" required class="input-modern w-full outline-none" placeholder="Masukkan Nama Lengkap" autocapitalize="characters">
                         </div>
                         
                         <div class="space-y-1">
@@ -208,7 +208,7 @@
 
                         <div class="space-y-1">
                             <label class="text-[10px] font-bold text-davka-orange uppercase tracking-wider pl-2 block">Alamat Lengkap</label>
-                            <textarea id="inpAddress" rows="2" class="input-modern w-full outline-none" placeholder="Nama Jalan, Kota..."></textarea>
+                            <textarea id="inpAddress" rows="2" class="input-modern w-full outline-none" placeholder="Nama Jalan, Kota..." autocapitalize="characters"></textarea>
                         </div>
                     </div>
                 </div>
@@ -252,12 +252,12 @@
                     <div class="flex items-center gap-3">
                         <div class="flex-1">
                             <label class="text-[10px] text-gray-400 ml-1 mb-1 block">ASAL (Kode)</label>
-                            <input type="text" id="inpOrigin" required class="w-full bg-davka-bg border border-davka-border rounded-xl px-4 py-3 text-lg font-bold text-white text-center uppercase focus:border-davka-orange outline-none" placeholder="GMR">
+                            <input type="text" id="inpOrigin" required class="w-full bg-davka-bg border border-davka-border rounded-xl px-4 py-3 text-lg font-bold text-white text-center uppercase focus:border-davka-orange outline-none" placeholder="GMR" autocapitalize="characters">
                         </div>
                         <i class="fas fa-arrow-right text-gray-500 mt-5"></i>
                         <div class="flex-1">
                             <label class="text-[10px] text-gray-400 ml-1 mb-1 block">TUJUAN (Kode)</label>
-                            <input type="text" id="inpDest" required class="w-full bg-davka-bg border border-davka-border rounded-xl px-4 py-3 text-lg font-bold text-white text-center uppercase focus:border-davka-orange outline-none" placeholder="YK">
+                            <input type="text" id="inpDest" required class="w-full bg-davka-bg border border-davka-border rounded-xl px-4 py-3 text-lg font-bold text-white text-center uppercase focus:border-davka-orange outline-none" placeholder="YK" autocapitalize="characters">
                         </div>
                     </div>
 
@@ -273,7 +273,7 @@
                                 <input type="date" id="inpWarDate" class="w-full bg-davka-surface border border-davka-orange/30 rounded-lg p-2 text-xs text-davka-orange font-bold outline-none" readonly>
                             </div>
                         </div>
-                        <input type="text" id="inpTrain" required class="w-full bg-davka-surface border border-davka-border rounded-lg p-2.5 text-xs text-white focus:border-davka-orange outline-none" placeholder="Nama Kereta (Cth: Taksaka)">
+                        <input type="text" id="inpTrain" required class="w-full bg-davka-surface border border-davka-border rounded-lg p-2.5 text-xs text-white focus:border-davka-orange outline-none" placeholder="Nama Kereta (Cth: Taksaka)" autocapitalize="characters">
                     </div>
 
                     <div id="returnTripFields" class="hidden bg-davka-bg/50 p-3 rounded-xl border border-white/5 relative overflow-hidden">
@@ -289,7 +289,7 @@
                                 <input type="date" id="inpReturnWarDate" class="w-full bg-davka-surface border border-blue-500/30 rounded-lg p-2 text-xs text-blue-500 font-bold outline-none" readonly>
                             </div>
                         </div>
-                        <input type="text" id="inpReturnTrain" class="w-full bg-davka-surface border border-davka-border rounded-lg p-2.5 text-xs text-white focus:border-blue-500 outline-none ml-2 w-[98%]" placeholder="Nama Kereta (Cth: Argo Lawu)">
+                        <input type="text" id="inpReturnTrain" class="w-full bg-davka-surface border border-davka-border rounded-lg p-2.5 text-xs text-white focus:border-blue-500 outline-none ml-2 w-[98%]" placeholder="Nama Kereta (Cth: Argo Lawu)" autocapitalize="characters">
                     </div>
                 </div>
 
@@ -407,7 +407,7 @@
                         </div>
                     </div>
                     <div class="relative">
-                        <input type="text" id="searchInput" onkeyup="searchOrders()" placeholder="Cari nama kontak..." class="w-full bg-davka-surface border border-white/10 text-white rounded-2xl py-3 pl-12 pr-4 focus:outline-none focus:border-davka-orange focus:ring-1 focus:ring-davka-orange transition-all shadow-inner">
+                        <input type="text" id="searchInput" onkeyup="searchOrders()" placeholder="Cari nama kontak..." class="w-full bg-davka-surface border border-white/10 text-white rounded-2xl py-3 pl-12 pr-4 focus:outline-none focus:border-davka-orange focus:ring-1 focus:ring-davka-orange transition-all shadow-inner" autocapitalize="characters">
                         <i class="fas fa-search absolute left-4 top-3.5 text-gray-500"></i>
                     </div>
                 </div>

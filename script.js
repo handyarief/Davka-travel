@@ -151,22 +151,22 @@ orderForm.addEventListener('submit', async (e) => {
     let chatUrl = document.getElementById('inpChatData').value;
 
     try {
-        // Langsung simpan ke database tanpa lewat Storage
+        // UPDATE: PAKSA HURUF BESAR (UPPERCASE) SAAT SIMPAN KE DATABASE
         const newOrder = {
             id: parseInt(orderId), 
-            contactName: document.getElementById('inpContactName').value,
+            contactName: document.getElementById('inpContactName').value.toUpperCase(),
             contactPhone: document.getElementById('inpContactPhone').value,
-            address: document.getElementById('inpAddress').value,
-            passengers: getPassengersFromForm(),
+            address: document.getElementById('inpAddress').value.toUpperCase(),
+            passengers: getPassengersFromForm(), // Function ini sudah di-update di bawah agar return uppercase
             origin: document.getElementById('inpOrigin').value.toUpperCase(),
             dest: document.getElementById('inpDest').value.toUpperCase(),
             date: document.getElementById('inpDate').value,
             warDate: document.getElementById('inpWarDate').value,
-            train: document.getElementById('inpTrain').value,
+            train: document.getElementById('inpTrain').value.toUpperCase(),
             tripType: document.getElementById('inpTripType').value,
             returnDate: document.getElementById('inpReturnDate').value,
             returnWarDate: document.getElementById('inpReturnWarDate').value,
-            returnTrain: document.getElementById('inpReturnTrain').value,
+            returnTrain: document.getElementById('inpReturnTrain').value.toUpperCase(),
             paymentMethod: document.getElementById('inpPaymentMethod').value,
             price: parseFloat(document.getElementById('inpPrice').value),
             fee: parseFloat(document.getElementById('inpFee').value), 
@@ -184,7 +184,7 @@ orderForm.addEventListener('submit', async (e) => {
 
         await setDoc(doc(db, "orders", orderId), newOrder);
 
-        showToast(editIndex === -1 ? "Pesanan Tersimpan (Mode Database)!" : "Data Updated!");
+        showToast(editIndex === -1 ? "Pesanan Tersimpan!" : "Data Updated!");
         resetForm(); 
     } catch (err) {
         console.error("Save Failed:", err);
@@ -213,8 +213,10 @@ function toggleLoader(show) {
 
 window.navTo = function(pageId) {
     const currentPages = document.querySelectorAll('main > section:not(.hidden)');
+    // UPDATE: Menggunakan class animasi fade-out yang baru
     currentPages.forEach(page => { page.classList.add('fade-out'); page.classList.remove('fade-in'); });
 
+    // UPDATE TIMING: Dinaikkan ke 400ms agar sesuai dengan CSS transition smooth (sebelumnya 250ms terlalu cepat)
     setTimeout(() => {
         document.querySelectorAll('main > section').forEach(el => {
             el.classList.add('hidden');
@@ -234,7 +236,7 @@ window.navTo = function(pageId) {
             if(document.getElementById('editIndex').value === "-1") resetForm();
         }
         window.scrollTo(0,0);
-    }, 250);
+    }, 400); // SYNC DENGAN CSS ANIMATION
 }
 
 window.deleteOrder = async function(id) {
@@ -488,7 +490,7 @@ window.updatePassengerForms = function() {
                 <div class="absolute -left-1 top-3 w-1 h-6 bg-davka-orange rounded-r"></div>
                 <p class="text-[10px] font-bold text-davka-orange mb-2 uppercase tracking-wider pl-2">Penumpang ${i}</p>
                 <div class="space-y-2 pl-2">
-                    <input type="text" value="${valName}" class="pax-name w-full bg-davka-bg border border-davka-border rounded-lg p-2 text-sm text-white focus:border-davka-orange focus:outline-none placeholder-gray-600" placeholder="Nama Lengkap (Sesuai KTP)">
+                    <input type="text" value="${valName}" class="pax-name w-full bg-davka-bg border border-davka-border rounded-lg p-2 text-sm text-white focus:border-davka-orange focus:outline-none placeholder-gray-600" placeholder="Nama Lengkap (Sesuai KTP)" autocapitalize="characters">
                     <input type="number" value="${valNik}" class="pax-nik w-full bg-davka-bg border border-davka-border rounded-lg p-2 text-sm text-white focus:border-davka-orange focus:outline-none placeholder-gray-600" placeholder="NIK (16 Digit)">
                 </div>
             </div>`;
@@ -530,23 +532,28 @@ function getPassengersFromForm() {
     const paxNiks = document.querySelectorAll('.pax-nik');
     let paxList = [];
     paxNames.forEach((input, i) => {
-        paxList.push({ name: input.value || 'Passenger Name', nik: paxNiks[i] ? paxNiks[i].value : '-' });
+        // UPDATE: PAKSA UPPERCASE UNTUK NAMA PENUMPANG
+        paxList.push({ 
+            name: input.value.toUpperCase() || 'PASSENGER NAME', 
+            nik: paxNiks[i] ? paxNiks[i].value : '-' 
+        });
     });
     return paxList;
 }
 
 window.generateAndPreviewTicket = function() {
-    const contactName = document.getElementById('inpContactName').value;
+    // UPDATE: Ambil value dan langsung UPPERCASE
+    const contactName = document.getElementById('inpContactName').value.toUpperCase();
     if(!contactName) { alert("Isi nama kontak dulu!"); return; }
     toggleLoader(true);
     const data = {
         id: Date.now().toString().slice(-6),
         contactName, 
         contactPhone: document.getElementById('inpContactPhone').value || '-',
-        address: document.getElementById('inpAddress').value || '-', 
+        address: document.getElementById('inpAddress').value.toUpperCase() || '-', 
         origin: document.getElementById('inpOrigin').value.toUpperCase(),
         dest: document.getElementById('inpDest').value.toUpperCase(),
-        train: document.getElementById('inpTrain').value, 
+        train: document.getElementById('inpTrain').value.toUpperCase(), 
         date: document.getElementById('inpDate').value,
         warDate: document.getElementById('inpWarDate').value,
         paymentMethod: document.getElementById('inpPaymentMethod').value,
@@ -554,7 +561,7 @@ window.generateAndPreviewTicket = function() {
         fee: parseFloat(document.getElementById('inpFee').value) || 0, 
         tripType: document.getElementById('inpTripType').value,
         returnDate: document.getElementById('inpReturnDate').value,
-        returnTrain: document.getElementById('inpReturnTrain').value,
+        returnTrain: document.getElementById('inpReturnTrain').value.toUpperCase(),
         returnWarDate: document.getElementById('inpReturnWarDate').value,
         passengers: getPassengersFromForm() 
     };
@@ -580,12 +587,13 @@ function renderReceiptToDOM(order) {
     document.getElementById('rec-date').innerText = now.toLocaleDateString('id-ID');
     document.getElementById('rec-time').innerText = now.toLocaleTimeString('id-ID', {hour:'2-digit', minute:'2-digit'});
     document.getElementById('rec-id').innerText = "#" + order.id.toString().slice(-6);
+    // PASTIKAN DISPLAY JUGA UPPERCASE
     document.getElementById('rec-full-name').innerText = (order.contactName || order.name).toUpperCase();
     document.getElementById('rec-phone').innerText = order.contactPhone || order.phone || '-';
-    document.getElementById('rec-address').innerText = order.address || '-';
+    document.getElementById('rec-address').innerText = (order.address || '-').toUpperCase();
     
     let desc = `KA ${order.train.toUpperCase()} (${order.origin}-${order.dest})`;
-    if(order.tripType === 'round_trip') desc = `PP ${order.train}/${order.returnTrain}`;
+    if(order.tripType === 'round_trip') desc = `PP ${order.train}/${order.returnTrain}`.toUpperCase();
     if(desc.length > 30) desc = desc.substring(0, 28) + '..';
 
     const paxCount = order.passengers ? order.passengers.length : 1;

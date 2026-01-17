@@ -118,7 +118,7 @@ window.handleUploadZoneClick = function(zoneId, inputId) {
         zone.classList.add('upload-zone-active');
         if(hint) hint.classList.remove('hidden');
 
-        // UPDATE: Auto scroll to center agar user nyaman saat upload
+        // Auto scroll to center agar user nyaman saat upload
         setTimeout(() => {
             zone.scrollIntoView({ behavior: "smooth", block: "center", inline: "nearest" });
         }, 300);
@@ -292,11 +292,10 @@ window.editOrder = function(id) {
 
     document.getElementById('inpPaymentMethod').value = data.paymentMethod;
     
-    // UPDATE: Set Price, lalu Hitung balik Price Per Pax untuk UX
     document.getElementById('inpPrice').value = data.price;
     const paxCount = paxList.length || 1;
     const pricePerPax = data.price > 0 ? (data.price / paxCount) : 0;
-    document.getElementById('inpPricePerPax').value = Math.round(pricePerPax); // Tampilkan
+    document.getElementById('inpPricePerPax').value = Math.round(pricePerPax); 
 
     document.getElementById('inpFee').value = data.fee;
     calcRemaining();
@@ -389,30 +388,22 @@ function setupHistoryUploader() {
     });
 }
 
-// UPDATE: REWRITE FOCUS MODE TO SUPPORT ENTER NAVIGATION & AUTO-CENTER
 function setupFocusMode() {
-    // Ambil semua input yang visible dan relevan
-    // Filter out hidden inputs atau file inputs
     const rawInputs = document.querySelectorAll('input:not([type="hidden"]):not([type="file"]), textarea, select');
-    // Konversi ke array untuk indexing
     const inputs = Array.from(rawInputs).filter(el => !el.closest('.hidden'));
 
     const header = document.querySelector('header');
     const nav = document.querySelector('nav');
 
     inputs.forEach((el, index) => {
-        // Hapus listener lama untuk mencegah duplikasi (Clean State)
         el.removeEventListener('focus', el._fnFocus);
         el.removeEventListener('blur', el._fnBlur);
         el.removeEventListener('keydown', el._fnKey);
 
-        // --- 1. AUTO CENTER LOGIC ---
         el._fnFocus = () => {
             if(header) header.classList.add('opacity-0', '-translate-y-full', 'absolute');
             if(nav) nav.classList.add('translate-y-[200%]', 'opacity-0');
             
-            // Timeout sedikit lebih lama (400ms) untuk menunggu keyboard mobile naik sepenuhnya
-            // Menggunakan block: 'center' agar input pas di tengah layar
             setTimeout(() => { 
                 el.scrollIntoView({behavior: "smooth", block: "center", inline: "nearest"}); 
             }, 400);
@@ -421,7 +412,6 @@ function setupFocusMode() {
         el._fnBlur = () => {
             setTimeout(() => {
                 const activeTag = document.activeElement.tagName;
-                // Jika user pindah ke input lain, jangan munculkan header/nav dulu
                 if (activeTag === 'INPUT' || activeTag === 'TEXTAREA' || activeTag === 'SELECT') return;
                 
                 if(header) header.classList.remove('opacity-0', '-translate-y-full', 'absolute');
@@ -429,23 +419,18 @@ function setupFocusMode() {
             }, 100);
         };
 
-        // --- 2. ENTER KEY NAVIGATION LOGIC ---
         el._fnKey = (e) => {
             if (e.key === 'Enter') {
-                e.preventDefault(); // Mencegah submit form
-                
-                // Cari elemen berikutnya
+                e.preventDefault(); 
                 const nextInput = inputs[index + 1];
                 if (nextInput) {
-                    nextInput.focus(); // Pindah fokus ke kolom selanjutnya
-                    // Event listener 'focus' di nextInput akan otomatis trigger scroll center
+                    nextInput.focus(); 
                 } else {
-                    el.blur(); // Jika habis, tutup keyboard
+                    el.blur(); 
                 }
             }
         };
 
-        // Pasang Listener Baru
         el.addEventListener('focus', el._fnFocus);
         el.addEventListener('blur', el._fnBlur);
         el.addEventListener('keydown', el._fnKey);
@@ -511,11 +496,9 @@ window.toggleTripType = function() {
         returnTrain.value = '';
         document.getElementById('inpReturnWarDate').value = ''; 
     }
-    // Re-run setupFocusMode karena visibilitas input berubah (agar urutan Enter benar)
     setTimeout(setupFocusMode, 100); 
 }
 
-// UPDATE: Added Logic to trigger calcTotalFromPax when pax count changes
 window.updatePassengerForms = function() {
     const count = parseInt(document.getElementById('inpPaxCount').value);
     const container = document.getElementById('passengerForms');
@@ -542,14 +525,11 @@ window.updatePassengerForms = function() {
     }
     container.innerHTML = html;
     
-    // UPDATE: Trigger kalkulasi ulang harga total
     calcTotalFromPax();
 
-    // Re-run setupFocusMode agar input penumpang baru bisa di-klik center & enter navigation
     setTimeout(setupFocusMode, 100);
 }
 
-// UPDATE: Fungsi Baru untuk Kalkulasi Harga Per Penumpang -> Total
 window.calcTotalFromPax = function() {
     const pricePerPax = parseFloat(document.getElementById('inpPricePerPax').value) || 0;
     const paxCount = parseInt(document.getElementById('inpPaxCount').value) || 1;
@@ -557,7 +537,7 @@ window.calcTotalFromPax = function() {
     if (pricePerPax > 0) {
         const total = pricePerPax * paxCount;
         document.getElementById('inpPrice').value = total;
-        calcRemaining(); // Chain reaction to remaining
+        calcRemaining(); 
     }
 }
 
@@ -693,18 +673,28 @@ function renderTicketToDOM(data) {
     } else returnBox.classList.add('hidden');
 
     let paxHtml = '';
-    document.getElementById('ticket-pax-count').innerText = data.passengers.length;
+    
+    // UPDATE: Perjelas teks jumlah penumpang
+    const paxCount = data.passengers.length;
+    document.getElementById('ticket-pax-count').innerText = `${paxCount} Penumpang`;
+    
+    // UPDATE: Calculate & Render Price Per Pax
+    const pricePerPax = data.price > 0 ? Math.round(data.price / paxCount) : 0;
+    document.getElementById('ticket-val-price-per-pax').innerText = formatRupiah(pricePerPax);
+
     data.passengers.forEach((p, index) => {
+        // UPDATE: REMOVE truncate, ADD break-words & leading-tight
         paxHtml += `
             <div class="flex items-center gap-3 border-b border-gray-100 pb-2 last:border-0 last:pb-0">
-                <div class="w-6 h-6 rounded-full bg-[#f8fafc] border border-gray-200 flex items-center justify-center text-[9px] font-bold text-gray-500">${index + 1}</div>
-                <div class="flex-1">
-                    <p class="text-xs font-black uppercase text-[#0b1c38] truncate">${p.name}</p>
+                <div class="w-6 h-6 rounded-full bg-[#f8fafc] border border-gray-200 flex items-center justify-center text-[9px] font-bold text-gray-500 shrink-0">${index + 1}</div>
+                <div class="flex-1 min-w-0">
+                    <p class="text-xs font-black uppercase text-[#0b1c38] break-words leading-tight">${p.name}</p>
                     <p class="text-[9px] text-gray-400 font-mono tracking-wider">NIK: ${p.nik}</p>
                 </div>
             </div>`;
     });
     document.getElementById('ticket-pax-list-vertical').innerHTML = paxHtml;
+    
     document.getElementById('ticket-val-method').innerText = data.paymentMethod;
     document.getElementById('ticket-val-total').innerText = formatRupiah(data.price); 
     document.getElementById('ticket-val-fee').innerText = formatRupiah(data.fee);     

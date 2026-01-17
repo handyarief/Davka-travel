@@ -2,9 +2,10 @@
 
 /* === BASE RESET & TYPOGRAPHY === */
 html {
-    scroll-behavior: smooth; /* Smooth anchor scrolling */
     height: 100%; 
+    overflow: hidden; /* UPDATE: Kunci HTML agar tidak ada double scrollbar */
     -webkit-text-size-adjust: 100%;
+    touch-action: pan-y; /* Optimization for touch devices */
 }
 
 body {
@@ -12,16 +13,15 @@ body {
     color: #f1f5f9;
     font-family: 'Plus Jakarta Sans', sans-serif;
     -webkit-tap-highlight-color: transparent;
-    -webkit-font-smoothing: antialiased; /* Text rendering lebih tajam saat scroll */
+    -webkit-font-smoothing: antialiased; 
     -moz-osx-font-smoothing: grayscale;
     
-    /* UPDATE: ULTRA SMOOTH SCROLLING PHYSICS */
-    min-height: 100vh; 
-    overflow-x: hidden;
-    overflow-y: scroll; /* Mengubah auto ke scroll untuk rendering track yang lebih stabil */
-    -webkit-overflow-scrolling: touch; /* Mengaktifkan Momentum Scrolling iOS */
-    overscroll-behavior-y: auto; /* Membiarkan bounce effect native (feel lebih natural) */
-    touch-action: pan-y; /* PRIORITAS GESTURE: Mengurangi delay saat mulai scroll */
+    /* UPDATE: ULTRA SMOOTH SCROLLING PHYSICS (APP SHELL) */
+    height: 100%;
+    overflow-y: auto; /* Scroll hanya terjadi di Body */
+    -webkit-overflow-scrolling: touch; /* Momentum Scrolling iOS */
+    scroll-behavior: smooth;
+    overscroll-behavior-y: none; /* Mencegah bounce effect native browser (feel lebih native app) */
 }
 
 /* Custom Scrollbar - Hidden but functional */
@@ -41,7 +41,7 @@ body {
     position: relative;
     z-index: 10;
     
-    /* UPDATE: GPU Acceleration untuk Scroll Lebih Halus */
+    /* GPU Acceleration untuk Scroll Lebih Halus */
     transform: translateZ(0); 
     will-change: transform; 
 }

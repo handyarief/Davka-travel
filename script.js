@@ -233,7 +233,8 @@ window.navTo = function(pageId) {
         if(pageId === 'input') {
             if(document.getElementById('editIndex').value === "-1") resetForm();
         }
-        window.scrollTo(0,0);
+        // Smooth scroll reset
+        window.scrollTo({ top: 0, behavior: 'smooth' });
     }, 400); 
 }
 
@@ -290,7 +291,13 @@ window.editOrder = function(id) {
     }
 
     document.getElementById('inpPaymentMethod').value = data.paymentMethod;
+    
+    // UPDATE: Set Price, lalu Hitung balik Price Per Pax untuk UX
     document.getElementById('inpPrice').value = data.price;
+    const paxCount = paxList.length || 1;
+    const pricePerPax = data.price > 0 ? (data.price / paxCount) : 0;
+    document.getElementById('inpPricePerPax').value = Math.round(pricePerPax); // Tampilkan
+
     document.getElementById('inpFee').value = data.fee;
     calcRemaining();
 
@@ -508,6 +515,7 @@ window.toggleTripType = function() {
     setTimeout(setupFocusMode, 100); 
 }
 
+// UPDATE: Added Logic to trigger calcTotalFromPax when pax count changes
 window.updatePassengerForms = function() {
     const count = parseInt(document.getElementById('inpPaxCount').value);
     const container = document.getElementById('passengerForms');
@@ -533,8 +541,24 @@ window.updatePassengerForms = function() {
             </div>`;
     }
     container.innerHTML = html;
+    
+    // UPDATE: Trigger kalkulasi ulang harga total
+    calcTotalFromPax();
+
     // Re-run setupFocusMode agar input penumpang baru bisa di-klik center & enter navigation
     setTimeout(setupFocusMode, 100);
+}
+
+// UPDATE: Fungsi Baru untuk Kalkulasi Harga Per Penumpang -> Total
+window.calcTotalFromPax = function() {
+    const pricePerPax = parseFloat(document.getElementById('inpPricePerPax').value) || 0;
+    const paxCount = parseInt(document.getElementById('inpPaxCount').value) || 1;
+    
+    if (pricePerPax > 0) {
+        const total = pricePerPax * paxCount;
+        document.getElementById('inpPrice').value = total;
+        calcRemaining(); // Chain reaction to remaining
+    }
 }
 
 window.calcH45 = function() {
@@ -750,6 +774,9 @@ window.resetForm = function() {
     document.getElementById('btnSaveText').innerText = "SIMPAN PESANAN";
     document.getElementById('inpPaxCount').value = "1";
     document.getElementById('inpTripType').value = 'one_way';
+    // Clear new input
+    document.getElementById('inpPricePerPax').value = '';
+    
     toggleTripType(); clearImage('transfer'); clearImage('chat'); updatePassengerForms(); calcRemaining();
     resetUploadZones();
 }

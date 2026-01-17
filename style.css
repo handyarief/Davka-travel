@@ -2,8 +2,9 @@
 
 /* === BASE RESET & TYPOGRAPHY === */
 html {
-    scroll-behavior: smooth; /* Memastikan scroll via anchor/JS halus secara global */
-    height: 100%; /* UPDATE: Penting untuk momentum scrolling yang konsisten */
+    scroll-behavior: smooth; /* Smooth anchor scrolling */
+    height: 100%; 
+    -webkit-text-size-adjust: 100%;
 }
 
 body {
@@ -11,37 +12,41 @@ body {
     color: #f1f5f9;
     font-family: 'Plus Jakarta Sans', sans-serif;
     -webkit-tap-highlight-color: transparent;
-    overflow-x: hidden;
+    -webkit-font-smoothing: antialiased; /* Text rendering lebih tajam saat scroll */
+    -moz-osx-font-smoothing: grayscale;
     
-    /* UPDATE: Smooth scrolling global & Momentum Scrolling untuk Mobile */
-    scroll-behavior: smooth;
-    min-height: 100%; /* Memastikan body memenuhi viewport */
-    overflow-y: auto; /* Mengaktifkan native scroll behavior yang optimal */
-    -webkit-overflow-scrolling: touch; /* Kunci agar scroll di iOS terasa "licin" dan tidak kaku */
+    /* UPDATE: ULTRA SMOOTH SCROLLING PHYSICS */
+    min-height: 100vh; 
+    overflow-x: hidden;
+    overflow-y: auto; 
+    -webkit-overflow-scrolling: touch; /* Mengaktifkan Momentum Scrolling iOS */
+    overscroll-behavior-y: auto; /* Membiarkan bounce effect native (feel lebih natural) */
 }
 
-/* Custom Scrollbar */
+/* Custom Scrollbar - Hidden but functional */
 ::-webkit-scrollbar {
     width: 0px;
     background: transparent;
 }
 
-/* === GLASSMORPHISM SYSTEM (REFINED FOR SMOOTHNESS) === */
+/* === GLASSMORPHISM SYSTEM (OPTIMIZED FOR PERFORMANCE) === */
 .glass {
     background: rgba(15, 23, 42, 0.9);
     backdrop-filter: blur(20px);
     -webkit-backdrop-filter: blur(20px);
     border: 1px solid rgba(255, 255, 255, 0.08);
     box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.3);
-    /* UPDATE: Transisi lebih smooth dengan cubic-bezier */
     transition: transform 0.4s cubic-bezier(0.25, 0.46, 0.45, 0.94), box-shadow 0.4s cubic-bezier(0.25, 0.46, 0.45, 0.94);
     position: relative;
     z-index: 10;
-    will-change: transform, box-shadow; /* Performance optimization */
+    
+    /* UPDATE: GPU Acceleration untuk Scroll Lebih Halus */
+    transform: translateZ(0); 
+    will-change: transform; 
 }
 
 .glass:active {
-    transform: scale(0.98); /* Efek pencet lebih halus */
+    transform: scale(0.98) translateZ(0); 
 }
 
 .glass-nav {
@@ -50,6 +55,9 @@ body {
     -webkit-backdrop-filter: blur(30px);
     border: 1px solid rgba(255, 255, 255, 0.1);
     box-shadow: 0 10px 40px -10px rgba(0, 0, 0, 0.6);
+    /* GPU Force */
+    transform: translate3d(-50%, 0, 0); 
+    will-change: transform;
 }
 
 /* === UI FIXES (HEADER & INPUTS) === */
@@ -64,7 +72,8 @@ body {
     border-bottom-right-radius: 2.5rem;
     overflow: hidden;
     box-shadow: 0 20px 50px -10px rgba(0, 0, 0, 0.8);
-    transition: all 0.5s cubic-bezier(0.22, 1, 0.36, 1); /* Smooth resize saat focus */
+    transition: all 0.5s cubic-bezier(0.22, 1, 0.36, 1);
+    transform: translateZ(0); /* Fix flickering saat scroll */
 }
 
 .header-hero img {
@@ -81,21 +90,17 @@ body {
     font-weight: 700 !important;
     font-size: 0.95rem !important;
     border-radius: 0.75rem;
-    transition: all 0.4s cubic-bezier(0.22, 1, 0.36, 1); /* Smooth focus transition */
+    transition: all 0.4s cubic-bezier(0.22, 1, 0.36, 1);
     padding: 0.75rem 1rem;
-    
-    /* UPDATE: UPPERCASE AUTOMATIC (VISUAL) */
     text-transform: uppercase; 
 }
 
-/* Memastikan placeholder tetap normal */
 .input-modern::placeholder {
     color: rgba(255, 255, 255, 0.3);
     font-weight: 400;
     text-transform: none; 
 }
 
-/* Global Input Uppercase Fix for Standard Inputs too */
 input[type="text"], 
 input[type="email"], 
 textarea {
@@ -108,8 +113,7 @@ input::placeholder, textarea::placeholder {
 .input-modern:focus {
     background-color: rgba(255, 255, 255, 0.1) !important;
     border-color: #ff5400 !important;
-    box-shadow: 0 0 20px rgba(255, 84, 0, 0.2); /* Glow lebih halus */
-    /* Kita hilangkan transform translateY saat focus agar kalkulasi scroll center di JS akurat */
+    box-shadow: 0 0 20px rgba(255, 84, 0, 0.2); 
     transform: none; 
 }
 
@@ -124,7 +128,7 @@ input::placeholder, textarea::placeholder {
     flex-direction: column;
     align-items: center;
     justify-content: center;
-    transition: opacity 0.5s cubic-bezier(0.4, 0, 0.2, 1); /* Smooth fade */
+    transition: opacity 0.5s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 .loading-overlay.hidden {
@@ -132,7 +136,6 @@ input::placeholder, textarea::placeholder {
     pointer-events: none;
 }
 
-/* Custom Animation classes for the Loader */
 .animate-spin-slow {
     animation: spinSlow 3s linear infinite;
 }
@@ -152,9 +155,9 @@ input::placeholder, textarea::placeholder {
 }
 
 /* === CINEMATIC SPLASH SCREEN === */
-
 .splash-transition {
     transition: opacity 1.5s cubic-bezier(0.7, 0, 0.3, 1), transform 1.5s cubic-bezier(0.7, 0, 0.3, 1);
+    will-change: opacity, transform;
 }
 
 .splash-hidden {
@@ -219,15 +222,13 @@ input::placeholder, textarea::placeholder {
     text-shadow: 0 0 10px rgba(14, 165, 233, 0.5);
 }
 
-/* === UPDATE: ULTRA SMOOTH PAGE ANIMATIONS === */
+/* === PAGE ANIMATIONS (Optimized) === */
 .fade-in {
-    /* Menggunakan kurva bezier 'Quart Out' untuk efek masuk yang elegan */
     animation: fadeInUp 0.6s cubic-bezier(0.165, 0.84, 0.44, 1) forwards;
     will-change: transform, opacity;
 }
 
 .fade-out {
-    /* Efek keluar sedikit lebih cepat tapi tetap halus */
     animation: fadeOutDown 0.4s cubic-bezier(0.165, 0.84, 0.44, 1) forwards;
     will-change: transform, opacity;
 }
@@ -243,7 +244,7 @@ input::placeholder, textarea::placeholder {
 }
 
 .animate-scale-up {
-    animation: scaleUp 0.4s cubic-bezier(0.34, 1.56, 0.64, 1); /* Bouncy effect */
+    animation: scaleUp 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
 }
 
 @keyframes scaleUp {
@@ -260,8 +261,8 @@ input::placeholder, textarea::placeholder {
 .active-nav i {
     color: #ff5400;
     filter: drop-shadow(0 0 12px rgba(255, 84, 0, 0.6));
-    transform: translateY(-6px); /* Naik sedikit lebih tinggi */
-    transition: all 0.4s cubic-bezier(0.34, 1.56, 0.64, 1); /* Efek pegas */
+    transform: translateY(-6px);
+    transition: all 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
 }
 
 .active-nav::after {

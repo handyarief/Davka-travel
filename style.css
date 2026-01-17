@@ -18,9 +18,10 @@ body {
     /* UPDATE: ULTRA SMOOTH SCROLLING PHYSICS */
     min-height: 100vh; 
     overflow-x: hidden;
-    overflow-y: auto; 
+    overflow-y: scroll; /* Mengubah auto ke scroll untuk rendering track yang lebih stabil */
     -webkit-overflow-scrolling: touch; /* Mengaktifkan Momentum Scrolling iOS */
     overscroll-behavior-y: auto; /* Membiarkan bounce effect native (feel lebih natural) */
+    touch-action: pan-y; /* PRIORITAS GESTURE: Mengurangi delay saat mulai scroll */
 }
 
 /* Custom Scrollbar - Hidden but functional */

@@ -628,7 +628,7 @@ window.generateAndPreviewTicket = function() {
     };
     data.remaining = data.price - data.fee;
     renderTicketToDOM(data);
-    showToast("Render Preview...");
+    showToast("TUNGGU CETAK DATA");
     setTimeout(() => { captureAndShowModal('ticket-render-area'); }, 800); 
 }
 

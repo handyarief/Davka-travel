@@ -802,52 +802,126 @@ window.renderOrderList = function(filterText = '') {
         const dateDepart = order.date ? new Date(order.date).toLocaleDateString('id-ID', {day:'numeric', month:'short'}) : '-';
         const warDateDepart = order.warDate ? new Date(order.warDate).toLocaleDateString('id-ID', {day:'numeric', month:'short'}) : '-';
         
-        // UPDATED: Fix Riwayat Pesanan (Text Truncation & Flex)
+        // --- 2. UPDATE: VISUAL RUTE FUTURISTIK ---
         let routeHtml = '';
         if(order.tripType === 'round_trip') {
             const dateReturn = order.returnDate ? new Date(order.returnDate).toLocaleDateString('id-ID', {day:'numeric', month:'short'}) : '-';
             const warDateReturn = order.returnWarDate ? new Date(order.returnWarDate).toLocaleDateString('id-ID', {day:'numeric', month:'short'}) : '-';
-            routeHtml = `<div class="space-y-2 my-3">
-                    <div class="bg-white/5 p-3 rounded-xl border border-white/5 relative overflow-hidden">
-                       <div class="absolute left-0 top-0 bottom-0 w-1 bg-davka-orange"></div>
-                       <div class="flex justify-between mb-1 pl-2">
-                            <span class="text-[9px] text-davka-orange font-bold uppercase tracking-wider">Keberangkatan</span> 
-                            <div class="text-right"><span class="text-[9px] text-gray-400 block">${dateDepart}</span><span class="text-[10px] text-davka-orange font-bold">Beli Tiket: ${warDateDepart}</span></div>
-                       </div>
-                       <div class="flex items-center gap-2 pl-2">
-                            <h4 class="text-sm font-bold text-white truncate flex-1 min-w-0 text-right">${order.origin}</h4>
-                            <i class="fas fa-arrow-right text-xs text-gray-500 shrink-0"></i>
-                            <h4 class="text-sm font-bold text-white truncate flex-1 min-w-0 text-left">${order.dest}</h4>
-                       </div>
-                       <p class="text-[10px] text-gray-400 mt-1 pl-2"><i class="fas fa-train mr-1"></i> ${order.train}</p>
+            
+            routeHtml = `
+            <div class="mt-4 mb-2 space-y-3">
+                <div class="relative bg-davka-bg/60 rounded-xl p-3 border border-white/5 overflow-hidden group-hover:border-davka-orange/30 transition-all">
+                    <div class="absolute inset-0 bg-gradient-to-r from-davka-orange/5 to-transparent"></div>
+                    <div class="relative z-10 flex items-center justify-between">
+                        <div class="text-left min-w-0 flex-1">
+                            <p class="text-[9px] text-davka-orange font-bold uppercase tracking-widest mb-0.5">Berangkat</p>
+                            <h4 class="text-lg font-black text-white leading-none truncate">${order.origin}</h4>
+                            <p class="text-[9px] text-gray-400 mt-1">${dateDepart}</p>
+                        </div>
+                        <div class="px-2 flex flex-col items-center justify-center">
+                            <i class="fas fa-train text-davka-orange text-xs animate-pulse"></i>
+                            <div class="h-px w-8 bg-davka-orange/50 mt-1"></div>
+                        </div>
+                        <div class="text-right min-w-0 flex-1">
+                            <p class="text-[9px] text-gray-500 font-bold uppercase tracking-widest mb-0.5 text-right">Tujuan</p>
+                            <h4 class="text-lg font-black text-white leading-none truncate">${order.dest}</h4>
+                            <p class="text-[9px] text-white/60 mt-1 font-bold">War: ${warDateDepart}</p>
+                        </div>
                     </div>
-                    <div class="bg-white/5 p-3 rounded-xl border border-white/5 relative overflow-hidden">
-                       <div class="absolute left-0 top-0 bottom-0 w-1 bg-davka-accent"></div>
-                       <div class="flex justify-between mb-1 pl-2">
-                            <span class="text-[9px] text-davka-accent font-bold uppercase tracking-wider">Kepulangan</span> 
-                            <div class="text-right"><span class="text-[9px] text-gray-400 block">${dateReturn}</span><span class="text-[10px] text-davka-accent font-bold">Beli Tiket: ${warDateReturn}</span></div>
-                       </div>
-                       <div class="flex items-center gap-2 pl-2">
-                            <h4 class="text-sm font-bold text-white truncate flex-1 min-w-0 text-right">${order.dest}</h4>
-                            <i class="fas fa-arrow-right text-xs text-gray-500 shrink-0"></i>
-                            <h4 class="text-sm font-bold text-white truncate flex-1 min-w-0 text-left">${order.origin}</h4>
-                       </div>
-                       <p class="text-[10px] text-gray-400 mt-1 pl-2"><i class="fas fa-train mr-1"></i> ${order.returnTrain}</p>
+                    <div class="mt-2 pt-2 border-t border-white/5 flex justify-between items-center">
+                         <span class="text-[9px] bg-davka-orange/20 text-davka-orange px-2 py-0.5 rounded text-center font-bold">${order.train}</span>
                     </div>
-                </div>`;
+                </div>
+
+                <div class="relative bg-davka-bg/60 rounded-xl p-3 border border-white/5 overflow-hidden group-hover:border-davka-accent/30 transition-all">
+                    <div class="absolute inset-0 bg-gradient-to-r from-davka-accent/5 to-transparent"></div>
+                    <div class="relative z-10 flex items-center justify-between">
+                         <div class="text-left min-w-0 flex-1">
+                            <p class="text-[9px] text-davka-accent font-bold uppercase tracking-widest mb-0.5">Pulang</p>
+                            <h4 class="text-lg font-black text-white leading-none truncate">${order.dest}</h4>
+                            <p class="text-[9px] text-gray-400 mt-1">${dateReturn}</p>
+                        </div>
+                        <div class="px-2 flex flex-col items-center justify-center">
+                            <i class="fas fa-undo text-davka-accent text-xs"></i>
+                            <div class="h-px w-8 bg-davka-accent/50 mt-1"></div>
+                        </div>
+                        <div class="text-right min-w-0 flex-1">
+                            <p class="text-[9px] text-gray-500 font-bold uppercase tracking-widest mb-0.5 text-right">Asal</p>
+                            <h4 class="text-lg font-black text-white leading-none truncate">${order.origin}</h4>
+                            <p class="text-[9px] text-white/60 mt-1 font-bold">War: ${warDateReturn}</p>
+                        </div>
+                    </div>
+                    <div class="mt-2 pt-2 border-t border-white/5 flex justify-between items-center">
+                         <span class="text-[9px] bg-davka-accent/20 text-davka-accent px-2 py-0.5 rounded text-center font-bold">${order.returnTrain}</span>
+                    </div>
+                </div>
+            </div>`;
         } else {
-            // UPDATED HTML STRUKTUR UNTUK ONE WAY (Ensure min-w-0)
-            routeHtml = `<div class="flex items-center gap-3 my-3 bg-white/5 p-3 rounded-xl border border-white/5">
-                    <div class="text-center flex-1 min-w-0"><h4 class="text-xl font-black text-white truncate">${order.origin}</h4><p class="text-[9px] text-gray-400 mt-1">Asal</p></div>
-                    <div class="flex-none flex flex-col items-center w-20"><i class="fas fa-arrow-right text-davka-orange text-xs mb-1"></i><p class="text-[9px] text-white font-bold">${dateDepart}</p><p class="text-[10px] text-davka-orange font-bold mt-0.5">Beli Tiket: ${warDateDepart}</p></div>
-                    <div class="text-center flex-1 min-w-0"><h4 class="text-xl font-black text-white truncate">${order.dest}</h4><p class="text-[9px] text-gray-400 mt-1">Tujuan</p></div>
-                </div>`;
+            // One Way Modern
+            routeHtml = `
+            <div class="relative bg-black/40 rounded-2xl p-4 border border-white/5 my-4 overflow-hidden shadow-inner">
+                 <div class="absolute top-0 right-0 p-2 opacity-10"><i class="fas fa-ticket-alt text-4xl"></i></div>
+                 <div class="flex justify-between items-center relative z-10">
+                     <div class="text-left flex-1 min-w-0">
+                         <div class="text-[10px] text-gray-500 font-bold tracking-widest mb-1">ASAL</div>
+                         <div class="text-xl font-black text-white leading-none truncate">${order.origin}</div>
+                         <div class="text-[10px] text-davka-orange font-bold mt-1 bg-davka-orange/10 inline-block px-1 rounded">${dateDepart}</div>
+                     </div>
+                     
+                     <div class="flex-none px-3 flex flex-col items-center justify-center w-16">
+                         <div class="w-full border-t-2 border-dashed border-gray-600 relative">
+                            <i class="fas fa-plane transform rotate-45 absolute -top-2 left-1/2 -translate-x-1/2 bg-davka-bg px-1 text-[10px] text-gray-400"></i>
+                         </div>
+                         <div class="text-[8px] text-gray-500 mt-2 font-mono">ONE WAY</div>
+                     </div>
+
+                     <div class="text-right flex-1 min-w-0">
+                         <div class="text-[10px] text-gray-500 font-bold tracking-widest mb-1">TUJUAN</div>
+                         <div class="text-xl font-black text-white leading-none truncate">${order.dest}</div>
+                         <div class="text-[10px] text-gray-400 mt-1 font-bold">War: ${warDateDepart}</div>
+                     </div>
+                 </div>
+                 <div class="mt-3 pt-2 border-t border-white/5 flex justify-between items-center">
+                    <span class="text-[10px] text-gray-500"><i class="fas fa-train mr-1"></i> ${order.train}</span>
+                 </div>
+            </div>`;
         }
+        
         const settlementOptions = ["-", "Tunai", "Transfer CIMB Niaga", "Transfer Seabank", "Dana", "Gopay", "Ovo", "ShopeePay"];
         let optionsHtml = settlementOptions.map(opt => `<option value="${opt}" ${order.settlementMethod === opt ? 'selected' : ''}>${opt === '-' ? 'Belum Lunas' : opt}</option>`).join('');
 
         const card = document.createElement('div');
-        card.className = `glass p-5 rounded-3xl border-l-4 ${statusColor} relative overflow-hidden group transition-all duration-300 hover:shadow-glow`;
+        card.className = `glass p-5 rounded-3xl border-l-4 ${statusColor} relative overflow-hidden group transition-all duration-300 hover:shadow-glow mb-4`;
+        
+        // --- 1. UPDATE: LAYOUT TAGIHAN TIDAK BERTABRAKAN (STACKED MODERN) ---
+        const priceSection = `
+        <div class="bg-gradient-to-br from-davka-surface to-black rounded-xl p-4 border border-white/10 mt-2 mb-4 relative overflow-hidden">
+            <div class="absolute -right-6 -top-6 w-20 h-20 bg-davka-orange/5 blur-2xl rounded-full"></div>
+            
+            <div class="flex justify-between items-end border-b border-white/5 pb-3 mb-3 relative z-10">
+                <span class="text-[10px] text-gray-400 font-bold tracking-widest uppercase">Total Tagihan</span>
+                <span class="text-xl font-black text-white tracking-tight drop-shadow-md">${formatRupiah(order.price || 0)}</span>
+            </div>
+
+            <div class="flex items-center relative z-10">
+                <div class="flex-1 pr-4 border-r border-white/10">
+                    <div class="flex justify-between items-center mb-1">
+                        <span class="text-[9px] text-davka-orange uppercase font-bold">Uang Muka (DP)</span>
+                        <i class="fas fa-coins text-[10px] text-davka-orange/50"></i>
+                    </div>
+                    <p class="text-sm font-bold text-gray-200">${formatRupiah(order.fee || 0)}</p>
+                </div>
+                
+                <div class="flex-1 pl-4">
+                    <div class="flex justify-between items-center mb-1">
+                        <span class="text-[9px] text-gray-400 uppercase font-bold">Sisa Pelunasan</span>
+                         ${remaining <= 0 ? '<i class="fas fa-check-circle text-[10px] text-green-500"></i>' : '<i class="fas fa-exclamation-circle text-[10px] text-red-500"></i>'}
+                    </div>
+                    <p class="text-sm font-black ${remaining <= 0 ? 'text-green-400' : 'text-red-500'}">${formatRupiah(remaining)}</p>
+                </div>
+            </div>
+        </div>`;
+
         card.innerHTML = `
             <div class="flex justify-between items-start">
                 <div class="flex items-center gap-3 w-[70%]">
@@ -856,14 +930,12 @@ window.renderOrderList = function(filterText = '') {
                 </div>
                 <div onclick="toggleStatus(${order.id})" class="cursor-pointer active:scale-95 transition-transform shrink-0">${statusBadge}</div>
             </div>
+            
             ${routeHtml}
-            <div class="bg-black/20 rounded-xl p-3 border border-white/5 grid grid-cols-3 gap-2 items-center mb-3">
-                <div class="text-left"><p class="text-[9px] text-gray-400 uppercase">Tagihan</p><p class="text-sm font-bold text-white">${formatRupiah(order.price || 0)}</p></div>
-                <div class="text-center border-l border-r border-white/10"><p class="text-[9px] text-davka-orange uppercase font-bold">DP</p><p class="text-sm font-bold text-davka-orange">${formatRupiah(order.fee || 0)}</p></div>
-                <div class="text-right"><p class="text-[9px] text-gray-400 uppercase">Sisa</p><p class="text-sm font-bold ${remaining <= 0 ? 'text-green-400' : 'text-red-400'}">${formatRupiah(remaining)}</p></div>
-            </div>
+            ${priceSection}
+
             <div class="space-y-3 mb-4">
-                <select onchange="updateSettlement(${order.id}, this.value)" class="w-full bg-davka-bg border border-white/10 rounded-lg text-[10px] text-white p-2 outline-none focus:border-davka-orange">${optionsHtml}</select>
+                <select onchange="updateSettlement(${order.id}, this.value)" class="w-full bg-davka-bg border border-white/10 rounded-lg text-[10px] text-white p-2 outline-none focus:border-davka-orange transition-colors cursor-pointer hover:bg-white/5">${optionsHtml}</select>
                 <div class="grid grid-cols-2 gap-2">
                     ${renderUploadBtnHTML(order.id, 'settlement', order.settlementProof, 'Bukti Lunas')}
                     ${renderUploadBtnHTML(order.id, 'kai_ticket', order.kaiTicketFile, 'Tiket KAI')}

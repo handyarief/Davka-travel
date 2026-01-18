@@ -1,20 +1,10 @@
-// --- IMPORT HANYA FIRESTORE (STORAGE DIBUANG AGAR TIDAK ERROR) ---
-import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
-import { getFirestore, collection, doc, setDoc, deleteDoc, onSnapshot, query, orderBy } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+// --- KONFIGURASI SUPABASE (WAJIB DIISI) ---
+// Tempel Project URL dan Anon Key Anda di dalam tanda kutip di bawah ini
+const SUPABASE_URL = 'https://wdhfthzuihakjlygttcw.supabase.co'; 
+const SUPABASE_KEY = 'sb_publishable_8U8NeSn4aOZiRzLRS3KmxA_oz84fUAL';
 
-// --- CONFIG BARU (PROJECT DAVKA GANTENG) ---
-const firebaseConfig = {
-  apiKey: "AIzaSyB8yMWU65W0n5_HrYYESO6pYqHaj51Ff7s",
-  authDomain: "davka-ganteng.firebaseapp.com",
-  projectId: "davka-ganteng",
-  // storageBucket: "davka-ganteng.firebasestorage.app", // INI KITA MATIKAN
-  messagingSenderId: "620587597086",
-  appId: "1:620587597086:web:0ec175fd3f42ad7d2d5d0f"
-};
-
-// Initialize Firebase (Hanya Database)
-const app = initializeApp(firebaseConfig);
-const db = getFirestore(app);
+// Inisialisasi Client Supabase
+const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
 // Variable Global
 let orders = []; 
@@ -50,7 +40,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         if(loaderWrapper && loaderFill) {
             loaderWrapper.style.opacity = '1';
             setTimeout(() => { loaderFill.style.width = '100%'; }, 100);
-            setTimeout(() => { enterApp(); }, 4100); 
+            setTimeout(() => { enterApp(); }, 1500); // Dipercepat sedikit agar UX lebih snappy
         } else {
             enterApp();
         }
@@ -82,25 +72,44 @@ function initializeAppLogic() {
     updateDate();
     updateGreeting(); 
     
-    // REALTIME LISTENER
-    const q = query(collection(db, "orders"), orderBy("created", "desc"));
-    onSnapshot(q, (snapshot) => {
-        orders = [];
-        snapshot.forEach((doc) => {
-            orders.push(doc.data());
-        });
-        renderStats();
-        const listSection = document.getElementById('page-list');
-        if (!listSection.classList.contains('hidden') || document.getElementById('ordersContainer').innerHTML === '') {
-             renderOrderList(document.getElementById('searchInput').value);
-        }
-    });
+    // 1. FETCH DATA AWAL
+    fetchOrders();
+
+    // 2. SETUP REALTIME LISTENER (Supabase Magic)
+    const channel = supabase
+        .channel('public:orders')
+        .on('postgres_changes', { event: '*', schema: 'public', table: 'orders' }, (payload) => {
+            console.log('Realtime update received:', payload);
+            fetchOrders(); // Refresh data otomatis saat ada perubahan di DB
+        })
+        .subscribe();
 
     updatePassengerForms(); // Init awal form
     setupImageUploader('inpFileTransfer', 'inpTransferData', 'imgTransfer', 'previewTransfer');
     setupImageUploader('inpFileChat', 'inpChatData', 'imgChat', 'previewChat');
     setupHistoryUploader();
-    // setupFocusMode dipanggil di dalam updatePassengerForms agar dinamis
+}
+
+async function fetchOrders() {
+    const { data, error } = await supabase
+        .from('orders')
+        .select('*')
+        .order('created_at', { ascending: false });
+
+    if (error) {
+        console.error("Error fetching orders:", error);
+        return;
+    }
+
+    orders = data || [];
+    renderStats();
+    
+    // Render ulang list jika sedang dibuka
+    const listSection = document.getElementById('page-list');
+    const container = document.getElementById('ordersContainer');
+    if (!listSection.classList.contains('hidden') || container.innerHTML === '') {
+         renderOrderList(document.getElementById('searchInput').value);
+    }
 }
 
 // --- LOGIC UPLOAD ---
@@ -134,9 +143,36 @@ function resetUploadZones() {
     document.getElementById('hintChat').classList.add('hidden');
 }
 
-// --- JALAN TIKUS: BYPASS STORAGE ---
-async function uploadBase64ToStorage(base64String, path) {
-    return base64String; 
+// --- HELPER: UPLOAD BASE64 KE SUPABASE STORAGE ---
+async function uploadToSupabaseStorage(base64Data, fileName) {
+    if (!base64Data || base64Data.startsWith('http')) return base64Data; // Skip jika kosong atau sudah URL
+
+    try {
+        // Convert Base64 ke Blob
+        const res = await fetch(base64Data);
+        const blob = await res.blob();
+        const filePath = `uploads/${fileName}.jpg`;
+
+        // Upload ke Bucket 'davka-files'
+        const { data, error } = await supabase.storage
+            .from('davka-files')
+            .upload(filePath, blob, {
+                contentType: 'image/jpeg',
+                upsert: true
+            });
+
+        if (error) throw error;
+
+        // Ambil Public URL
+        const { data: publicData } = supabase.storage
+            .from('davka-files')
+            .getPublicUrl(filePath);
+
+        return publicData.publicUrl;
+    } catch (err) {
+        console.error("Upload Error:", err);
+        throw new Error("Gagal upload gambar ke server.");
+    }
 }
 
 const orderForm = document.getElementById('orderForm');
@@ -147,14 +183,31 @@ orderForm.addEventListener('submit', async (e) => {
     
     const editIndex = parseInt(document.getElementById('editIndex').value);
     const existingOrder = editIndex !== -1 ? orders[editIndex] : null;
-    const orderId = existingOrder ? existingOrder.id.toString() : Date.now().toString();
+    
+    // Gunakan ID lama jika edit, atau buat ID baru (timestamp)
+    const orderId = existingOrder ? existingOrder.id : Date.now();
+    const timestamp = new Date().toISOString();
 
-    let transferUrl = document.getElementById('inpTransferData').value;
-    let chatUrl = document.getElementById('inpChatData').value;
+    let transferBase64 = document.getElementById('inpTransferData').value;
+    let chatBase64 = document.getElementById('inpChatData').value;
 
     try {
+        // 1. Upload Gambar Dulu (jika ada perubahan)
+        let transferUrl = existingOrder ? existingOrder.transferScreenshot : null;
+        let chatUrl = existingOrder ? existingOrder.chatScreenshot : null;
+
+        if (transferBase64 && !transferBase64.startsWith('http')) {
+            showToast("Mengupload Bukti Transfer...");
+            transferUrl = await uploadToSupabaseStorage(transferBase64, `${orderId}_transfer_${Date.now()}`);
+        }
+        if (chatBase64 && !chatBase64.startsWith('http')) {
+            showToast("Mengupload Bukti Chat...");
+            chatUrl = await uploadToSupabaseStorage(chatBase64, `${orderId}_chat_${Date.now()}`);
+        }
+
+        // 2. Siapkan Object Data
         const newOrder = {
-            id: parseInt(orderId), 
+            id: orderId, 
             contactName: document.getElementById('inpContactName').value.toUpperCase(),
             contactPhone: document.getElementById('inpContactPhone').value,
             address: document.getElementById('inpAddress').value.toUpperCase(),
@@ -173,18 +226,33 @@ orderForm.addEventListener('submit', async (e) => {
             fee: parseFloat(document.getElementById('inpFee').value), 
             settlementMethod: existingOrder ? (existingOrder.settlementMethod || '-') : '-',
             
-            transferScreenshot: transferUrl || (existingOrder ? existingOrder.transferScreenshot : null), 
-            chatScreenshot: chatUrl || (existingOrder ? existingOrder.chatScreenshot : null),
+            transferScreenshot: transferUrl, 
+            chatScreenshot: chatUrl,
             
             settlementProof: existingOrder ? existingOrder.settlementProof : null,
             kaiTicketFile: existingOrder ? existingOrder.kaiTicketFile : null,
-            status: existingOrder ? existingOrder.status : 'pending',
-            created: existingOrder ? existingOrder.created : new Date().toISOString()
+            status: existingOrder ? existingOrder.status : 'pending'
+            // created_at otomatis diisi Supabase untuk data baru
         };
 
-        await setDoc(doc(db, "orders", orderId), newOrder);
+        // 3. Simpan ke Database
+        if (existingOrder) {
+            // Update
+            const { error } = await supabase
+                .from('orders')
+                .update(newOrder)
+                .eq('id', orderId);
+            if(error) throw error;
+            showToast("Data Updated!");
+        } else {
+            // Insert
+            const { error } = await supabase
+                .from('orders')
+                .insert([newOrder]);
+            if(error) throw error;
+            showToast("Pesanan Tersimpan!");
+        }
 
-        showToast(editIndex === -1 ? "Pesanan Tersimpan!" : "Data Updated!");
         resetForm(); 
     } catch (err) {
         console.error("Save Failed:", err);
@@ -203,9 +271,9 @@ function toggleLoader(show) {
         loaderTimeout = setTimeout(() => {
             if (!loader.classList.contains('hidden')) {
                 toggleLoader(false);
-                alert("Koneksi lambat, tapi data sedang diproses di background.");
+                // alert("Koneksi lambat, tapi data sedang diproses di background.");
             }
-        }, 15000); 
+        }, 30000); // 30 detik timeout untuk upload gambar
     } else {
         loader.classList.add('hidden');
     }
@@ -242,8 +310,14 @@ window.deleteOrder = async function(id) {
     if(confirm("Hapus pesanan ini Permanen?")) {
         toggleLoader(true);
         try {
-            await deleteDoc(doc(db, "orders", id.toString()));
+            const { error } = await supabase
+                .from('orders')
+                .delete()
+                .eq('id', id);
+
+            if(error) throw error;
             showToast("Pesanan dihapus");
+            // fetchOrders() dipanggil otomatis oleh Realtime Listener
         } catch (err) {
             console.error(err);
             alert("Gagal menghapus data.");
@@ -259,12 +333,19 @@ window.editOrder = function(id) {
     const data = orders[index];
     
     document.getElementById('editIndex').value = index;
-    document.getElementById('inpContactName').value = data.contactName || data.name;
-    document.getElementById('inpContactPhone').value = data.contactPhone || data.phone;
+    document.getElementById('inpContactName').value = data.contactName || data.name || '';
+    document.getElementById('inpContactPhone').value = data.contactPhone || data.phone || '';
     document.getElementById('inpAddress').value = data.address || '';
     
-    const paxList = data.passengers || [{name: data.name, nik: data.nik}];
-    document.getElementById('inpPaxCount').value = paxList.length;
+    // Handle Penumpang (Support format lama & baru)
+    let paxList = [];
+    if (Array.isArray(data.passengers)) {
+        paxList = data.passengers;
+    } else if (data.name) {
+         paxList = [{name: data.name, nik: data.nik || '-'}];
+    }
+    
+    document.getElementById('inpPaxCount').value = paxList.length || 1;
     updatePassengerForms();
     
     setTimeout(() => {
@@ -276,28 +357,28 @@ window.editOrder = function(id) {
         });
     }, 0);
 
-    document.getElementById('inpOrigin').value = data.origin;
-    document.getElementById('inpDest').value = data.dest;
-    document.getElementById('inpDate').value = data.date;
+    document.getElementById('inpOrigin').value = data.origin || '';
+    document.getElementById('inpDest').value = data.dest || '';
+    document.getElementById('inpDate').value = data.date || '';
     document.getElementById('inpWarDate').value = data.warDate || ''; 
-    document.getElementById('inpTrain').value = data.train;
+    document.getElementById('inpTrain').value = data.train || '';
     document.getElementById('inpTripType').value = data.tripType || 'one_way';
     
     toggleTripType();
     if(data.tripType === 'round_trip') {
-        document.getElementById('inpReturnDate').value = data.returnDate;
-        document.getElementById('inpReturnWarDate').value = data.returnWarDate;
-        document.getElementById('inpReturnTrain').value = data.returnTrain;
+        document.getElementById('inpReturnDate').value = data.returnDate || '';
+        document.getElementById('inpReturnWarDate').value = data.returnWarDate || '';
+        document.getElementById('inpReturnTrain').value = data.returnTrain || '';
     }
 
-    document.getElementById('inpPaymentMethod').value = data.paymentMethod;
+    document.getElementById('inpPaymentMethod').value = data.paymentMethod || 'Tunai';
     
-    document.getElementById('inpPrice').value = data.price;
+    document.getElementById('inpPrice').value = data.price || 0;
     const paxCount = paxList.length || 1;
     const pricePerPax = data.price > 0 ? (data.price / paxCount) : 0;
     document.getElementById('inpPricePerPax').value = Math.round(pricePerPax); 
 
-    document.getElementById('inpFee').value = data.fee;
+    document.getElementById('inpFee').value = data.fee || 0;
     calcRemaining();
 
     if(data.transferScreenshot) {
@@ -325,9 +406,14 @@ window.toggleStatus = async function(id) {
     const current = orders[index].status;
     const next = current === 'pending' ? 'success' : (current === 'success' ? 'cancel' : 'pending');
     
-    orders[index].status = next; 
     try {
-        await setDoc(doc(db, "orders", id.toString()), orders[index]);
+        const { error } = await supabase
+            .from('orders')
+            .update({ status: next })
+            .eq('id', id);
+
+        if(error) throw error;
+        // Tidak perlu manual update array, realtime listener akan menangani
     } catch(e) {
         console.error(e);
         alert("Gagal update status");
@@ -340,13 +426,18 @@ window.updateSettlement = async function(id, newVal) {
     toggleLoader(true);
     const index = orders.findIndex(o => o.id === id);
     if(index !== -1) {
-        orders[index].settlementMethod = newVal;
-        orders[index].status = newVal === '-' ? 'pending' : 'success';
+        const nextStatus = newVal === '-' ? 'pending' : 'success';
         try {
-             await setDoc(doc(db, "orders", id.toString()), orders[index]);
+             const { error } = await supabase
+                .from('orders')
+                .update({ settlementMethod: newVal, status: nextStatus })
+                .eq('id', id);
+
+            if(error) throw error;
             showToast("Info Pelunasan Updated");
         } catch(e) {
             console.error(e);
+            alert("Gagal update pelunasan");
         } finally {
             toggleLoader(false);
         }
@@ -363,27 +454,36 @@ function setupHistoryUploader() {
         const file = e.target.files[0];
         if (!file) return;
 
-        showToast("Menyimpan gambar...");
+        showToast("Mengupload gambar...");
         toggleLoader(true);
 
-        processFile(file, async (dataUrl) => {
-            const orderIndex = orders.findIndex(o => o.id === currentUploadOrderId);
-            if (orderIndex !== -1) {
-                try {
-                    if (currentUploadType === 'settlement') orders[orderIndex].settlementProof = dataUrl;
-                    else if (currentUploadType === 'kai_ticket') orders[orderIndex].kaiTicketFile = dataUrl;
-                    
-                    await setDoc(doc(db, "orders", currentUploadOrderId.toString()), orders[orderIndex]);
-                    showToast("Tersimpan!");
-                } catch(e) {
-                    console.error(e);
-                    alert("Gagal simpan: " + e.message);
-                }
+        processFile(file, async (base64Data) => {
+            try {
+                // Upload ke Storage
+                const fileName = `${currentUploadOrderId}_${currentUploadType}_${Date.now()}`;
+                const publicUrl = await uploadToSupabaseStorage(base64Data, fileName);
+
+                // Update Database Record
+                const updateData = {};
+                if (currentUploadType === 'settlement') updateData.settlementProof = publicUrl;
+                else if (currentUploadType === 'kai_ticket') updateData.kaiTicketFile = publicUrl;
+
+                const { error } = await supabase
+                    .from('orders')
+                    .update(updateData)
+                    .eq('id', currentUploadOrderId);
+
+                if(error) throw error;
+                showToast("Tersimpan!");
+            } catch(e) {
+                console.error(e);
+                alert("Gagal simpan: " + e.message);
+            } finally {
+                currentUploadOrderId = null;
+                currentUploadType = null;
+                historyInput.value = ''; 
+                toggleLoader(false);
             }
-            currentUploadOrderId = null;
-            currentUploadType = null;
-            historyInput.value = ''; 
-            toggleLoader(false);
         });
     });
 }
@@ -396,9 +496,12 @@ function setupFocusMode() {
     const nav = document.querySelector('nav');
 
     inputs.forEach((el, index) => {
-        el.removeEventListener('focus', el._fnFocus);
-        el.removeEventListener('blur', el._fnBlur);
-        el.removeEventListener('keydown', el._fnKey);
+        // Hapus listener lama biar ga numpuk
+        if(el._fnFocus) {
+             el.removeEventListener('focus', el._fnFocus);
+             el.removeEventListener('blur', el._fnBlur);
+             el.removeEventListener('keydown', el._fnKey);
+        }
 
         el._fnFocus = () => {
             if(header) header.classList.add('opacity-0', '-translate-y-full', 'absolute');
@@ -421,6 +524,9 @@ function setupFocusMode() {
 
         el._fnKey = (e) => {
             if (e.key === 'Enter') {
+                // Jangan prevent default kalo textarea
+                if(el.tagName === 'TEXTAREA') return;
+                
                 e.preventDefault(); 
                 const nextInput = inputs[index + 1];
                 if (nextInput) {
@@ -460,7 +566,7 @@ function processFile(file, callback) {
         img.onload = function() {
             const canvas = document.createElement('canvas');
             const ctx = canvas.getContext('2d');
-            const MAX_WIDTH = 600; 
+            const MAX_WIDTH = 800; // Sedikit dinaikkan untuk kualitas tiket
             let width = img.width;
             let height = img.height;
             if (width > MAX_WIDTH) {
@@ -470,7 +576,7 @@ function processFile(file, callback) {
             canvas.width = width;
             canvas.height = height;
             ctx.drawImage(img, 0, 0, width, height);
-            callback(canvas.toDataURL('image/jpeg', 0.5));
+            callback(canvas.toDataURL('image/jpeg', 0.7)); // Kompresi 0.7
         }
         img.src = event.target.result;
     }
@@ -628,7 +734,7 @@ function renderReceiptToDOM(order) {
     document.getElementById('rec-date').innerText = now.toLocaleDateString('id-ID');
     document.getElementById('rec-time').innerText = now.toLocaleTimeString('id-ID', {hour:'2-digit', minute:'2-digit'});
     document.getElementById('rec-id').innerText = "#" + order.id.toString().slice(-6);
-    document.getElementById('rec-full-name').innerText = (order.contactName || order.name).toUpperCase();
+    document.getElementById('rec-full-name').innerText = (order.contactName || order.name || '').toUpperCase();
     document.getElementById('rec-phone').innerText = order.contactPhone || order.phone || '-';
     document.getElementById('rec-address').innerText = (order.address || '-').toUpperCase();
     
@@ -636,8 +742,12 @@ function renderReceiptToDOM(order) {
     if(order.tripType === 'round_trip') desc = `PP ${order.train}/${order.returnTrain}`.toUpperCase();
     if(desc.length > 30) desc = desc.substring(0, 28) + '..';
 
-    const paxCount = order.passengers ? order.passengers.length : 1;
-    const pricePerPax = Math.round(order.price / paxCount); 
+    // Handle penumpang array vs object
+    let paxCount = 1;
+    if(order.passengers) paxCount = order.passengers.length;
+    else if(order.name) paxCount = 1;
+
+    const pricePerPax = order.price > 0 ? Math.round(order.price / paxCount) : 0;
     const tbody = document.getElementById('rec-items');
     tbody.innerHTML = `<tr><td colspan="2" class="pb-1 uppercase">${desc}</td></tr>
                  <tr><td class="pb-1">${paxCount} x ${formatNumber(pricePerPax)}</td><td class="text-right font-bold">${formatNumber(order.price)}</td></tr>`;
@@ -673,17 +783,13 @@ function renderTicketToDOM(data) {
     } else returnBox.classList.add('hidden');
 
     let paxHtml = '';
-    
-    // UPDATE: Perjelas teks jumlah penumpang
     const paxCount = data.passengers.length;
     document.getElementById('ticket-pax-count').innerText = `${paxCount} Penumpang`;
     
-    // UPDATE: Calculate & Render Price Per Pax
     const pricePerPax = data.price > 0 ? Math.round(data.price / paxCount) : 0;
     document.getElementById('ticket-val-price-per-pax').innerText = formatRupiah(pricePerPax);
 
     data.passengers.forEach((p, index) => {
-        // UPDATE: REMOVE truncate, ADD break-words & leading-tight
         paxHtml += `
             <div class="flex items-center gap-3 border-b border-gray-100 pb-2 last:border-0 last:pb-0">
                 <div class="w-6 h-6 rounded-full bg-[#f8fafc] border border-gray-200 flex items-center justify-center text-[9px] font-bold text-gray-500 shrink-0">${index + 1}</div>
@@ -711,7 +817,7 @@ function captureAndShowModal(elementId) {
         .catch(err => { 
             console.error("Render Error:", err); 
             toggleLoader(false); 
-            alert("Gagal render. Coba deploy ke Vercel jika masih error."); 
+            alert("Gagal render gambar."); 
         });
 }
 
@@ -774,16 +880,26 @@ window.resetForm = function() {
 window.renderOrderList = function(filterText = '') {
     const container = document.getElementById('ordersContainer');
     container.innerHTML = '';
-    const filtered = orders.filter(o => (o.contactName || o.name).toLowerCase().includes(filterText.toLowerCase()));
+    
+    // Safety check jika orders belum terload
+    if(!orders) return;
+
+    const filtered = orders.filter(o => {
+        const name = o.contactName || o.name || '';
+        return name.toLowerCase().includes(filterText.toLowerCase());
+    });
 
     if(filtered.length === 0) {
         document.getElementById('emptyState').classList.remove('hidden'); return;
     } else document.getElementById('emptyState').classList.add('hidden');
 
     filtered.forEach(order => {
-        const remaining = order.price - order.fee;
-        const paxCount = order.passengers ? order.passengers.length : 1;
-        const displayName = order.contactName || order.name; 
+        const remaining = (order.price || 0) - (order.fee || 0);
+        let paxCount = 1;
+        if(order.passengers) paxCount = order.passengers.length;
+        else if(order.name) paxCount = 1;
+
+        const displayName = order.contactName || order.name || 'No Name'; 
         
         let statusBadge = ''; let statusColor = '';
         if(order.status === 'success') {
@@ -797,7 +913,7 @@ window.renderOrderList = function(filterText = '') {
             statusColor = 'border-l-yellow-500';
         }
 
-        const dateDepart = new Date(order.date).toLocaleDateString('id-ID', {day:'numeric', month:'short'});
+        const dateDepart = order.date ? new Date(order.date).toLocaleDateString('id-ID', {day:'numeric', month:'short'}) : '-';
         const warDateDepart = order.warDate ? new Date(order.warDate).toLocaleDateString('id-ID', {day:'numeric', month:'short'}) : '-';
         
         let routeHtml = '';
@@ -853,8 +969,8 @@ window.renderOrderList = function(filterText = '') {
             </div>
             ${routeHtml}
             <div class="bg-black/20 rounded-xl p-3 border border-white/5 grid grid-cols-3 gap-2 items-center mb-3">
-                <div class="text-left"><p class="text-[9px] text-gray-400 uppercase">Tagihan</p><p class="text-sm font-bold text-white">${formatRupiah(order.price)}</p></div>
-                <div class="text-center border-l border-r border-white/10"><p class="text-[9px] text-davka-orange uppercase font-bold">DP</p><p class="text-sm font-bold text-davka-orange">${formatRupiah(order.fee)}</p></div>
+                <div class="text-left"><p class="text-[9px] text-gray-400 uppercase">Tagihan</p><p class="text-sm font-bold text-white">${formatRupiah(order.price || 0)}</p></div>
+                <div class="text-center border-l border-r border-white/10"><p class="text-[9px] text-davka-orange uppercase font-bold">DP</p><p class="text-sm font-bold text-davka-orange">${formatRupiah(order.fee || 0)}</p></div>
                 <div class="text-right"><p class="text-[9px] text-gray-400 uppercase">Sisa</p><p class="text-sm font-bold ${remaining <= 0 ? 'text-green-400' : 'text-red-400'}">${formatRupiah(remaining)}</p></div>
             </div>
             <div class="space-y-3 mb-4">
@@ -878,7 +994,7 @@ window.renderOrderList = function(filterText = '') {
 function renderUploadBtnHTML(id, type, file, label) {
     if(file) {
         return `<div class="relative h-20 w-full rounded-xl overflow-hidden border border-white/10 group cursor-pointer">
-            <img src="${file}" class="w-full h-full object-cover opacity-80 group-hover:opacity-100 transition-all transform group-hover:scale-110">
+            <img src="${file}" class="w-full h-full object-cover opacity-80 group-hover:opacity-100 transition-all transform group-hover:scale-110" onclick="showImageModal(this.src, true); event.stopPropagation();">
             <div class="absolute inset-0 bg-black/40 flex items-center justify-center pointer-events-none"><p class="text-[9px] text-white font-bold drop-shadow-md text-center px-1">${label}</p></div>
             <button onclick="triggerHistoryUpload(${id}, '${type}')" class="absolute top-1 right-1 bg-black/60 text-white rounded-full w-6 h-6 flex items-center justify-center hover:bg-davka-orange transition-colors z-10"><i class="fas fa-pen text-[9px]"></i></button>
         </div>`;
@@ -890,14 +1006,35 @@ function renderUploadBtnHTML(id, type, file, label) {
 }
 
 function renderStats() {
-    const today = new Date().toISOString().split('T')[0];
-    const month = new Date().getMonth();
+    // Gunakan tanggal lokal untuk perbandingan yang akurat
+    const now = new Date();
+    const today = now.toISOString().split('T')[0];
+    const currentMonth = now.getMonth();
+    const currentYear = now.getFullYear();
+
     let cToday=0, rev=0, p=0, s=0, c=0;
-    orders.forEach(o => {
-        if(o.status==='pending') p++; else if(o.status==='success') s++; else c++;
-        if(o.created && o.created.startsWith(today)) cToday++;
-        if(o.status==='success' && new Date(o.created).getMonth() === month) rev += o.fee;
-    });
+    
+    if(orders) {
+        orders.forEach(o => {
+            // Hitung Status
+            if(o.status==='pending') p++; 
+            else if(o.status==='success') s++; 
+            else c++;
+
+            // Parsing tanggal created_at (dari Supabase formatnya ISO String)
+            let createdDate = new Date(o.created_at || o.id); // Fallback ke ID jika created_at null (data lama)
+            let dateStr = createdDate.toISOString().split('T')[0];
+
+            // Hitung Hari Ini
+            if(dateStr === today) cToday++;
+
+            // Hitung Revenue Bulan Ini (Hanya Status Success)
+            if(o.status === 'success' && createdDate.getMonth() === currentMonth && createdDate.getFullYear() === currentYear) {
+                rev += (o.fee || 0);
+            }
+        });
+    }
+    
     document.getElementById('stat-today').innerText = cToday;
     document.getElementById('stat-revenue').innerText = formatRupiah(rev);
     document.getElementById('stat-pending').innerText = p;

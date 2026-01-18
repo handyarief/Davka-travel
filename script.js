@@ -59,7 +59,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     if (video) {
         setTimeout(() => { if(skipBtn) skipBtn.classList.remove('hidden'); }, 1000);
         
-        // UPDATE: Saat video selesai, jangan langsung masuk, tapi jalankan loader dulu
+        // UPDATE: Saat video selesai, jalankan loader dulu
         video.addEventListener('ended', startLoaderSequence);
         
         // Timeout pengaman jika video error/stuck (15 detik)
@@ -70,8 +70,16 @@ document.addEventListener('DOMContentLoaded', async () => {
         enterApp();
     }
     
-    // Tombol skip tetap langsung masuk (bypass loader)
-    if(skipBtn) skipBtn.addEventListener('click', enterApp);
+    // UPDATE: Tombol skip sekarang mentrigger loader sequence (4 detik) dulu
+    if(skipBtn) {
+        skipBtn.addEventListener('click', (e) => {
+            e.preventDefault();
+            // Pause video jika user klik skip saat video masih jalan
+            if(video) video.pause(); 
+            // Masuk ke sequence loading 4 detik
+            startLoaderSequence();
+        });
+    }
 
     document.addEventListener('click', (e) => {
         if (!e.target.closest('.upload-zone-base')) {

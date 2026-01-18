@@ -192,7 +192,7 @@ select:focus {
 /* === POST-VIDEO LOADER === */
 .video-loader-wrapper {
     position: absolute;
-    bottom: 20%; 
+    bottom: 12%; /* UPDATED: Diturunkan dari 20% ke 12% agar lebih ke bawah tapi aman dari tombol SKIP */
     left: 50%;
     transform: translateX(-50%);
     width: 70%;

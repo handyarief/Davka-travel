@@ -122,6 +122,11 @@ select {
     scroll-margin-top: 150px;
 }
 
+/* UPDATED: Scroll margin khusus untuk Zona Upload agar saat diklik posisinya pas di tengah/atas keyboard */
+.upload-zone-base {
+    scroll-margin-top: 180px; 
+}
+
 input::placeholder, textarea::placeholder {
     text-transform: none;
 }

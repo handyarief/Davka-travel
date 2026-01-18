@@ -14,7 +14,7 @@ let activeUploadZone = null;
 
 // --- INIT SYSTEM ---
 document.addEventListener('DOMContentLoaded', async () => {
-    // Logic Video Intro & Loading Bar (DIUPDATE)
+    // Logic Video Intro & Loading Bar
     const splash = document.getElementById('splash-screen');
     const video = document.getElementById('intro-video');
     const skipBtn = document.getElementById('btn-skip-intro');
@@ -29,29 +29,24 @@ document.addEventListener('DOMContentLoaded', async () => {
         }
     };
 
-    // LOGIC BARU: Jalankan loading bar 4 detik setelah video selesai
+    // LOGIC: Jalankan loading bar 4 detik setelah video selesai
     const startLoaderSequence = () => {
         const loaderWrapper = document.getElementById('post-video-loader');
         const loaderFill = document.getElementById('post-video-fill');
         const videoOverlay = document.getElementById('video-overlay');
 
         if (loaderWrapper && loaderFill) {
-            // 1. Munculkan Container Loader & Overlay Gelap
             loaderWrapper.style.opacity = '1';
             if(videoOverlay) videoOverlay.style.opacity = '1';
 
-            // 2. Trigger Animasi CSS (Width 0 -> 100% dalam 4s sesuai style.css)
-            // Timeout kecil agar transisi CSS terdeteksi
             setTimeout(() => {
                 loaderFill.style.width = '100%';
             }, 100);
 
-            // 3. Tunggu 4 Detik (4000ms), baru masuk aplikasi
             setTimeout(() => {
                 enterApp();
-            }, 4100); // Dilebihkan 100ms untuk buffer animasi
+            }, 4100); 
         } else {
-            // Fallback jika elemen tidak ada
             enterApp();
         }
     };
@@ -59,10 +54,8 @@ document.addEventListener('DOMContentLoaded', async () => {
     if (video) {
         setTimeout(() => { if(skipBtn) skipBtn.classList.remove('hidden'); }, 1000);
         
-        // UPDATE: Saat video selesai, jalankan loader dulu
         video.addEventListener('ended', startLoaderSequence);
         
-        // Timeout pengaman jika video error/stuck (15 detik)
         setTimeout(() => {
             if(document.getElementById('splash-screen')) enterApp();
         }, 15000); 
@@ -70,13 +63,10 @@ document.addEventListener('DOMContentLoaded', async () => {
         enterApp();
     }
     
-    // UPDATE: Tombol skip sekarang mentrigger loader sequence (4 detik) dulu
     if(skipBtn) {
         skipBtn.addEventListener('click', (e) => {
             e.preventDefault();
-            // Pause video jika user klik skip saat video masih jalan
             if(video) video.pause(); 
-            // Masuk ke sequence loading 4 detik
             startLoaderSequence();
         });
     }
@@ -91,8 +81,8 @@ document.addEventListener('DOMContentLoaded', async () => {
 function initializeAppLogic() {
     updateDate();
     updateGreeting(); 
-    fetchOrders(); // Ambil data
-    setupRealtime(); // Pasang antena realtime
+    fetchOrders(); 
+    setupRealtime(); 
     
     updatePassengerForms(); 
     setupImageUploader('inpFileTransfer', 'inpTransferData', 'imgTransfer', 'previewTransfer');
@@ -103,28 +93,31 @@ function initializeAppLogic() {
     enableSmoothInputUX();
 }
 
-// --- UX ENGINE: SMOOTH SCROLL CENTER & ENTER KEY NAVIGATION ---
+// --- UX ENGINE: SMOOTH SCROLL & ENTER KEY NAVIGATION (UPDATED) ---
 function enableSmoothInputUX() {
-    // Ambil semua elemen input yang relevan, termasuk yang dinamis
+    // Ambil semua elemen input yang relevan
     const formElements = document.querySelectorAll('input, select, textarea');
     
     formElements.forEach((el, index) => {
-        // Hapus listener lama jika ada (untuk mencegah duplikasi pada re-render)
         el.removeEventListener('focus', handleInputFocus);
+        el.removeEventListener('click', handleInputFocus); // UPDATED: Tambah listener click
         el.removeEventListener('keydown', handleInputEnter);
 
         // Tambah listener baru
         el.addEventListener('focus', handleInputFocus);
+        el.addEventListener('click', handleInputFocus); // UPDATED: Trigger saat diklik
         el.addEventListener('keydown', (e) => handleInputEnter(e, index, formElements));
     });
 }
 
 function handleInputFocus(e) {
-    // Delay sedikit agar keyboard virtual muncul dulu (terutama di HP)
+    // Delay sedikit agar keyboard virtual muncul dulu
     setTimeout(() => {
+        // UPDATED: Menggunakan block 'start' agar respect terhadap scroll-margin-top di CSS
+        // Ini memastikan elemen naik ke atas keyboard (area aman)
         e.target.scrollIntoView({ 
             behavior: 'smooth', 
-            block: 'center', 
+            block: 'start', 
             inline: 'nearest' 
         });
     }, 300);
@@ -132,34 +125,32 @@ function handleInputFocus(e) {
 
 function handleInputEnter(e, currentIndex, allElements) {
     if (e.key === 'Enter') {
-        e.preventDefault(); // Mencegah submit form atau baris baru (default behavior)
+        e.preventDefault(); 
         
-        // Cari elemen berikutnya yang valid (tidak hidden, tidak disabled)
         let nextIndex = currentIndex + 1;
         while (nextIndex < allElements.length) {
             const nextEl = allElements[nextIndex];
-            // Cek apakah elemen terlihat dan bisa difokuskan
             if (nextEl.offsetParent !== null && !nextEl.disabled && !nextEl.readOnly) {
-                nextEl.focus(); // Ini akan mentrigger handleInputFocus otomatis
+                nextEl.focus(); 
+                // Focus akan mentrigger handleInputFocus -> scroll otomatis
                 return;
             }
             nextIndex++;
         }
         
-        // Jika tidak ada input lagi, hilangkan fokus (keyboard turun)
         if (nextIndex >= allElements.length) {
             e.target.blur();
         }
     }
 }
 
-// FUNGSI BARU: Ambil data dibatasi 50 agar ringan
+// FUNGSI: Ambil data dibatasi 50
 async function fetchOrders() {
     const { data, error } = await supabase
         .from('orders')
         .select('*')
         .order('created_at', { ascending: false })
-        .limit(50); // LIMIT 50 AGAR TIDAK BERAT
+        .limit(50); 
 
     if (error) {
         console.error("Error fetching:", error);
@@ -169,18 +160,15 @@ async function fetchOrders() {
     orders = data || [];
     renderStats();
     
-    // Render jika halaman list sedang aktif
     if (!document.getElementById('page-list').classList.contains('hidden')) {
          renderOrderList(document.getElementById('searchInput').value);
     }
 }
 
-// FUNGSI BARU: Realtime hanya pelengkap, bukan tumpuan utama
+// FUNGSI: Realtime
 function setupRealtime() {
     supabase.channel('public:orders')
         .on('postgres_changes', { event: '*', schema: 'public', table: 'orders' }, (payload) => {
-            // Hanya fetch ulang jika perubahan BUKAN dari kita sendiri (agar tidak bentrok)
-            // Tapi untuk simplifikasi, kita fetch background saja tanpa loader
             fetchOrdersBg(); 
         })
         .subscribe();
@@ -191,7 +179,6 @@ async function fetchOrdersBg() {
     if(data) {
         orders = data;
         renderStats();
-        // Update list hanya jika user tidak sedang mengetik search
         if (document.getElementById('searchInput').value === '') {
              renderOrderList('');
         }
@@ -205,7 +192,6 @@ async function uploadToSupabaseStorage(base64Data, fileName) {
     try {
         const res = await fetch(base64Data);
         const blob = await res.blob();
-        // Kompresi nama file agar unik
         const cleanFileName = fileName.replace(/[^a-zA-Z0-9]/g, '_'); 
         const filePath = `uploads/${cleanFileName}.jpg`;
 
@@ -222,11 +208,11 @@ async function uploadToSupabaseStorage(base64Data, fileName) {
         return publicData.publicUrl;
     } catch (err) {
         console.error("Upload Error:", err);
-        return null; // Gagal upload, biarkan kosong daripada error
+        return null; 
     }
 }
 
-// --- FORM HANDLING (PERBAIKAN UX INSTAN) ---
+// --- FORM HANDLING ---
 const orderForm = document.getElementById('orderForm');
 
 orderForm.addEventListener('submit', async (e) => {
@@ -236,7 +222,6 @@ orderForm.addEventListener('submit', async (e) => {
     const editIndex = parseInt(document.getElementById('editIndex').value);
     const existingOrder = editIndex !== -1 ? orders[editIndex] : null;
     
-    // ID menggunakan Timestamp agar unik & sortable
     const orderId = existingOrder ? existingOrder.id : Date.now();
     const created_at = existingOrder ? existingOrder.created_at : new Date().toISOString();
 
@@ -244,7 +229,6 @@ orderForm.addEventListener('submit', async (e) => {
     let chatBase64 = document.getElementById('inpChatData').value;
 
     try {
-        // Upload Gambar (Async)
         let transferUrl = existingOrder ? existingOrder.transferScreenshot : null;
         let chatUrl = existingOrder ? existingOrder.chatScreenshot : null;
 
@@ -257,7 +241,6 @@ orderForm.addEventListener('submit', async (e) => {
             chatUrl = await uploadToSupabaseStorage(chatBase64, `${orderId}_chat`);
         }
 
-        // Object Data Baru
         const newOrder = {
             id: orderId, 
             created_at: created_at,
@@ -285,28 +268,18 @@ orderForm.addEventListener('submit', async (e) => {
             status: existingOrder ? existingOrder.status : 'pending'
         };
 
-        // TEKNIK OPTIMISTIC UI: Update Lokal Dulu (Supaya terasa cepat)
         if (existingOrder) {
             orders[editIndex] = newOrder;
         } else {
-            orders.unshift(newOrder); // Tambah ke paling atas
+            orders.unshift(newOrder); 
         }
-        // Langsung render ulang stats & list tanpa menunggu server
         renderStats();
-        // Hapus filter search saat submit baru agar data terlihat
         document.getElementById('searchInput').value = ''; 
         renderOrderList(''); 
         
-        // Pindah halaman & Reset form SECARA VISUAL
         showToast("Data Tersimpan!");
         resetForm();
-        if(document.getElementById('page-input').classList.contains('hidden') === false) {
-             // Jika sedang di input page, jangan pindah paksa kalau user mau input lagi? 
-             // Tapi standardnya pindah ke list atau stay. Kita stay saja tapi bersih.
-             // Opsional: navTo('list'); jika mau langsung lihat hasil
-        }
 
-        // KIRIM KE SERVER (BACKGROUND)
         const { error } = existingOrder 
             ? await supabase.from('orders').update(newOrder).eq('id', orderId)
             : await supabase.from('orders').insert([newOrder]);
@@ -321,12 +294,11 @@ orderForm.addEventListener('submit', async (e) => {
     }
 });
 
-// --- UPDATE UI LAINNYA AGAR INSTAN ---
+// --- UI HELPERS ---
 
 window.deleteOrder = async function(id) {
     if(confirm("Hapus pesanan ini Permanen?")) {
         toggleLoader(true);
-        // Hapus lokal dulu
         orders = orders.filter(o => o.id !== id);
         renderOrderList(document.getElementById('searchInput').value);
         renderStats();
@@ -351,9 +323,7 @@ window.toggleStatus = async function(id) {
     const current = orders[index].status;
     const next = current === 'pending' ? 'success' : (current === 'success' ? 'cancel' : 'pending');
     
-    // Update lokal instan
     orders[index].status = next;
-    // Render ulang kartu spesifik saja (biar ga kedip semua) atau render semua
     renderOrderList(document.getElementById('searchInput').value);
     renderStats();
 
@@ -361,11 +331,8 @@ window.toggleStatus = async function(id) {
         await supabase.from('orders').update({ status: next }).eq('id', id);
     } catch(e) {
         console.error(e);
-        // Rollback jika error (opsional)
     }
 }
-
-// ... Sisanya fungsi helper UI & DOM Manipulation sama seperti sebelumnya ...
 
 window.navTo = function(pageId) {
     const currentPages = document.querySelectorAll('main > section:not(.hidden)');
@@ -404,7 +371,7 @@ window.editOrder = function(id) {
     else if (data.name) paxList = [{name: data.name, nik: data.nik || '-'}];
     
     document.getElementById('inpPaxCount').value = paxList.length || 1;
-    updatePassengerForms(); // Ini akan memanggil enableSmoothInputUX() didalamnya
+    updatePassengerForms(); 
     
     setTimeout(() => {
         const nameInputs = document.querySelectorAll('.pax-name');
@@ -459,7 +426,7 @@ window.updateSettlement = async function(id, newVal) {
         const nextStatus = newVal === '-' ? 'pending' : 'success';
         orders[index].settlementMethod = newVal;
         orders[index].status = nextStatus;
-        renderOrderList(document.getElementById('searchInput').value); // Render ulang status
+        renderOrderList(document.getElementById('searchInput').value); 
         try {
              await supabase.from('orders').update({ settlementMethod: newVal, status: nextStatus }).eq('id', id);
             showToast("Info Pelunasan Updated");
@@ -467,17 +434,17 @@ window.updateSettlement = async function(id, newVal) {
     } else toggleLoader(false);
 }
 
-// --- HELPER LAINNYA (Sama) ---
+// --- HELPER LAINNYA ---
 function toggleLoader(show) {
     const loader = document.getElementById('global-loader');
     if (loaderTimeout) { clearTimeout(loaderTimeout); loaderTimeout = null; }
     if (show) {
         loader.classList.remove('hidden');
-        // Timeout 15 detik saja biar ga kerasa nge-hang
         loaderTimeout = setTimeout(() => { if (!loader.classList.contains('hidden')) toggleLoader(false); }, 15000); 
     } else loader.classList.add('hidden');
 }
 
+// UPDATED: Scroll ke zona upload dengan block: 'start' agar tidak tertutup header
 window.handleUploadZoneClick = function(zoneId, inputId) {
     const zone = document.getElementById(zoneId);
     const hint = document.getElementById(zoneId.replace('zone', 'hint')); 
@@ -490,9 +457,8 @@ window.handleUploadZoneClick = function(zoneId, inputId) {
         zone.classList.add('upload-zone-active');
         if(hint) hint.classList.remove('hidden');
         
-        // UX UPDATE: Scroll ke tengah dengan mulus saat zona upload aktif
         setTimeout(() => { 
-            zone.scrollIntoView({ behavior: "smooth", block: "center", inline: "nearest" }); 
+            zone.scrollIntoView({ behavior: "smooth", block: "start", inline: "nearest" }); 
         }, 300);
     }
 }
@@ -525,13 +491,12 @@ function processFile(file, callback) {
         img.onload = function() {
             const canvas = document.createElement('canvas');
             const ctx = canvas.getContext('2d');
-            // Resize lebih kecil lagi (600px) untuk performa
             const MAX_WIDTH = 600; 
             let width = img.width; let height = img.height;
             if (width > MAX_WIDTH) { height *= MAX_WIDTH / width; width = MAX_WIDTH; }
             canvas.width = width; canvas.height = height;
             ctx.drawImage(img, 0, 0, width, height);
-            callback(canvas.toDataURL('image/jpeg', 0.6)); // Kualitas 60%
+            callback(canvas.toDataURL('image/jpeg', 0.6)); 
         }
         img.src = event.target.result;
     }
@@ -556,7 +521,6 @@ function setupHistoryUploader() {
 
                 await supabase.from('orders').update(updateData).eq('id', currentUploadOrderId);
                 
-                // Update lokal juga
                 const idx = orders.findIndex(o => o.id === currentUploadOrderId);
                 if(idx !== -1) {
                      if (currentUploadType === 'settlement') orders[idx].settlementProof = publicUrl;
@@ -572,7 +536,6 @@ function setupHistoryUploader() {
     });
 }
 
-// Helper UI kecil
 window.toggleTripType = function() {
     const type = document.getElementById('inpTripType').value;
     const fields = document.getElementById('returnTripFields');
@@ -585,7 +548,6 @@ window.toggleTripType = function() {
         document.getElementById('inpReturnDate').required = false;
         document.getElementById('inpReturnTrain').required = false;
     }
-    // UX ENHANCEMENT: Refresh smooth UX karena ada field yang hidden/show
     setTimeout(enableSmoothInputUX, 200);
 }
 window.updatePassengerForms = function() {
@@ -612,7 +574,6 @@ window.updatePassengerForms = function() {
     container.innerHTML = html;
     calcTotalFromPax();
     
-    // WAJIB: Re-inisialisasi UX karena elemen input baru dibuat
     setTimeout(enableSmoothInputUX, 100);
 }
 window.calcTotalFromPax = function() {
@@ -806,10 +767,10 @@ window.resetForm = function() {
     document.getElementById('inpPricePerPax').value = '';
     toggleTripType(); clearImage('transfer'); clearImage('chat'); updatePassengerForms(); calcRemaining();
     resetUploadZones();
-    // UX ENHANCEMENT: Reset UX handlers
     enableSmoothInputUX();
 }
 
+// --- RENDER LIST SYSTEM (UPDATED) ---
 window.renderOrderList = function(filterText = '') {
     const container = document.getElementById('ordersContainer');
     container.innerHTML = '';
@@ -841,6 +802,7 @@ window.renderOrderList = function(filterText = '') {
         const dateDepart = order.date ? new Date(order.date).toLocaleDateString('id-ID', {day:'numeric', month:'short'}) : '-';
         const warDateDepart = order.warDate ? new Date(order.warDate).toLocaleDateString('id-ID', {day:'numeric', month:'short'}) : '-';
         
+        // UPDATED: Fix Riwayat Pesanan (Text Truncation & Flex)
         let routeHtml = '';
         if(order.tripType === 'round_trip') {
             const dateReturn = order.returnDate ? new Date(order.returnDate).toLocaleDateString('id-ID', {day:'numeric', month:'short'}) : '-';
@@ -852,7 +814,11 @@ window.renderOrderList = function(filterText = '') {
                             <span class="text-[9px] text-davka-orange font-bold uppercase tracking-wider">Keberangkatan</span> 
                             <div class="text-right"><span class="text-[9px] text-gray-400 block">${dateDepart}</span><span class="text-[10px] text-davka-orange font-bold">Beli Tiket: ${warDateDepart}</span></div>
                        </div>
-                       <div class="flex justify-between items-center pl-2"><h4 class="text-sm font-bold text-white">${order.origin}</h4><i class="fas fa-arrow-right text-xs text-gray-500"></i><h4 class="text-sm font-bold text-white">${order.dest}</h4></div>
+                       <div class="flex items-center gap-2 pl-2">
+                            <h4 class="text-sm font-bold text-white truncate flex-1 min-w-0 text-right">${order.origin}</h4>
+                            <i class="fas fa-arrow-right text-xs text-gray-500 shrink-0"></i>
+                            <h4 class="text-sm font-bold text-white truncate flex-1 min-w-0 text-left">${order.dest}</h4>
+                       </div>
                        <p class="text-[10px] text-gray-400 mt-1 pl-2"><i class="fas fa-train mr-1"></i> ${order.train}</p>
                     </div>
                     <div class="bg-white/5 p-3 rounded-xl border border-white/5 relative overflow-hidden">
@@ -861,15 +827,20 @@ window.renderOrderList = function(filterText = '') {
                             <span class="text-[9px] text-davka-accent font-bold uppercase tracking-wider">Kepulangan</span> 
                             <div class="text-right"><span class="text-[9px] text-gray-400 block">${dateReturn}</span><span class="text-[10px] text-davka-accent font-bold">Beli Tiket: ${warDateReturn}</span></div>
                        </div>
-                       <div class="flex justify-between items-center pl-2"><h4 class="text-sm font-bold text-white">${order.dest}</h4> <i class="fas fa-arrow-right text-xs text-gray-500"></i><h4 class="text-sm font-bold text-white">${order.origin}</h4></div>
+                       <div class="flex items-center gap-2 pl-2">
+                            <h4 class="text-sm font-bold text-white truncate flex-1 min-w-0 text-right">${order.dest}</h4>
+                            <i class="fas fa-arrow-right text-xs text-gray-500 shrink-0"></i>
+                            <h4 class="text-sm font-bold text-white truncate flex-1 min-w-0 text-left">${order.origin}</h4>
+                       </div>
                        <p class="text-[10px] text-gray-400 mt-1 pl-2"><i class="fas fa-train mr-1"></i> ${order.returnTrain}</p>
                     </div>
                 </div>`;
         } else {
+            // UPDATED HTML STRUKTUR UNTUK ONE WAY (Ensure min-w-0)
             routeHtml = `<div class="flex items-center gap-3 my-3 bg-white/5 p-3 rounded-xl border border-white/5">
-                    <div class="text-center flex-1"><h4 class="text-xl font-black text-white truncate">${order.origin}</h4><p class="text-[9px] text-gray-400 mt-1">Asal</p></div>
+                    <div class="text-center flex-1 min-w-0"><h4 class="text-xl font-black text-white truncate">${order.origin}</h4><p class="text-[9px] text-gray-400 mt-1">Asal</p></div>
                     <div class="flex-none flex flex-col items-center w-20"><i class="fas fa-arrow-right text-davka-orange text-xs mb-1"></i><p class="text-[9px] text-white font-bold">${dateDepart}</p><p class="text-[10px] text-davka-orange font-bold mt-0.5">Beli Tiket: ${warDateDepart}</p></div>
-                    <div class="text-center flex-1"><h4 class="text-xl font-black text-white truncate">${order.dest}</h4><p class="text-[9px] text-gray-400 mt-1">Tujuan</p></div>
+                    <div class="text-center flex-1 min-w-0"><h4 class="text-xl font-black text-white truncate">${order.dest}</h4><p class="text-[9px] text-gray-400 mt-1">Tujuan</p></div>
                 </div>`;
         }
         const settlementOptions = ["-", "Tunai", "Transfer CIMB Niaga", "Transfer Seabank", "Dana", "Gopay", "Ovo", "ShopeePay"];

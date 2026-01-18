@@ -14,7 +14,7 @@ let activeUploadZone = null;
 
 // --- INIT SYSTEM ---
 document.addEventListener('DOMContentLoaded', async () => {
-    // Logic Video Intro (Dioptimalkan agar tidak memblokir sistem)
+    // Logic Video Intro & Loading Bar (DIUPDATE)
     const splash = document.getElementById('splash-screen');
     const video = document.getElementById('intro-video');
     const skipBtn = document.getElementById('btn-skip-intro');
@@ -29,15 +29,48 @@ document.addEventListener('DOMContentLoaded', async () => {
         }
     };
 
+    // LOGIC BARU: Jalankan loading bar 4 detik setelah video selesai
+    const startLoaderSequence = () => {
+        const loaderWrapper = document.getElementById('post-video-loader');
+        const loaderFill = document.getElementById('post-video-fill');
+        const videoOverlay = document.getElementById('video-overlay');
+
+        if (loaderWrapper && loaderFill) {
+            // 1. Munculkan Container Loader & Overlay Gelap
+            loaderWrapper.style.opacity = '1';
+            if(videoOverlay) videoOverlay.style.opacity = '1';
+
+            // 2. Trigger Animasi CSS (Width 0 -> 100% dalam 4s sesuai style.css)
+            // Timeout kecil agar transisi CSS terdeteksi
+            setTimeout(() => {
+                loaderFill.style.width = '100%';
+            }, 100);
+
+            // 3. Tunggu 4 Detik (4000ms), baru masuk aplikasi
+            setTimeout(() => {
+                enterApp();
+            }, 4100); // Dilebihkan 100ms untuk buffer animasi
+        } else {
+            // Fallback jika elemen tidak ada
+            enterApp();
+        }
+    };
+
     if (video) {
         setTimeout(() => { if(skipBtn) skipBtn.classList.remove('hidden'); }, 1000);
-        video.addEventListener('ended', enterApp);
-        // Timeout pengaman jika video gagal play
-        setTimeout(enterApp, 5000); 
+        
+        // UPDATE: Saat video selesai, jangan langsung masuk, tapi jalankan loader dulu
+        video.addEventListener('ended', startLoaderSequence);
+        
+        // Timeout pengaman jika video error/stuck (15 detik)
+        setTimeout(() => {
+            if(document.getElementById('splash-screen')) enterApp();
+        }, 15000); 
     } else {
         enterApp();
     }
     
+    // Tombol skip tetap langsung masuk (bypass loader)
     if(skipBtn) skipBtn.addEventListener('click', enterApp);
 
     document.addEventListener('click', (e) => {

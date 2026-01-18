@@ -98,6 +98,59 @@ function initializeAppLogic() {
     setupImageUploader('inpFileTransfer', 'inpTransferData', 'imgTransfer', 'previewTransfer');
     setupImageUploader('inpFileChat', 'inpChatData', 'imgChat', 'previewChat');
     setupHistoryUploader();
+    
+    // UX ENHANCEMENT: Inisialisasi Smooth Scroll & Enter Key
+    enableSmoothInputUX();
+}
+
+// --- UX ENGINE: SMOOTH SCROLL CENTER & ENTER KEY NAVIGATION ---
+function enableSmoothInputUX() {
+    // Ambil semua elemen input yang relevan, termasuk yang dinamis
+    const formElements = document.querySelectorAll('input, select, textarea');
+    
+    formElements.forEach((el, index) => {
+        // Hapus listener lama jika ada (untuk mencegah duplikasi pada re-render)
+        el.removeEventListener('focus', handleInputFocus);
+        el.removeEventListener('keydown', handleInputEnter);
+
+        // Tambah listener baru
+        el.addEventListener('focus', handleInputFocus);
+        el.addEventListener('keydown', (e) => handleInputEnter(e, index, formElements));
+    });
+}
+
+function handleInputFocus(e) {
+    // Delay sedikit agar keyboard virtual muncul dulu (terutama di HP)
+    setTimeout(() => {
+        e.target.scrollIntoView({ 
+            behavior: 'smooth', 
+            block: 'center', 
+            inline: 'nearest' 
+        });
+    }, 300);
+}
+
+function handleInputEnter(e, currentIndex, allElements) {
+    if (e.key === 'Enter') {
+        e.preventDefault(); // Mencegah submit form atau baris baru (default behavior)
+        
+        // Cari elemen berikutnya yang valid (tidak hidden, tidak disabled)
+        let nextIndex = currentIndex + 1;
+        while (nextIndex < allElements.length) {
+            const nextEl = allElements[nextIndex];
+            // Cek apakah elemen terlihat dan bisa difokuskan
+            if (nextEl.offsetParent !== null && !nextEl.disabled && !nextEl.readOnly) {
+                nextEl.focus(); // Ini akan mentrigger handleInputFocus otomatis
+                return;
+            }
+            nextIndex++;
+        }
+        
+        // Jika tidak ada input lagi, hilangkan fokus (keyboard turun)
+        if (nextIndex >= allElements.length) {
+            e.target.blur();
+        }
+    }
 }
 
 // FUNGSI BARU: Ambil data dibatasi 50 agar ringan
@@ -313,7 +366,6 @@ window.toggleStatus = async function(id) {
 }
 
 // ... Sisanya fungsi helper UI & DOM Manipulation sama seperti sebelumnya ...
-// ... (Bagian bawah ini tidak berubah logika intinya, hanya copy paste fungsi helper) ...
 
 window.navTo = function(pageId) {
     const currentPages = document.querySelectorAll('main > section:not(.hidden)');
@@ -352,7 +404,7 @@ window.editOrder = function(id) {
     else if (data.name) paxList = [{name: data.name, nik: data.nik || '-'}];
     
     document.getElementById('inpPaxCount').value = paxList.length || 1;
-    updatePassengerForms();
+    updatePassengerForms(); // Ini akan memanggil enableSmoothInputUX() didalamnya
     
     setTimeout(() => {
         const nameInputs = document.querySelectorAll('.pax-name');
@@ -437,7 +489,11 @@ window.handleUploadZoneClick = function(zoneId, inputId) {
         activeUploadZone = zoneId;
         zone.classList.add('upload-zone-active');
         if(hint) hint.classList.remove('hidden');
-        setTimeout(() => { zone.scrollIntoView({ behavior: "smooth", block: "center", inline: "nearest" }); }, 300);
+        
+        // UX UPDATE: Scroll ke tengah dengan mulus saat zona upload aktif
+        setTimeout(() => { 
+            zone.scrollIntoView({ behavior: "smooth", block: "center", inline: "nearest" }); 
+        }, 300);
     }
 }
 function resetUploadZones() {
@@ -529,6 +585,8 @@ window.toggleTripType = function() {
         document.getElementById('inpReturnDate').required = false;
         document.getElementById('inpReturnTrain').required = false;
     }
+    // UX ENHANCEMENT: Refresh smooth UX karena ada field yang hidden/show
+    setTimeout(enableSmoothInputUX, 200);
 }
 window.updatePassengerForms = function() {
     const count = parseInt(document.getElementById('inpPaxCount').value);
@@ -553,6 +611,9 @@ window.updatePassengerForms = function() {
     }
     container.innerHTML = html;
     calcTotalFromPax();
+    
+    // WAJIB: Re-inisialisasi UX karena elemen input baru dibuat
+    setTimeout(enableSmoothInputUX, 100);
 }
 window.calcTotalFromPax = function() {
     const pricePerPax = parseFloat(document.getElementById('inpPricePerPax').value) || 0;
@@ -745,6 +806,8 @@ window.resetForm = function() {
     document.getElementById('inpPricePerPax').value = '';
     toggleTripType(); clearImage('transfer'); clearImage('chat'); updatePassengerForms(); calcRemaining();
     resetUploadZones();
+    // UX ENHANCEMENT: Reset UX handlers
+    enableSmoothInputUX();
 }
 
 window.renderOrderList = function(filterText = '') {

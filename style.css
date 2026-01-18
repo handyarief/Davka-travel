@@ -3,13 +3,16 @@
 /* === BASE RESET & TYPOGRAPHY === */
 html {
     height: 100%; 
-    overflow: hidden; /* PENTING: Mengunci HTML agar scroll hanya terjadi di Body (App-Like Feel) */
+    overflow: hidden; /* Mengunci HTML agar scroll hanya di Body */
     -webkit-text-size-adjust: 100%;
     touch-action: pan-y;
+    
+    /* UX UPDATE: Global Smooth Scroll untuk dukungan Auto-Centering JS */
+    scroll-behavior: smooth; 
 }
 
 body {
-    background-color: #00040f; /* Deepest Navy/Black */
+    background-color: #00040f; 
     color: #f1f5f9;
     font-family: 'Plus Jakarta Sans', sans-serif;
     -webkit-tap-highlight-color: transparent;
@@ -17,14 +20,14 @@ body {
     -moz-osx-font-smoothing: grayscale;
     text-rendering: optimizeLegibility;
     
-    /* ULTRA SMOOTH SCROLLING PHYSICS (APP SHELL) */
+    /* APP SHELL PHYSICS */
     height: 100%;
-    overflow-y: auto; /* Scroll container utama pindah ke body */
-    -webkit-overflow-scrolling: touch; /* Momentum Scrolling iOS */
+    overflow-y: auto; 
+    -webkit-overflow-scrolling: touch; /* Native iOS Momentum */
     scroll-behavior: smooth;
-    overscroll-behavior-y: none; /* Mencegah bounce effect native browser */
+    overscroll-behavior-y: none;
     
-    /* Performance Booster untuk Scroll */
+    /* Performance Booster */
     will-change: scroll-position;
 }
 
@@ -44,8 +47,6 @@ body {
     transition: transform 0.4s cubic-bezier(0.25, 0.46, 0.45, 0.94), box-shadow 0.4s cubic-bezier(0.25, 0.46, 0.45, 0.94);
     position: relative;
     z-index: 10;
-    
-    /* GPU Acceleration */
     transform: translateZ(0); 
     will-change: transform; 
 }
@@ -60,7 +61,6 @@ body {
     -webkit-backdrop-filter: blur(30px);
     border: 1px solid rgba(255, 255, 255, 0.1);
     box-shadow: 0 10px 40px -10px rgba(0, 0, 0, 0.6);
-    /* GPU Force */
     transform: translate3d(-50%, 0, 0); 
     will-change: transform;
 }
@@ -88,6 +88,7 @@ body {
     height: 100%;
 }
 
+/* UX UPDATE: Input Animation Refinement */
 .input-modern {
     background-color: rgba(255, 255, 255, 0.05) !important;
     border: 1px solid rgba(255, 255, 255, 0.15) !important;
@@ -95,9 +96,15 @@ body {
     font-weight: 700 !important;
     font-size: 0.95rem !important;
     border-radius: 0.75rem;
-    transition: all 0.4s cubic-bezier(0.22, 1, 0.36, 1);
+    
+    /* Transisi diperhalus (0.5s) agar perubahan fokus terasa fluid */
+    transition: all 0.5s cubic-bezier(0.22, 1, 0.36, 1);
+    
     padding: 0.75rem 1rem;
     text-transform: uppercase; 
+    
+    /* Pastikan scroll margin cukup agar tidak tertutup header saat auto-center */
+    scroll-margin-top: 150px;
 }
 
 .input-modern::placeholder {
@@ -108,18 +115,29 @@ body {
 
 input[type="text"], 
 input[type="email"], 
-textarea {
+textarea,
+select {
     text-transform: uppercase;
+    /* Tambahan scroll margin untuk elemen native lainnya */
+    scroll-margin-top: 150px;
 }
+
 input::placeholder, textarea::placeholder {
     text-transform: none;
 }
 
-.input-modern:focus {
+/* UX UPDATE: Focus State yang lebih lembut */
+.input-modern:focus,
+input:focus, 
+textarea:focus, 
+select:focus {
     background-color: rgba(255, 255, 255, 0.1) !important;
     border-color: #ff5400 !important;
-    box-shadow: 0 0 20px rgba(255, 84, 0, 0.2); 
-    transform: none; 
+    box-shadow: 0 0 25px rgba(255, 84, 0, 0.15); /* Glow lebih soft */
+    transform: scale(1.01); /* Zoom in sangat halus (mikro interaksi) */
+    outline: none;
+    position: relative;
+    z-index: 20;
 }
 
 /* === LOADING SYSTEM === */
@@ -174,7 +192,7 @@ input::placeholder, textarea::placeholder {
 /* === POST-VIDEO LOADER === */
 .video-loader-wrapper {
     position: absolute;
-    bottom: 20%; /* FIXED: Dinaikkan agar tidak menumpuk dengan tombol SKIP */
+    bottom: 20%; 
     left: 50%;
     transform: translateX(-50%);
     width: 70%;
@@ -298,11 +316,6 @@ input[type="date"]::-webkit-calendar-picker-indicator {
 }
 input[type="date"]::-webkit-calendar-picker-indicator:hover {
     opacity: 1;
-}
-
-input:focus, textarea:focus, select:focus {
-    position: relative;
-    z-index: 20;
 }
 
 #ticket-render-area {

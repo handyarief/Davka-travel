@@ -174,7 +174,7 @@ input::placeholder, textarea::placeholder {
 /* === POST-VIDEO LOADER === */
 .video-loader-wrapper {
     position: absolute;
-    bottom: 7%; 
+    bottom: 20%; /* FIXED: Dinaikkan agar tidak menumpuk dengan tombol SKIP */
     left: 50%;
     transform: translateX(-50%);
     width: 70%;

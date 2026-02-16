@@ -113,7 +113,7 @@
                     </p>
                 </div>
 
-                <div class="flex justify-between items-center px-2 mb-2">
+                <div class="flex justify-between items-center px-2 mb-4">
                     <div>
                         <span class="inline-block px-3 py-1 rounded-full bg-davka-orange/20 border border-davka-orange/50 text-[10px] text-davka-orange font-bold tracking-wider mb-1">
                             <i class="fas fa-crown mr-1"></i> PREMIUM ACCESS
@@ -126,36 +126,22 @@
                     </div>
                 </div>
 
-                <div class="grid grid-cols-2 gap-4 mb-4">
-                    <div class="glass p-5 rounded-3xl relative overflow-hidden group">
-                        <div class="absolute -right-6 -top-6 bg-davka-orange/20 w-24 h-24 rounded-full blur-2xl group-hover:bg-davka-orange/30 transition-all duration-500"></div>
-                        <div class="relative z-10">
-                            <div class="flex justify-between items-start mb-2">
-                                <div class="bg-davka-orange/20 p-2 rounded-xl text-davka-orange">
-                                    <i class="fas fa-ticket-alt text-lg"></i>
-                                </div>
-                                <span class="text-[10px] font-bold bg-white/5 px-2 py-1 rounded text-gray-300">Bulan Ini</span>
-                            </div>
-                            <h3 class="text-3xl font-bold text-white mt-1" id="stat-today">0</h3>
-                            <p class="text-[10px] text-gray-400">Tiket Terjual</p>
-                        </div>
-                    </div>
-
-                    <div class="glass p-5 rounded-3xl relative overflow-hidden group">
-                        <div class="absolute -right-6 -top-6 bg-davka-accent/20 w-24 h-24 rounded-full blur-2xl group-hover:bg-davka-accent/30 transition-all duration-500"></div>
-                        <div class="relative z-10">
-                            <div class="flex justify-between items-start mb-2">
-                                <div class="bg-davka-accent/20 p-2 rounded-xl text-davka-accent">
-                                    <i class="fas fa-wallet text-lg"></i>
-                                </div>
-                                <span class="text-[10px] font-bold bg-white/5 px-2 py-1 rounded text-gray-300">Bulan Ini</span>
-                            </div>
-                            <h3 class="text-lg font-bold text-white mt-2 truncate" id="stat-revenue">Rp 0</h3>
-                            <p class="text-[10px] text-gray-400">Total Omset</p>
+                <div class="glass p-5 rounded-3xl relative overflow-hidden mb-4 border border-white/10">
+                    <div class="absolute -right-10 -top-10 w-40 h-40 bg-davka-orange rounded-full blur-3xl opacity-10"></div>
+                    
+                    <div class="relative z-10">
+                        <p class="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-1">Estimasi Omset (Bulan Ini)</p>
+                        <h2 class="text-3xl font-black text-white mb-3" id="stat-revenue">Rp 0</h2>
+                        
+                        <div class="inline-flex items-center gap-2 bg-white/5 px-3 py-1.5 rounded-lg border border-white/5">
+                            <div class="w-2 h-2 rounded-full bg-green-500 animate-pulse"></div>
+                            <p class="text-[10px] text-gray-300">
+                                <span class="text-white font-bold text-sm mr-1" id="stat-today">0</span> 
+                                Tiket Terjual
+                            </p>
                         </div>
                     </div>
                 </div>
-
                 <div class="glass p-1 rounded-2xl flex justify-between items-center text-center shadow-lg">
                     <div class="flex-1 py-3 hover:bg-white/5 rounded-xl transition-colors">
                         <p class="text-[10px] text-gray-400 font-bold uppercase mb-1">Pending</p>
@@ -173,8 +159,7 @@
                     </div>
                 </div>
             </div>
-            </section>
-
+        </section>
         <section id="page-input" class="hidden fade-in pb-10 pt-4">
             <div class="flex justify-between items-center mb-6 mt-2">
                 <div>
@@ -235,7 +220,6 @@
                     </div>
                     <div id="passengerForms" class="space-y-4"></div>
                 </div>
-
                 <div class="glass p-5 rounded-3xl space-y-4">
                     <div class="flex items-center gap-2 mb-2">
                         <div class="w-8 h-8 rounded-full bg-davka-orange/20 flex items-center justify-center text-davka-orange">
@@ -420,13 +404,145 @@
                 </div>
 
                 <div id="ordersContainer" class="space-y-4 pb-48">
-                </div>
+                    </div>
             
                 <div id="emptyState" class="hidden flex flex-col items-center justify-center py-20 text-gray-600">
                     <div class="w-20 h-20 rounded-full bg-davka-surface flex items-center justify-center mb-4">
                         <i class="fas fa-inbox text-3xl opacity-30"></i>
                     </div>
                     <p class="text-sm">Belum ada pesanan.</p>
+                </div>
+            </div>
+        </section>
+<section id="page-detail" class="hidden fade-in pb-32">
+            <div class="pt-16 px-1">
+                <div class="flex items-center gap-3 mb-6">
+                    <div>
+                        <h2 class="text-lg font-bold text-white leading-none" id="detail-contact-name">NAMA KONTAK</h2>
+                        <p class="text-[10px] text-gray-400 mt-1" id="detail-id">#ID000000</p>
+                    </div>
+                    <div class="ml-auto">
+                        <div id="detail-status-badge" class="px-3 py-1 rounded-full text-[10px] font-bold uppercase border">
+                            STATUS
+                        </div>
+                    </div>
+                </div>
+
+                <div class="glass p-5 rounded-3xl mb-4 relative overflow-hidden">
+                    <div class="absolute top-0 left-0 w-1 h-full bg-davka-orange"></div>
+                    
+                    <div class="flex justify-between items-center text-center mb-6">
+                        <div class="flex-1">
+                            <h3 class="text-2xl font-black text-white" id="detail-origin">ORG</h3>
+                            <p class="text-[10px] text-gray-400 uppercase tracking-wider">Keberangkatan</p>
+                        </div>
+                        <div class="px-4">
+                            <i id="detail-route-icon" class="fas fa-arrow-right text-davka-orange text-xl"></i>
+                        </div>
+                        <div class="flex-1">
+                            <h3 class="text-2xl font-black text-white" id="detail-dest">DES</h3>
+                            <p class="text-[10px] text-gray-400 uppercase tracking-wider">Tujuan</p>
+                        </div>
+                    </div>
+
+                    <div class="flex bg-white/5 p-1 rounded-xl mb-4 relative" id="tab-container">
+                        <button onclick="switchTab('depart')" id="tab-btn-depart" class="flex-1 py-2 text-[10px] font-bold uppercase rounded-lg transition-all bg-davka-orange text-white shadow-lg">
+                            <i class="fas fa-train mr-1"></i> Pergi
+                        </button>
+                        <button onclick="switchTab('return')" id="tab-btn-return" class="flex-1 py-2 text-[10px] font-bold uppercase rounded-lg transition-all text-gray-400 hover:text-white relative">
+                            <i class="fas fa-exchange-alt mr-1"></i> Pulang
+                            <span id="badge-return-active" class="hidden absolute top-1 right-2 w-1.5 h-1.5 bg-blue-500 rounded-full"></span>
+                        </button>
+                    </div>
+
+                    <div id="tab-content-depart" class="animate-scale-up">
+                        <div class="bg-white/5 rounded-xl p-3 border border-white/10">
+                            <p class="text-[9px] text-davka-orange font-bold uppercase mb-1 opacity-70">Detail Keberangkatan</p>
+                            <div class="flex justify-between items-end">
+                                <div>
+                                    <p class="text-sm font-bold text-white" id="detail-train">Nama Kereta</p>
+                                    <p class="text-[10px] text-gray-300 mt-0.5" id="detail-date">-</p>
+                                </div>
+                                <div class="text-right">
+                                    <p class="text-[9px] text-gray-500">War Tiket</p>
+                                    <p class="text-[10px] text-davka-orange font-bold" id="detail-war-date">-</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div id="tab-content-return" class="hidden animate-scale-up">
+                        <div class="bg-white/5 rounded-xl p-3 border border-blue-500/30 relative overflow-hidden">
+                            <div class="absolute left-0 top-0 bottom-0 w-1 bg-blue-500"></div>
+                            <p class="text-[9px] text-blue-400 font-bold uppercase mb-1 opacity-70">Detail Kepulangan</p>
+                            
+                            <div id="data-return-exist">
+                                <div class="flex justify-between items-end">
+                                    <div>
+                                        <p class="text-sm font-bold text-white" id="detail-return-train">Nama Kereta</p>
+                                        <p class="text-[10px] text-gray-300 mt-0.5" id="detail-return-date">-</p>
+                                    </div>
+                                    <div class="text-right">
+                                        <p class="text-[9px] text-gray-500">War Tiket</p>
+                                        <p class="text-[10px] text-blue-400 font-bold" id="detail-return-war-date">-</p>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div id="data-return-empty" class="hidden text-center py-2">
+                                <p class="text-[10px] text-gray-500 italic">Tidak ada data kepulangan (Sekali Jalan)</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="glass p-5 rounded-3xl mb-4">
+                    <h3 class="text-xs font-bold text-gray-400 uppercase tracking-widest mb-3 border-b border-white/10 pb-2">Penumpang</h3>
+                    <div id="detail-pax-list" class="space-y-3">
+                        </div>
+                </div>
+
+                <div class="glass p-5 rounded-3xl mb-24">
+                     <h3 class="text-xs font-bold text-gray-400 uppercase tracking-widest mb-3 border-b border-white/10 pb-2">Pembayaran</h3>
+                     
+                     <div class="grid grid-cols-2 gap-4 mb-4">
+                        <div>
+                            <p class="text-[9px] text-gray-500 uppercase">Total Harga</p>
+                            <p class="text-sm font-bold text-davka-orange" id="detail-price">Rp 0</p>
+                        </div>
+                        <div class="text-right">
+                            <p class="text-[9px] text-gray-500 uppercase">Sisa Tagihan</p>
+                            <p class="text-sm font-black text-red-500" id="detail-remaining">Rp 0</p>
+                        </div>
+                     </div>
+
+                     <div class="mb-4">
+                        <label class="text-[10px] text-gray-400 mb-1 block">Update Metode Pelunasan</label>
+                        <select id="detail-settlement-select" class="w-full bg-davka-bg border border-white/10 rounded-lg px-3 py-2 text-xs text-white outline-none focus:border-davka-orange">
+                            </select>
+                     </div>
+
+                     <div class="grid grid-cols-2 gap-3 mb-4">
+                        <div id="detail-upload-settlement" class="h-32"></div> <div id="detail-upload-ticket" class="h-32"></div> </div>
+
+                     <div class="grid grid-cols-4 gap-2 border-t border-white/10 pt-4">
+                        <button id="btn-action-status" class="col-span-1 bg-white/5 border border-white/10 rounded-xl py-3 flex flex-col items-center justify-center gap-1 hover:bg-white/10 text-gray-400 transition-all">
+                            <i class="fas fa-sync-alt text-sm"></i>
+                            <span class="text-[8px] font-bold uppercase">Status</span>
+                        </button>
+                         <button id="btn-action-edit" class="col-span-1 bg-blue-500/10 border border-blue-500/30 rounded-xl py-3 flex flex-col items-center justify-center gap-1 hover:bg-blue-500/20 text-blue-400 transition-all">
+                            <i class="fas fa-edit text-sm"></i>
+                            <span class="text-[8px] font-bold uppercase">Edit</span>
+                        </button>
+                         <button id="btn-action-print" class="col-span-1 bg-orange-500/10 border border-orange-500/30 rounded-xl py-3 flex flex-col items-center justify-center gap-1 hover:bg-orange-500/20 text-orange-400 transition-all">
+                            <i class="fas fa-print text-sm"></i>
+                            <span class="text-[8px] font-bold uppercase">Struk</span>
+                        </button>
+                         <button id="btn-action-delete" class="col-span-1 bg-red-500/10 border border-red-500/30 rounded-xl py-3 flex flex-col items-center justify-center gap-1 hover:bg-red-500/20 text-red-400 transition-all">
+                            <i class="fas fa-trash text-sm"></i>
+                            <span class="text-[8px] font-bold uppercase">Hapus</span>
+                        </button>
+                     </div>
                 </div>
             </div>
         </section>

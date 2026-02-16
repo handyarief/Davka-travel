@@ -93,19 +93,47 @@ function initializeAppLogic() {
     enableSmoothInputUX();
 }
 
-// --- UX ENGINE: SMOOTH SCROLL & ENTER KEY NAVIGATION (UPDATED) ---
+// --- NEW FEATURE: TAB SYSTEM LOGIC (PERGI / PULANG) ---
+window.switchTab = function(tabName) {
+    const btnDepart = document.getElementById('tab-btn-depart');
+    const btnReturn = document.getElementById('tab-btn-return');
+    const contentDepart = document.getElementById('tab-content-depart');
+    const contentReturn = document.getElementById('tab-content-return');
+
+    // Reset Styles (Inactive State)
+    const inactiveClass = "flex-1 py-2 text-[10px] font-bold uppercase rounded-lg transition-all text-gray-400 hover:text-white relative";
+    const activeClass = "flex-1 py-2 text-[10px] font-bold uppercase rounded-lg transition-all bg-davka-orange text-white shadow-lg relative";
+
+    btnDepart.className = inactiveClass;
+    btnReturn.className = inactiveClass;
+    
+    // Hide Content
+    contentDepart.classList.add('hidden');
+    contentReturn.classList.add('hidden');
+
+    // Activate Requested Tab
+    if (tabName === 'depart') {
+        btnDepart.className = activeClass;
+        contentDepart.classList.remove('hidden');
+    } else {
+        btnReturn.className = activeClass;
+        contentReturn.classList.remove('hidden');
+    }
+}
+
+// --- UX ENGINE: SMOOTH SCROLL & ENTER KEY NAVIGATION ---
 function enableSmoothInputUX() {
     // Ambil semua elemen input yang relevan
     const formElements = document.querySelectorAll('input, select, textarea');
     
     formElements.forEach((el, index) => {
         el.removeEventListener('focus', handleInputFocus);
-        el.removeEventListener('click', handleInputFocus); // UPDATED: Tambah listener click
+        el.removeEventListener('click', handleInputFocus); 
         el.removeEventListener('keydown', handleInputEnter);
 
         // Tambah listener baru
         el.addEventListener('focus', handleInputFocus);
-        el.addEventListener('click', handleInputFocus); // UPDATED: Trigger saat diklik
+        el.addEventListener('click', handleInputFocus); 
         el.addEventListener('keydown', (e) => handleInputEnter(e, index, formElements));
     });
 }
@@ -113,8 +141,6 @@ function enableSmoothInputUX() {
 function handleInputFocus(e) {
     // Delay sedikit agar keyboard virtual muncul dulu
     setTimeout(() => {
-        // UPDATED: Menggunakan block 'start' agar respect terhadap scroll-margin-top di CSS
-        // Ini memastikan elemen naik ke atas keyboard (area aman)
         e.target.scrollIntoView({ 
             behavior: 'smooth', 
             block: 'start', 
@@ -132,7 +158,6 @@ function handleInputEnter(e, currentIndex, allElements) {
             const nextEl = allElements[nextIndex];
             if (nextEl.offsetParent !== null && !nextEl.disabled && !nextEl.readOnly) {
                 nextEl.focus(); 
-                // Focus akan mentrigger handleInputFocus -> scroll otomatis
                 return;
             }
             nextIndex++;
@@ -149,7 +174,7 @@ async function fetchOrders() {
     const { data, error } = await supabase
         .from('orders')
         .select('*')
-        .order('created_at', { ascending: false })
+        .order('created_at', { ascending: true }) 
         .limit(50); 
 
     if (error) {
@@ -175,7 +200,11 @@ function setupRealtime() {
 }
 
 async function fetchOrdersBg() {
-    const { data } = await supabase.from('orders').select('*').order('created_at', { ascending: false }).limit(50);
+    const { data } = await supabase.from('orders')
+        .select('*')
+        .order('created_at', { ascending: true }) 
+        .limit(50);
+        
     if(data) {
         orders = data;
         renderStats();
@@ -184,7 +213,6 @@ async function fetchOrdersBg() {
         }
     }
 }
-
 // --- LOGIC UPLOAD & STORAGE ---
 async function uploadToSupabaseStorage(base64Data, fileName) {
     if (!base64Data || base64Data.startsWith('http')) return base64Data; 
@@ -271,7 +299,7 @@ orderForm.addEventListener('submit', async (e) => {
         if (existingOrder) {
             orders[editIndex] = newOrder;
         } else {
-            orders.unshift(newOrder); 
+            orders.push(newOrder); 
         }
         renderStats();
         document.getElementById('searchInput').value = ''; 
@@ -293,13 +321,17 @@ orderForm.addEventListener('submit', async (e) => {
         toggleLoader(false); 
     }
 });
-
 // --- UI HELPERS ---
 
 window.deleteOrder = async function(id) {
     if(confirm("Hapus pesanan ini Permanen?")) {
         toggleLoader(true);
         orders = orders.filter(o => o.id !== id);
+        
+        // Cek halaman mana yang aktif
+        const isDetailOpen = !document.getElementById('page-detail').classList.contains('hidden');
+        if(isDetailOpen) closeDetailView();
+        
         renderOrderList(document.getElementById('searchInput').value);
         renderStats();
         showToast("Dihapus dari layar...");
@@ -324,7 +356,14 @@ window.toggleStatus = async function(id) {
     const next = current === 'pending' ? 'success' : (current === 'success' ? 'cancel' : 'pending');
     
     orders[index].status = next;
+    
+    // Update List & Detail View
     renderOrderList(document.getElementById('searchInput').value);
+    
+    // Jika sedang buka detail, refresh tampilan detailnya
+    const isDetailOpen = !document.getElementById('page-detail').classList.contains('hidden');
+    if(isDetailOpen) openDetailView(id);
+
     renderStats();
 
     try {
@@ -384,7 +423,6 @@ window.editOrder = function(id) {
             if(nikInputs[i]) nikInputs[i].value = p.nik;
         });
     }, 0);
-
     document.getElementById('inpOrigin').value = data.origin || '';
     document.getElementById('inpDest').value = data.dest || '';
     document.getElementById('inpDate').value = data.date || '';
@@ -429,8 +467,14 @@ window.updateSettlement = async function(id, newVal) {
         const nextStatus = newVal === '-' ? 'pending' : 'success';
         orders[index].settlementMethod = newVal;
         orders[index].status = nextStatus;
+        
+        // Refresh List & Detail
         renderOrderList(document.getElementById('searchInput').value);
-        renderStats(); // Update stats real-time
+        
+        const isDetailOpen = !document.getElementById('page-detail').classList.contains('hidden');
+        if(isDetailOpen) openDetailView(id); 
+
+        renderStats(); 
         try {
              await supabase.from('orders').update({ settlementMethod: newVal, status: nextStatus }).eq('id', id);
             showToast("Info Pelunasan Updated");
@@ -448,7 +492,6 @@ function toggleLoader(show) {
     } else loader.classList.add('hidden');
 }
 
-// UPDATED: Scroll ke zona upload dengan block: 'start' agar tidak tertutup header
 window.handleUploadZoneClick = function(zoneId, inputId) {
     const zone = document.getElementById(zoneId);
     const hint = document.getElementById(zoneId.replace('zone', 'hint')); 
@@ -506,7 +549,6 @@ function processFile(file, callback) {
     }
     reader.readAsDataURL(file);
 }
-
 function setupHistoryUploader() {
     const historyInput = document.getElementById('inpHistoryUpload');
     historyInput.addEventListener('change', function(e) {
@@ -529,7 +571,10 @@ function setupHistoryUploader() {
                 if(idx !== -1) {
                      if (currentUploadType === 'settlement') orders[idx].settlementProof = publicUrl;
                      else orders[idx].kaiTicketFile = publicUrl;
-                     renderOrderList(document.getElementById('searchInput').value);
+                     
+                     // Refresh tampilan jika sedang buka detail
+                     const isDetailOpen = !document.getElementById('page-detail').classList.contains('hidden');
+                     if(isDetailOpen) openDetailView(currentUploadOrderId);
                 }
                 showToast("Tersimpan!");
             } catch(e) { console.error(e); alert("Gagal simpan."); } finally {
@@ -539,6 +584,7 @@ function setupHistoryUploader() {
         });
     });
 }
+// --- HELPER LAINNYA (LANJUTAN) ---
 
 window.toggleTripType = function() {
     const type = document.getElementById('inpTripType').value;
@@ -555,13 +601,10 @@ window.toggleTripType = function() {
     setTimeout(enableSmoothInputUX, 200);
 }
 
-// --- FIX: KEMBALIKAN LOGIKA PENUMPANG ASLI ---
 window.updatePassengerForms = function() {
     const count = parseInt(document.getElementById('inpPaxCount').value);
-    // PASTIKAN ID SESUAI index.html
     const container = document.getElementById('passengerForms'); 
     
-    // Logic untuk menyimpan data lama saat jumlah diubah
     const existingNames = document.querySelectorAll('.pax-name');
     const existingNiks = document.querySelectorAll('.pax-nik');
     let storedData = [];
@@ -582,7 +625,6 @@ window.updatePassengerForms = function() {
     }
     container.innerHTML = html;
     calcTotalFromPax();
-    
     setTimeout(enableSmoothInputUX, 100);
 }
 
@@ -780,231 +822,251 @@ window.resetForm = function() {
     enableSmoothInputUX();
 }
 
-// --- RENDER LIST SYSTEM (UPDATED) ---
+// --- LOGIC DETAIL VIEW (UPDATED: TAB SYSTEM) ---
+
+window.openDetailView = function(orderId) {
+    const order = orders.find(o => o.id === orderId);
+    if (!order) return;
+
+    // 1. Switch Page
+    document.getElementById('page-list').classList.add('hidden', 'fade-out');
+    document.getElementById('page-detail').classList.remove('hidden');
+    document.getElementById('page-detail').classList.add('fade-in');
+    
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+
+    // 2. Reset Tab ke 'depart' setiap kali buka
+    switchTab('depart');
+
+    // 3. Populate Header & Status
+    const displayName = (order.contactName || order.name || 'No Name').toUpperCase();
+    document.getElementById('detail-contact-name').innerText = displayName;
+    document.getElementById('detail-id').innerText = "#" + order.id.toString().slice(-6);
+    
+    const badge = document.getElementById('detail-status-badge');
+    badge.className = "px-3 py-1 rounded-full text-[10px] font-bold uppercase border ";
+    if (order.status === 'success') {
+        badge.innerText = "LUNAS";
+        badge.classList.add('bg-green-500/10', 'border-green-500/30', 'text-green-400');
+    } else if (order.status === 'cancel') {
+        badge.innerText = "BATAL";
+        badge.classList.add('bg-red-500/10', 'border-red-500/30', 'text-red-400');
+    } else {
+        badge.innerText = "PENDING";
+        badge.classList.add('bg-orange-500/10', 'border-orange-500/30', 'text-orange-400');
+    }
+
+    // 4. Populate Route Header (Origin -> Dest)
+    document.getElementById('detail-origin').innerText = order.origin || 'ORG';
+    document.getElementById('detail-dest').innerText = order.dest || 'DST';
+    
+    // Icon Logic: Panah atau Exchange
+    const iconEl = document.getElementById('detail-route-icon');
+    if (order.tripType === 'round_trip') {
+        iconEl.className = "fas fa-exchange-alt text-blue-400 text-xl";
+    } else {
+        iconEl.className = "fas fa-arrow-right text-davka-orange text-xl";
+    }
+
+    // 5. Populate Tab Data: PERGI (Depart)
+    document.getElementById('detail-train').innerText = order.train || '-';
+    document.getElementById('detail-date').innerText = order.date ? new Date(order.date).toLocaleDateString('id-ID', {day: 'numeric', month: 'short', year: 'numeric'}) : '-';
+    document.getElementById('detail-war-date').innerText = order.warDate ? new Date(order.warDate).toLocaleDateString('id-ID', {day: 'numeric', month: 'short'}) : '-';
+
+    // 6. Populate Tab Data: PULANG (Return) logic
+    const returnBadge = document.getElementById('badge-return-active');
+    const returnDataContainer = document.getElementById('data-return-exist');
+    const returnEmptyContainer = document.getElementById('data-return-empty');
+
+    if (order.tripType === 'round_trip') {
+        // Aktifkan Badge di Tab Pulang
+        returnBadge.classList.remove('hidden');
+        
+        // Tampilkan Container Data
+        returnDataContainer.classList.remove('hidden');
+        returnEmptyContainer.classList.add('hidden');
+
+        document.getElementById('detail-return-train').innerText = order.returnTrain || '-';
+        document.getElementById('detail-return-date').innerText = order.returnDate ? new Date(order.returnDate).toLocaleDateString('id-ID', {day: 'numeric', month: 'short', year: 'numeric'}) : '-';
+        document.getElementById('detail-return-war-date').innerText = order.returnWarDate ? new Date(order.returnWarDate).toLocaleDateString('id-ID', {day: 'numeric', month: 'short'}) : '-';
+    } else {
+        // Matikan Badge
+        returnBadge.classList.add('hidden');
+        
+        // Tampilkan State Kosong
+        returnDataContainer.classList.add('hidden');
+        returnEmptyContainer.classList.remove('hidden');
+    }
+
+    // 7. Populate Passengers
+    let paxListHtml = '';
+    let paxArray = order.passengers || (order.name ? [{name: order.name, nik: order.nik || '-'}] : []);
+    
+    paxArray.forEach((p, idx) => {
+        paxListHtml += `
+            <div class="flex items-center gap-3 border-b border-white/5 pb-2 last:border-0 last:pb-0">
+                <div class="w-6 h-6 rounded-full bg-white/10 flex items-center justify-center text-[10px] font-bold text-gray-300 shrink-0">${idx+1}</div>
+                <div>
+                    <p class="text-xs font-bold text-white uppercase">${p.name}</p>
+                    <p class="text-[9px] text-gray-500 font-mono">NIK: ${p.nik}</p>
+                </div>
+            </div>
+        `;
+    });
+    document.getElementById('detail-pax-list').innerHTML = paxListHtml;
+
+    // 8. Payment Info
+    document.getElementById('detail-price').innerText = formatRupiah(order.price || 0);
+    const remaining = (order.price || 0) - (order.fee || 0);
+    const remEl = document.getElementById('detail-remaining');
+    remEl.innerText = formatRupiah(remaining);
+    remEl.className = remaining <= 0 ? "text-sm font-black text-green-500" : "text-sm font-black text-red-500";
+
+    const settlementOptions = ["-", "Tunai", "Transfer CIMB Niaga", "Transfer Seabank", "Dana", "Gopay", "Ovo", "ShopeePay"];
+    const selectEl = document.getElementById('detail-settlement-select');
+    selectEl.innerHTML = settlementOptions.map(opt => `<option value="${opt}" ${order.settlementMethod === opt ? 'selected' : ''}>${opt === '-' ? 'Belum Lunas' : opt}</option>`).join('');
+    selectEl.onchange = function() { updateSettlement(orderId, this.value); };
+
+    // 9. Upload Buttons (Dynamic Render with Fix)
+    document.getElementById('detail-upload-settlement').innerHTML = renderUploadBtnHTML(orderId, 'settlement', order.settlementProof, 'Bukti Lunas');
+    document.getElementById('detail-upload-ticket').innerHTML = renderUploadBtnHTML(orderId, 'kai_ticket', order.kaiTicketFile, 'E-Ticket KAI');
+
+    // 10. Action Buttons
+    document.getElementById('btn-action-status').onclick = function() { toggleStatus(orderId); };
+    document.getElementById('btn-action-edit').onclick = function() { editOrder(orderId); };
+    document.getElementById('btn-action-print').onclick = function() { printReceipt(orderId); };
+    document.getElementById('btn-action-delete').onclick = function() { deleteOrder(orderId); };
+}
+
+window.closeDetailView = function() {
+    document.getElementById('page-detail').classList.add('hidden', 'fade-out');
+    document.getElementById('page-detail').classList.remove('fade-in');
+    
+    document.getElementById('page-list').classList.remove('hidden');
+    document.getElementById('page-list').classList.add('fade-in');
+    
+    renderOrderList(document.getElementById('searchInput').value);
+}
+
+// --- REDESIGNED LIST VIEW: 1 BARIS COMPACT (NAVIGATE ON CLICK) ---
 window.renderOrderList = function(filterText = '') {
     const container = document.getElementById('ordersContainer');
     container.innerHTML = '';
     if(!orders) return;
+    
     const filtered = orders.filter(o => {
         const name = o.contactName || o.name || '';
         return name.toLowerCase().includes(filterText.toLowerCase());
     });
-    if(filtered.length === 0) { document.getElementById('emptyState').classList.remove('hidden'); return; } 
-    else document.getElementById('emptyState').classList.add('hidden');
 
-    filtered.forEach(order => {
-        const remaining = (order.price || 0) - (order.fee || 0);
-        let paxCount = order.passengers ? order.passengers.length : (order.name ? 1 : 1);
-        const displayName = order.contactName || order.name || 'No Name'; 
+    if(filtered.length === 0) { 
+        document.getElementById('emptyState').classList.remove('hidden'); 
+        return; 
+    } else {
+        document.getElementById('emptyState').classList.add('hidden');
+    }
+
+    filtered.forEach((order, index) => {
+        // --- LOGIC WARNA STATUS & INDIKATOR ---
+        let statusColorClass = '';
+        let indicatorColor = '';
         
-        let statusBadge = ''; let statusColor = '';
-        if(order.status === 'success') {
-            statusBadge = `<span class="bg-green-500/20 text-green-400 border border-green-500/50 px-3 py-1 rounded-full text-[10px] font-bold tracking-wider whitespace-nowrap"><i class="fas fa-check-double mr-1"></i> LUNAS</span>`;
-            statusColor = 'border-l-green-500';
+        if (order.status === 'success') {
+            statusColorClass = 'bg-green-500/10 border-green-500/30 text-green-400';
+            indicatorColor = 'bg-green-500';
         } else if (order.status === 'cancel') {
-            statusBadge = `<span class="bg-red-500/20 text-red-400 border border-red-500/50 px-3 py-1 rounded-full text-[10px] font-bold tracking-wider whitespace-nowrap"><i class="fas fa-times mr-1"></i> BATAL</span>`;
-            statusColor = 'border-l-red-500';
+            statusColorClass = 'bg-red-500/10 border-red-500/30 text-red-400';
+            indicatorColor = 'bg-red-500';
         } else {
-            statusBadge = `<span class="bg-yellow-500/20 text-yellow-400 border border-yellow-500/50 px-3 py-1 rounded-full text-[10px] font-bold tracking-wider whitespace-nowrap"><i class="fas fa-clock mr-1"></i> PENDING</span>`;
-            statusColor = 'border-l-yellow-500';
+            statusColorClass = 'bg-orange-500/10 border-orange-500/30 text-orange-400';
+            indicatorColor = 'bg-orange-500';
         }
 
         const dateDepart = order.date ? new Date(order.date).toLocaleDateString('id-ID', {day:'numeric', month:'short'}) : '-';
-        const warDateDepart = order.warDate ? new Date(order.warDate).toLocaleDateString('id-ID', {day:'numeric', month:'short'}) : '-';
-        
-        // --- 2. UPDATE: VISUAL RUTE FUTURISTIK ---
-        let routeHtml = '';
-        if(order.tripType === 'round_trip') {
-            const dateReturn = order.returnDate ? new Date(order.returnDate).toLocaleDateString('id-ID', {day:'numeric', month:'short'}) : '-';
-            const warDateReturn = order.returnWarDate ? new Date(order.returnWarDate).toLocaleDateString('id-ID', {day:'numeric', month:'short'}) : '-';
-            
-            routeHtml = `
-            <div class="mt-4 mb-2 space-y-3">
-                <div class="relative bg-davka-bg/60 rounded-xl p-3 border border-white/5 overflow-hidden group-hover:border-davka-orange/30 transition-all">
-                    <div class="absolute inset-0 bg-gradient-to-r from-davka-orange/5 to-transparent"></div>
-                    <div class="relative z-10 flex items-center justify-between">
-                        <div class="text-left min-w-0 flex-1">
-                            <p class="text-[9px] text-davka-orange font-bold uppercase tracking-widest mb-0.5">Berangkat</p>
-                            <h4 class="text-lg font-black text-white leading-none truncate">${order.origin}</h4>
-                            <p class="text-[9px] text-gray-400 mt-1">${dateDepart}</p>
-                        </div>
-                        <div class="px-2 flex flex-col items-center justify-center">
-                            <i class="fas fa-train text-davka-orange text-xs animate-pulse"></i>
-                            <div class="h-px w-8 bg-davka-orange/50 mt-1"></div>
-                        </div>
-                        <div class="text-right min-w-0 flex-1">
-                            <p class="text-[9px] text-gray-500 font-bold uppercase tracking-widest mb-0.5 text-right">Tujuan</p>
-                            <h4 class="text-lg font-black text-white leading-none truncate">${order.dest}</h4>
-                            <p class="text-[9px] text-white/60 mt-1 font-bold">War: ${warDateDepart}</p>
-                        </div>
-                    </div>
-                    <div class="mt-2 pt-2 border-t border-white/5 flex justify-between items-center">
-                         <span class="text-[9px] bg-davka-orange/20 text-davka-orange px-2 py-0.5 rounded text-center font-bold">${order.train}</span>
-                    </div>
-                </div>
+        const displayName = (order.contactName || order.name || 'No Name').toUpperCase();
+        const displayNo = index + 1; 
 
-                <div class="relative bg-davka-bg/60 rounded-xl p-3 border border-white/5 overflow-hidden group-hover:border-davka-accent/30 transition-all">
-                    <div class="absolute inset-0 bg-gradient-to-r from-davka-accent/5 to-transparent"></div>
-                    <div class="relative z-10 flex items-center justify-between">
-                         <div class="text-left min-w-0 flex-1">
-                            <p class="text-[9px] text-davka-accent font-bold uppercase tracking-widest mb-0.5">Pulang</p>
-                            <h4 class="text-lg font-black text-white leading-none truncate">${order.dest}</h4>
-                            <p class="text-[9px] text-gray-400 mt-1">${dateReturn}</p>
-                        </div>
-                        <div class="px-2 flex flex-col items-center justify-center">
-                            <i class="fas fa-undo text-davka-accent text-xs"></i>
-                            <div class="h-px w-8 bg-davka-accent/50 mt-1"></div>
-                        </div>
-                        <div class="text-right min-w-0 flex-1">
-                            <p class="text-[9px] text-gray-500 font-bold uppercase tracking-widest mb-0.5 text-right">Asal</p>
-                            <h4 class="text-lg font-black text-white leading-none truncate">${order.origin}</h4>
-                            <p class="text-[9px] text-white/60 mt-1 font-bold">War: ${warDateReturn}</p>
-                        </div>
-                    </div>
-                    <div class="mt-2 pt-2 border-t border-white/5 flex justify-between items-center">
-                         <span class="text-[9px] bg-davka-accent/20 text-davka-accent px-2 py-0.5 rounded text-center font-bold">${order.returnTrain}</span>
-                    </div>
-                </div>
-            </div>`;
-        } else {
-            // One Way Modern
-            routeHtml = `
-            <div class="relative bg-black/40 rounded-2xl p-4 border border-white/5 my-4 overflow-hidden shadow-inner">
-                 <div class="absolute top-0 right-0 p-2 opacity-10"><i class="fas fa-ticket-alt text-4xl"></i></div>
-                 <div class="flex justify-between items-center relative z-10">
-                     <div class="text-left flex-1 min-w-0">
-                         <div class="text-[10px] text-gray-500 font-bold tracking-widest mb-1">ASAL</div>
-                         <div class="text-xl font-black text-white leading-none truncate">${order.origin}</div>
-                         <div class="text-[10px] text-davka-orange font-bold mt-1 bg-davka-orange/10 inline-block px-1 rounded">${dateDepart}</div>
-                     </div>
-                     
-                     <div class="flex-none px-3 flex flex-col items-center justify-center w-16">
-                         <div class="w-full border-t-2 border-dashed border-gray-600 relative">
-                            <i class="fas fa-plane transform rotate-45 absolute -top-2 left-1/2 -translate-x-1/2 bg-davka-bg px-1 text-[10px] text-gray-400"></i>
-                         </div>
-                         <div class="text-[8px] text-gray-500 mt-2 font-mono">ONE WAY</div>
-                     </div>
-
-                     <div class="text-right flex-1 min-w-0">
-                         <div class="text-[10px] text-gray-500 font-bold tracking-widest mb-1">TUJUAN</div>
-                         <div class="text-xl font-black text-white leading-none truncate">${order.dest}</div>
-                         <div class="text-[10px] text-gray-400 mt-1 font-bold">War: ${warDateDepart}</div>
-                     </div>
-                 </div>
-                 <div class="mt-3 pt-2 border-t border-white/5 flex justify-between items-center">
-                    <span class="text-[10px] text-gray-500"><i class="fas fa-train mr-1"></i> ${order.train}</span>
-                 </div>
-            </div>`;
+        let routeIcon = '<i class="fas fa-arrow-right text-[9px] mx-1 opacity-50"></i>'; 
+        if (order.tripType === 'round_trip') {
+            routeIcon = '<i class="fas fa-exchange-alt text-[9px] mx-1 text-blue-400"></i>';
         }
-        
-        const settlementOptions = ["-", "Tunai", "Transfer CIMB Niaga", "Transfer Seabank", "Dana", "Gopay", "Ovo", "ShopeePay"];
-        let optionsHtml = settlementOptions.map(opt => `<option value="${opt}" ${order.settlementMethod === opt ? 'selected' : ''}>${opt === '-' ? 'Belum Lunas' : opt}</option>`).join('');
 
-        const card = document.createElement('div');
-        card.className = `glass p-5 rounded-3xl border-l-4 ${statusColor} relative overflow-hidden group transition-all duration-300 hover:shadow-glow mb-4`;
+        const routeInfo = `${order.origin || '?'} ${routeIcon} ${order.dest || '?'}`;
+
+        const item = document.createElement('div');
+        item.className = `rounded-xl border ${statusColorClass.split(' ')[1]} ${statusColorClass.split(' ')[0]} overflow-hidden mb-2 transition-all duration-300 active:scale-95`;
         
-        // --- 1. UPDATE: LAYOUT TAGIHAN TIDAK BERTABRAKAN (STACKED MODERN) ---
-        const priceSection = `
-        <div class="bg-gradient-to-br from-davka-surface to-black rounded-xl p-4 border border-white/10 mt-2 mb-4 relative overflow-hidden">
-            <div class="absolute -right-6 -top-6 w-20 h-20 bg-davka-orange/5 blur-2xl rounded-full"></div>
-            
-            <div class="flex justify-between items-end border-b border-white/5 pb-3 mb-3 relative z-10">
-                <span class="text-[10px] text-gray-400 font-bold tracking-widest uppercase">Total Tagihan</span>
-                <span class="text-xl font-black text-white tracking-tight drop-shadow-md">${formatRupiah(order.price || 0)}</span>
+        item.onclick = function() { openDetailView(order.id); };
+
+        const mainRow = `
+        <div class="flex items-center justify-between p-3 cursor-pointer select-none relative">
+            <div class="absolute left-0 top-0 bottom-0 w-1 ${indicatorColor}"></div>
+            <div class="flex items-center gap-3 pl-2 overflow-hidden flex-1">
+                <div class="w-7 h-7 rounded-lg bg-black/20 flex items-center justify-center font-mono text-xs font-bold ${statusColorClass.split(' ')[2]} shrink-0 border border-white/5">
+                    ${displayNo}
+                </div>
+                <div class="min-w-0 flex-1">
+                    <div class="flex items-baseline gap-2">
+                         <h4 class="text-xs font-bold text-white truncate leading-tight">${displayName}</h4>
+                    </div>
+                    <p class="text-[10px] text-gray-400 truncate mt-0.5 font-medium flex items-center">
+                        ${routeInfo}
+                    </p>
+                </div>
             </div>
-
-            <div class="flex items-center relative z-10">
-                <div class="flex-1 pr-4 border-r border-white/10">
-                    <div class="flex justify-between items-center mb-1">
-                        <span class="text-[9px] text-davka-orange uppercase font-bold">Uang Muka (DP)</span>
-                        <i class="fas fa-coins text-[10px] text-davka-orange/50"></i>
-                    </div>
-                    <p class="text-sm font-bold text-gray-200">${formatRupiah(order.fee || 0)}</p>
+            <div class="flex items-center gap-3 shrink-0 pl-2">
+                <div class="text-right">
+                     <p class="text-[9px] ${statusColorClass.split(' ')[2]} font-bold uppercase tracking-wide opacity-80">Berangkat</p>
+                     <p class="text-xs font-bold text-white">${dateDepart}</p>
                 </div>
-                
-                <div class="flex-1 pl-4">
-                    <div class="flex justify-between items-center mb-1">
-                        <span class="text-[9px] text-gray-400 uppercase font-bold">Sisa Pelunasan</span>
-                         ${remaining <= 0 ? '<i class="fas fa-check-circle text-[10px] text-green-500"></i>' : '<i class="fas fa-exclamation-circle text-[10px] text-red-500"></i>'}
-                    </div>
-                    <p class="text-sm font-black ${remaining <= 0 ? 'text-green-400' : 'text-red-500'}">${formatRupiah(remaining)}</p>
-                </div>
+                <i class="fas fa-chevron-right text-white/30 text-xs"></i>
             </div>
         </div>`;
 
-        card.innerHTML = `
-            <div class="flex justify-between items-start">
-                <div class="flex items-center gap-3 w-[70%]">
-                    <div class="w-10 h-10 min-w-[2.5rem] rounded-full bg-gradient-to-br from-gray-700 to-black flex items-center justify-center border border-white/10 shadow-lg"><span class="font-bold text-white text-sm">${displayName.charAt(0).toUpperCase()}</span></div>
-                    <div class="overflow-hidden"><h3 class="font-bold text-white text-sm leading-tight truncate">${displayName}</h3><p class="text-[10px] text-gray-400">${paxCount} Penumpang</p></div>
-                </div>
-                <div onclick="toggleStatus(${order.id})" class="cursor-pointer active:scale-95 transition-transform shrink-0">${statusBadge}</div>
-            </div>
-            
-            ${routeHtml}
-            ${priceSection}
-
-            <div class="space-y-3 mb-4">
-                <select onchange="updateSettlement(${order.id}, this.value)" class="w-full bg-davka-bg border border-white/10 rounded-lg text-[10px] text-white p-2 outline-none focus:border-davka-orange transition-colors cursor-pointer hover:bg-white/5">${optionsHtml}</select>
-                <div class="grid grid-cols-2 gap-2">
-                    ${renderUploadBtnHTML(order.id, 'settlement', order.settlementProof, 'Bukti Lunas')}
-                    ${renderUploadBtnHTML(order.id, 'kai_ticket', order.kaiTicketFile, 'Tiket KAI')}
-                </div>
-            </div>
-            <div class="glass p-1 rounded-2xl flex justify-between items-center text-center shadow-lg mt-4">
-                <button onclick="editOrder(${order.id})" class="flex-1 py-3 hover:bg-white/5 rounded-xl transition-colors group"><p class="text-[10px] text-gray-400 font-bold uppercase mb-1 group-hover:text-white">Edit</p><i class="fas fa-edit text-lg text-blue-400 group-hover:scale-110 transition-transform"></i></button>
-                <div class="w-px h-8 bg-white/10"></div>
-                <button onclick="deleteOrder(${order.id})" class="flex-1 py-3 hover:bg-white/5 rounded-xl transition-colors group"><p class="text-[10px] text-gray-400 font-bold uppercase mb-1 group-hover:text-white">Hapus</p><i class="fas fa-trash text-lg text-red-500 group-hover:scale-110 transition-transform"></i></button>
-                <div class="w-px h-8 bg-white/10"></div>
-                <button onclick="printReceipt(${order.id})" class="flex-1 py-3 hover:bg-white/5 rounded-xl transition-colors group"><p class="text-[10px] text-gray-400 font-bold uppercase mb-1 group-hover:text-white">Cetak</p><i class="fas fa-print text-lg text-davka-orange group-hover:scale-110 transition-transform"></i></button>
-            </div>`;
-        container.appendChild(card);
+        item.innerHTML = mainRow;
+        container.appendChild(item);
     });
 }
+
+// UPDATE: FIX RENDER UPLOAD BTN AGAR TIDAK SETENGAH
+// Menggunakan h-full dan w-full agar mengikuti parent container di HTML (h-32)
 function renderUploadBtnHTML(id, type, file, label) {
     if(file) {
-        return `<div class="relative h-20 w-full rounded-xl overflow-hidden border border-white/10 group cursor-pointer">
-            <img src="${file}" class="w-full h-full object-cover opacity-80 group-hover:opacity-100 transition-all transform group-hover:scale-110" onclick="showImageModal(this.src, true); event.stopPropagation();">
-            <div class="absolute inset-0 bg-black/40 flex items-center justify-center pointer-events-none"><p class="text-[9px] text-white font-bold drop-shadow-md text-center px-1">${label}</p></div>
-            <button onclick="triggerHistoryUpload(${id}, '${type}')" class="absolute top-1 right-1 bg-black/60 text-white rounded-full w-6 h-6 flex items-center justify-center hover:bg-davka-orange transition-colors z-10"><i class="fas fa-pen text-[9px]"></i></button>
+        return `<div class="relative w-full h-full rounded-lg overflow-hidden border border-white/10 group cursor-pointer bg-black/40">
+            <img src="${file}" class="w-full h-full object-cover opacity-60 group-hover:opacity-100 transition-all" onclick="showImageModal(this.src, true); event.stopPropagation();">
+            <div class="absolute inset-0 flex items-center justify-center pointer-events-none"><p class="text-[9px] text-white font-bold drop-shadow-md px-1 text-center leading-tight">${label}</p></div>
+            <button onclick="triggerHistoryUpload(${id}, '${type}')" class="absolute top-1 right-1 bg-black/60 text-white rounded-full w-5 h-5 flex items-center justify-center hover:bg-davka-orange transition-colors z-10"><i class="fas fa-pen text-[8px]"></i></button>
         </div>`;
     } else {
-        return `<button onclick="triggerHistoryUpload(${id}, '${type}')" class="h-20 bg-white/5 border border-white/10 border-dashed text-gray-400 rounded-xl text-[10px] hover:bg-white/10 hover:border-davka-orange/50 hover:text-white transition-all flex flex-col items-center justify-center gap-2 group">
-            <div class="w-8 h-8 rounded-full bg-white/5 flex items-center justify-center group-hover:bg-davka-orange group-hover:text-white transition-colors"><i class="fas fa-cloud-upload-alt"></i></div><span>${label}</span>
+        return `<button onclick="triggerHistoryUpload(${id}, '${type}')" class="w-full h-full bg-white/5 border border-white/10 border-dashed text-gray-500 rounded-lg text-[9px] hover:bg-white/10 hover:border-white/30 hover:text-gray-300 transition-all flex flex-col items-center justify-center gap-1 group">
+            <i class="fas fa-upload text-xs mb-0.5"></i><span>${label}</span>
         </button>`;
     }
 }
+
 function renderStats() {
     const now = new Date();
-    // Gunakan filter berdasarkan BULAN SAAT INI
     const currentMonth = now.getMonth();
     const currentYear = now.getFullYear();
 
-    let ticketCountMonth = 0; // Total PENUMPANG terjual (sukses) bulan ini
-    let revenueMonth = 0;     // Total OMSET (price) sukses bulan ini
-    
-    let p=0, s=0, c=0; // Status counter
+    let ticketCountMonth = 0; 
+    let revenueMonth = 0;     
+    let p=0, s=0, c=0; 
     
     if(orders) {
         orders.forEach(o => {
-            // Hitung status global
             if(o.status==='pending') p++; 
             else if(o.status==='success') s++; 
             else c++;
 
-            // Parsing tanggal (handle created_at dari Supabase atau timestamp lokal)
             let createdDate = o.created_at ? new Date(o.created_at) : new Date(o.id);
             const isCurrentMonth = createdDate.getMonth() === currentMonth && createdDate.getFullYear() === currentYear;
 
-            // Logika Statistik Utama: HANYA jika SUKSES dan BULAN INI
             if(o.status === 'success' && isCurrentMonth) {
-                // 1. Hitung Penumpang (bukan jumlah transaksi)
                 let paxCount = 1;
                 if(Array.isArray(o.passengers)) paxCount = o.passengers.length;
-                else if(o.name) paxCount = 1; // Fallback legacy
+                else if(o.name) paxCount = 1; 
                 ticketCountMonth += paxCount;
-
-                // 2. Hitung Omset (Total Price)
                 revenueMonth += (parseFloat(o.price) || 0);
             }
         });

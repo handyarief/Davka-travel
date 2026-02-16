@@ -167,13 +167,14 @@ function handleInputEnter(e, currentIndex, allElements) {
 }
 
 // --- UPDATE LOGIC PENUMPANG (DEWASA & BAYI) ---
+// UPDATED: Menambahkan Field Tanggal Lahir (DOB)
 
 window.updatePassengerForms = function() {
     const adultCount = parseInt(document.getElementById('inpPaxCount').value) || 1;
     const infantCount = parseInt(document.getElementById('inpInfantCount').value) || 0;
     const container = document.getElementById('passengerForms'); 
     
-    // Simpan data lama agar tidak hilang saat resize
+    // Simpan data lama agar tidak hilang saat resize (Termasuk DOB)
     const existingItems = document.querySelectorAll('.passenger-item');
     let storedAdults = [];
     let storedInfants = [];
@@ -182,10 +183,14 @@ window.updatePassengerForms = function() {
         const type = el.getAttribute('data-type');
         const name = el.querySelector('.pax-name').value;
         const nik = el.querySelector('.pax-nik').value;
+        // UPDATE: Ambil data tanggal lahir jika ada
+        const dobInput = el.querySelector('.pax-dob');
+        const dob = dobInput ? dobInput.value : '';
+
         if(type === 'infant') {
-            storedInfants.push({name, nik});
+            storedInfants.push({name, nik, dob});
         } else {
-            storedAdults.push({name, nik});
+            storedAdults.push({name, nik, dob});
         }
     });
 
@@ -195,6 +200,7 @@ window.updatePassengerForms = function() {
     for(let i = 1; i <= adultCount; i++) {
         const valName = storedAdults[i-1] ? storedAdults[i-1].name : '';
         const valNik = storedAdults[i-1] ? storedAdults[i-1].nik : '';
+        const valDob = storedAdults[i-1] ? storedAdults[i-1].dob : ''; // Retrieve DOB
         
         html += `
         <div class="passenger-item border border-white/10 rounded-xl p-3 bg-white/5 relative group hover:border-davka-orange/50 transition-colors" data-type="adult">
@@ -204,7 +210,10 @@ window.updatePassengerForms = function() {
             </p>
             <div class="space-y-2 pl-2">
                 <input type="text" value="${valName}" class="pax-name w-full bg-davka-bg border border-davka-border rounded-lg p-2 text-sm text-white focus:border-davka-orange focus:outline-none placeholder-gray-600" placeholder="Nama Lengkap (Sesuai KTP)" autocapitalize="characters">
-                <input type="number" value="${valNik}" class="pax-nik w-full bg-davka-bg border border-davka-border rounded-lg p-2 text-sm text-white focus:border-davka-orange focus:outline-none placeholder-gray-600" placeholder="NIK">
+                <div class="grid grid-cols-2 gap-2">
+                    <input type="number" value="${valNik}" class="pax-nik w-full bg-davka-bg border border-davka-border rounded-lg p-2 text-sm text-white focus:border-davka-orange focus:outline-none placeholder-gray-600" placeholder="NIK / Paspor">
+                    <input type="text" onfocus="(this.type='date')" onblur="(this.type='text')" value="${valDob}" class="pax-dob w-full bg-davka-bg border border-davka-border rounded-lg p-2 text-sm text-white focus:border-davka-orange focus:outline-none placeholder-gray-600" placeholder="Tgl Lahir">
+                </div>
             </div>
         </div>`;
     }
@@ -213,6 +222,7 @@ window.updatePassengerForms = function() {
     for(let i = 1; i <= infantCount; i++) {
         const valName = storedInfants[i-1] ? storedInfants[i-1].name : '';
         const valNik = storedInfants[i-1] ? storedInfants[i-1].nik : '';
+        const valDob = storedInfants[i-1] ? storedInfants[i-1].dob : ''; // Retrieve DOB
         
         html += `
         <div class="passenger-item border border-pink-500/30 rounded-xl p-3 bg-pink-500/5 relative group hover:border-pink-500 transition-colors" data-type="infant">
@@ -222,7 +232,10 @@ window.updatePassengerForms = function() {
             </p>
             <div class="space-y-2 pl-2">
                 <input type="text" value="${valName}" class="pax-name w-full bg-davka-bg border border-davka-border rounded-lg p-2 text-sm text-white focus:border-pink-500 focus:outline-none placeholder-gray-600" placeholder="Nama Bayi" autocapitalize="characters">
-                <input type="number" value="${valNik}" class="pax-nik w-full bg-davka-bg border border-davka-border rounded-lg p-2 text-sm text-white focus:border-pink-500 focus:outline-none placeholder-gray-600" placeholder="NIK / Tgl Lahir">
+                <div class="grid grid-cols-2 gap-2">
+                    <input type="number" value="${valNik}" class="pax-nik w-full bg-davka-bg border border-davka-border rounded-lg p-2 text-sm text-white focus:border-pink-500 focus:outline-none placeholder-gray-600" placeholder="NIK / KIA">
+                    <input type="text" onfocus="(this.type='date')" onblur="(this.type='text')" value="${valDob}" class="pax-dob w-full bg-davka-bg border border-davka-border rounded-lg p-2 text-sm text-white focus:border-pink-500 focus:outline-none placeholder-gray-600" placeholder="Tgl Lahir">
+                </div>
             </div>
         </div>`;
     }
@@ -241,11 +254,13 @@ window.getPassengersFromForm = function() {
     items.forEach(el => {
         const nameInput = el.querySelector('.pax-name');
         const nikInput = el.querySelector('.pax-nik');
+        const dobInput = el.querySelector('.pax-dob'); // UPDATE: Capture DOB
         const type = el.getAttribute('data-type'); // 'adult' or 'infant'
         
         paxList.push({
             name: nameInput.value.toUpperCase() || (type === 'infant' ? 'BAYI' : 'PENUMPANG'),
             nik: nikInput.value || '-',
+            dob: dobInput ? dobInput.value : '', // Simpan DOB
             type: type 
         });
     });
@@ -256,9 +271,10 @@ window.getPassengersFromForm = function() {
 window.calcTotalFromPax = function() {
     const pricePerPax = parseFloat(document.getElementById('inpPricePerPax').value) || 0;
     const adultCount = parseInt(document.getElementById('inpPaxCount').value) || 1;
+    // const infantCount = parseInt(document.getElementById('inpInfantCount').value) || 0; // TIDAK DIGUNAKAN UNTUK HARGA
     
-    // LOGIC: Harga otomatis hanya dikali jumlah DEWASA.
-    // Asumsi: Bayi biasanya gratis/reduksi (bisa diedit manual di Total Harga jika berbayar).
+    // LOGIC STRICT: Harga otomatis hanya dikali jumlah DEWASA.
+    // Bayi (infantCount) diabaikan dalam perkalian harga (Gratis).
     if (pricePerPax > 0) {
         document.getElementById('inpPrice').value = pricePerPax * adultCount;
         calcRemaining(); 
@@ -374,7 +390,7 @@ orderForm.addEventListener('submit', async (e) => {
             contactName: document.getElementById('inpContactName').value.toUpperCase(),
             contactPhone: document.getElementById('inpContactPhone').value,
             address: document.getElementById('inpAddress').value.toUpperCase(),
-            passengers: passengerData, // Array Object dengan type 'adult'/'infant'
+            passengers: passengerData, // Array Object dengan type 'adult'/'infant' + dob
             origin: document.getElementById('inpOrigin').value.toUpperCase(),
             dest: document.getElementById('inpDest').value.toUpperCase(),
             date: document.getElementById('inpDate').value,
@@ -492,7 +508,7 @@ window.navTo = function(pageId) {
     }, 400); 
 }
 
-// --- EDIT ORDER LOGIC (UPDATED FOR MULTI PASSENGER) ---
+// --- EDIT ORDER LOGIC (UPDATED FOR MULTI PASSENGER & DOB) ---
 window.editOrder = function(id) {
     const index = orders.findIndex(o => o.id === id);
     if (index === -1) return;
@@ -509,7 +525,7 @@ window.editOrder = function(id) {
         paxList = data.passengers;
     } else if (data.name) {
         // Backward compatibility untuk data lama
-        paxList = [{name: data.name, nik: data.nik || '-', type: 'adult'}];
+        paxList = [{name: data.name, nik: data.nik || '-', dob: '', type: 'adult'}];
     }
     
     // Filter Dewasa & Bayi
@@ -533,14 +549,18 @@ window.editOrder = function(id) {
             const type = el.getAttribute('data-type');
             const nameInput = el.querySelector('.pax-name');
             const nikInput = el.querySelector('.pax-nik');
+            // UPDATE: Populate DOB
+            const dobInput = el.querySelector('.pax-dob');
 
             if (type === 'adult' && adults[adultIdx]) {
                 nameInput.value = adults[adultIdx].name;
                 nikInput.value = adults[adultIdx].nik;
+                if(dobInput) dobInput.value = adults[adultIdx].dob || '';
                 adultIdx++;
             } else if (type === 'infant' && infants[infantIdx]) {
                 nameInput.value = infants[infantIdx].name;
                 nikInput.value = infants[infantIdx].nik;
+                if(dobInput) dobInput.value = infants[infantIdx].dob || '';
                 infantIdx++;
             }
         });
@@ -617,7 +637,6 @@ function toggleLoader(show) {
         loaderTimeout = setTimeout(() => { if (!loader.classList.contains('hidden')) toggleLoader(false); }, 15000); 
     } else loader.classList.add('hidden');
 }
-
 window.handleUploadZoneClick = function(zoneId, inputId) {
     const zone = document.getElementById(zoneId);
     const hint = document.getElementById(zoneId.replace('zone', 'hint')); 
@@ -815,6 +834,7 @@ function renderReceiptToDOM(order) {
     document.getElementById('rec-settlement').innerText = formatRupiah(order.price - order.fee);
     document.getElementById('rec-method').innerText = (order.settlementMethod && order.settlementMethod !== '-') ? order.settlementMethod.toUpperCase() : order.paymentMethod.toUpperCase();
 }
+
 function renderTicketToDOM(data) {
     document.getElementById('ticket-id').innerText = "#" + data.id.toString().slice(-6);
     document.getElementById('ticket-issued-date').innerText = new Date().toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' });
@@ -837,7 +857,7 @@ function renderTicketToDOM(data) {
         document.getElementById('ticket-war-date-return').innerText = formatDateIndo(data.returnWarDate); 
     } else returnBox.classList.add('hidden');
     
-    // UPDATE: Render Penumpang Tiket dengan Label Bayi
+    // UPDATE: Render Penumpang Tiket dengan Label Bayi & Tanggal Lahir (DOB)
     let paxHtml = '';
     const paxList = data.passengers;
     const adults = paxList.filter(p => !p.type || p.type === 'adult').length;
@@ -847,7 +867,7 @@ function renderTicketToDOM(data) {
     
     // Harga per pax di tiket hanya estimasi rata-rata dari total
     const totalHead = adults + infants; 
-    const pricePerPax = data.price > 0 ? Math.round(data.price / (adults || 1)) : 0; // Asumsi harga base on adult
+    const pricePerPax = data.price > 0 ? Math.round(data.price / (adults || 1)) : 0; 
     
     document.getElementById('ticket-val-price-per-pax').innerText = formatRupiah(pricePerPax);
     
@@ -855,12 +875,13 @@ function renderTicketToDOM(data) {
         const isInfant = p.type === 'infant';
         const icon = isInfant ? 'fa-baby text-pink-500' : 'fa-user text-gray-500';
         const typeBadge = isInfant ? '<span class="ml-2 text-[8px] bg-pink-100 text-pink-600 px-1 rounded font-bold uppercase tracking-wider">BAYI</span>' : '';
+        const dobText = p.dob ? ` | LHR: ${p.dob}` : ''; // Format DOB untuk tiket
         
         paxHtml += `<div class="flex items-center gap-3 border-b border-gray-100 pb-2 last:border-0 last:pb-0">
                 <div class="w-6 h-6 rounded-full bg-[#f8fafc] border border-gray-200 flex items-center justify-center text-[9px] font-bold shrink-0">
                     <i class="fas ${icon}"></i>
                 </div>
-                <div class="flex-1 min-w-0"><p class="text-xs font-black uppercase text-[#0b1c38] break-words leading-tight flex items-center">${p.name} ${typeBadge}</p><p class="text-[9px] text-gray-400 font-mono tracking-wider">NIK: ${p.nik}</p></div>
+                <div class="flex-1 min-w-0"><p class="text-xs font-black uppercase text-[#0b1c38] break-words leading-tight flex items-center">${p.name} ${typeBadge}</p><p class="text-[9px] text-gray-400 font-mono tracking-wider">NIK: ${p.nik}${dobText}</p></div>
             </div>`;
     });
     document.getElementById('ticket-pax-list-vertical').innerHTML = paxHtml;
@@ -869,6 +890,7 @@ function renderTicketToDOM(data) {
     document.getElementById('ticket-val-fee').innerText = formatRupiah(data.fee);     
     document.getElementById('ticket-val-remaining').innerText = formatRupiah(data.remaining);
 }
+
 function captureAndShowModal(elementId) {
     const el = document.getElementById(elementId);
     html2canvas(el, { scale: 3, useCORS: true, allowTaint: true, backgroundColor: "#ffffff" })
@@ -930,7 +952,7 @@ window.resetForm = function() {
     enableSmoothInputUX();
 }
 
-// --- LOGIC DETAIL VIEW (UPDATED: TAB SYSTEM & INFANT) ---
+// --- LOGIC DETAIL VIEW (UPDATED: TAB SYSTEM & INFANT & DOB) ---
 
 window.openDetailView = function(orderId) {
     const order = orders.find(o => o.id === orderId);
@@ -1006,15 +1028,17 @@ window.openDetailView = function(orderId) {
         returnEmptyContainer.classList.remove('hidden');
     }
 
-    // 7. Populate Passengers (UPDATED)
+    // 7. Populate Passengers (UPDATED with DOB)
     let paxListHtml = '';
-    let paxArray = Array.isArray(order.passengers) ? order.passengers : (order.name ? [{name: order.name, nik: order.nik || '-', type: 'adult'}] : []);
+    let paxArray = Array.isArray(order.passengers) ? order.passengers : (order.name ? [{name: order.name, nik: order.nik || '-', dob: '', type: 'adult'}] : []);
     
     paxArray.forEach((p, idx) => {
         const isInfant = p.type === 'infant';
         const iconColor = isInfant ? 'text-pink-400 bg-pink-500/10' : 'text-gray-300 bg-white/10';
         const icon = isInfant ? 'fa-baby' : 'fa-user';
         const label = isInfant ? '<span class="text-[8px] ml-2 px-1.5 py-0.5 rounded bg-pink-500/20 text-pink-400 border border-pink-500/30">BAYI</span>' : '';
+        // UPDATE: Format tampilan DOB di detail history
+        const dobDisplay = p.dob ? `<span class="ml-2 text-davka-orange">| LHR: ${p.dob}</span>` : '';
 
         paxListHtml += `
             <div class="flex items-center gap-3 border-b border-white/5 pb-2 last:border-0 last:pb-0">
@@ -1023,7 +1047,7 @@ window.openDetailView = function(orderId) {
                 </div>
                 <div>
                     <p class="text-xs font-bold text-white uppercase flex items-center">${p.name} ${label}</p>
-                    <p class="text-[9px] text-gray-500 font-mono">NIK: ${p.nik}</p>
+                    <p class="text-[9px] text-gray-500 font-mono">NIK: ${p.nik} ${dobDisplay}</p>
                 </div>
             </div>
         `;
@@ -1177,11 +1201,18 @@ function renderStats() {
             const isCurrentMonth = createdDate.getMonth() === currentMonth && createdDate.getFullYear() === currentYear;
 
             if(o.status === 'success' && isCurrentMonth) {
-                // Hitung total penumpang (Dewasa+Bayi) atau hanya Dewasa tergantung kebijakan.
-                // Di sini kita hitung semua nyawa.
-                let paxCount = 1;
-                if(Array.isArray(o.passengers)) paxCount = o.passengers.length;
-                else if(o.name) paxCount = 1; 
+                // UPDATE LOGIC: HANYA MENGHITUNG PENUMPANG DEWASA
+                // Bayi (type === 'infant') tidak dihitung sebagai tiket terjual karena gratis
+                
+                let paxCount = 1; // Default fallback data lama (1 orang dewasa)
+                
+                if(Array.isArray(o.passengers)) {
+                    // Filter hanya yang tipe dewasa (atau undefined yg dianggap dewasa)
+                    const adultsOnly = o.passengers.filter(pass => !pass.type || pass.type === 'adult');
+                    paxCount = adultsOnly.length;
+                } else if(o.name) {
+                    paxCount = 1; 
+                }
                 
                 ticketCountMonth += paxCount;
                 revenueMonth += (parseFloat(o.price) || 0);

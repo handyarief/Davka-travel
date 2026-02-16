@@ -1,14 +1,11 @@
-/* style.css - Full Content */
 @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&family=Cinzel:wght@400;700&family=Courier+Prime:wght@400;700&display=swap');
 
 /* === BASE RESET & TYPOGRAPHY === */
 html {
     height: 100%; 
-    overflow: hidden; /* Mengunci HTML agar scroll hanya di Body */
+    overflow: hidden; 
     -webkit-text-size-adjust: 100%;
     touch-action: pan-y;
-    
-    /* UX UPDATE: Global Smooth Scroll untuk dukungan Auto-Centering JS */
     scroll-behavior: smooth; 
 }
 
@@ -20,19 +17,14 @@ body {
     -webkit-font-smoothing: antialiased; 
     -moz-osx-font-smoothing: grayscale;
     text-rendering: optimizeLegibility;
-    
-    /* APP SHELL PHYSICS */
     height: 100%;
     overflow-y: auto; 
-    -webkit-overflow-scrolling: touch; /* Native iOS Momentum */
+    -webkit-overflow-scrolling: touch; 
     scroll-behavior: smooth;
     overscroll-behavior-y: none;
-    
-    /* Performance Booster */
     will-change: scroll-position;
 }
 
-/* Custom Scrollbar - Hidden but functional */
 ::-webkit-scrollbar {
     width: 0px;
     background: transparent;
@@ -89,7 +81,6 @@ body {
     height: 100%;
 }
 
-/* UX UPDATE: Input Animation Refinement */
 .input-modern {
     background-color: rgba(255, 255, 255, 0.05) !important;
     border: 1px solid rgba(255, 255, 255, 0.15) !important;
@@ -97,14 +88,9 @@ body {
     font-weight: 700 !important;
     font-size: 0.95rem !important;
     border-radius: 0.75rem;
-    
-    /* Transisi diperhalus (0.5s) agar perubahan fokus terasa fluid */
     transition: all 0.5s cubic-bezier(0.22, 1, 0.36, 1);
-    
     padding: 0.75rem 1rem;
     text-transform: uppercase; 
-    
-    /* Pastikan scroll margin cukup agar tidak tertutup header saat auto-center */
     scroll-margin-top: 150px;
 }
 
@@ -119,11 +105,9 @@ input[type="email"],
 textarea,
 select {
     text-transform: uppercase;
-    /* Tambahan scroll margin untuk elemen native lainnya */
     scroll-margin-top: 150px;
 }
 
-/* UPDATED: Scroll margin khusus untuk Zona Upload agar saat diklik posisinya pas di tengah/atas keyboard */
 .upload-zone-base {
     scroll-margin-top: 180px; 
 }
@@ -132,15 +116,14 @@ input::placeholder, textarea::placeholder {
     text-transform: none;
 }
 
-/* UX UPDATE: Focus State yang lebih lembut */
 .input-modern:focus,
 input:focus, 
 textarea:focus, 
 select:focus {
     background-color: rgba(255, 255, 255, 0.1) !important;
     border-color: #ff5400 !important;
-    box-shadow: 0 0 25px rgba(255, 84, 0, 0.15); /* Glow lebih soft */
-    transform: scale(1.01); /* Zoom in sangat halus (mikro interaksi) */
+    box-shadow: 0 0 25px rgba(255, 84, 0, 0.15); 
+    transform: scale(1.01); 
     outline: none;
     position: relative;
     z-index: 20;
@@ -198,7 +181,7 @@ select:focus {
 /* === POST-VIDEO LOADER === */
 .video-loader-wrapper {
     position: absolute;
-    bottom: 12%; /* UPDATED: Diturunkan dari 20% ke 12% agar lebih ke bawah tapi aman dari tombol SKIP */
+    bottom: 12%; 
     left: 50%;
     transform: translateX(-50%);
     width: 70%;
@@ -324,57 +307,52 @@ input[type="date"]::-webkit-calendar-picker-indicator:hover {
     opacity: 1;
 }
 
-#ticket-render-area {
-    position: fixed;
-    top: 0;
-    left: -9999px;
-    z-index: -100;
-    background-color: #ffffff !important; 
-    color: #1e293b;
-    -webkit-print-color-adjust: exact !important;   
-    print-color-adjust: exact !important;
-    overflow: hidden;
-}
-
-#ticket-render-area img {
-    max-width: 100%;
-    display: block;
-}
-
 .font-serif {
     font-family: 'Cinzel', serif;
 }
 
+/* === NEW: FUTURISTIC INVOICE STYLES === */
 #receipt-render-area {
     position: fixed;
     top: 0;
     left: -9999px;
     z-index: -100;
-    background-color: #ffffff !important; 
-    color: #000000 !important;
-    font-family: 'Courier Prime', 'Courier New', monospace;
+    background-color: #0f172a !important; 
+    color: #ffffff !important;
+    font-family: 'Plus Jakarta Sans', sans-serif;
     -webkit-print-color-adjust: exact !important;
     print-color-adjust: exact !important;
-    width: 380px;
-    padding-bottom: 20px;
 }
 
-.stamp-lunas {
+/* Update Stamp Style: Watermark Effect */
+.stamp-lunas-modern {
     position: absolute;
     top: 50%; 
     left: 50%;
-    transform: translate(-50%, -50%) rotate(-15deg);
+    transform: translate(-50%, -50%) rotate(-15deg) scale(0.9);
     display: none; 
-    z-index: 40; 
+    z-index: 5; /* Low z-index to stay behind text */
     pointer-events: none;
-    width: 200px;
+    width: 300px;
     height: auto;
-    opacity: 0.25; 
-    filter: contrast(1.2) sepia(0.2) saturate(1.5);
+    
+    /* Watermark Effect Key Properties */
+    opacity: 0.15; /* Sangat transparan */
+    mix-blend-mode: hard-light; /* Blend halus dengan background gelap */
+    filter: drop-shadow(0 0 10px rgba(255,255,255,0.2));
+    
+    transition: all 0.5s ease;
+    border-radius: 50%; 
 }
 
-.stamp-lunas.visible {
+.stamp-lunas-modern.visible {
     display: block !important;
+    animation: stampBounce 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+}
+
+@keyframes stampBounce {
+    0% { transform: translate(-50%, -50%) rotate(-45deg) scale(2); opacity: 0; }
+    100% { transform: translate(-50%, -50%) rotate(-15deg) scale(0.9); opacity: 0.15; }
 }
 
 .truncate-text {

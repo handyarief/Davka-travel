@@ -165,10 +165,7 @@ function handleInputEnter(e, currentIndex, allElements) {
         }
     }
 }
-
 // --- UPDATE LOGIC PENUMPANG (DEWASA & BAYI) ---
-// UPDATED: Menambahkan Field Tanggal Lahir (DOB)
-
 window.updatePassengerForms = function() {
     const adultCount = parseInt(document.getElementById('inpPaxCount').value) || 1;
     const infantCount = parseInt(document.getElementById('inpInfantCount').value) || 0;
@@ -183,7 +180,6 @@ window.updatePassengerForms = function() {
         const type = el.getAttribute('data-type');
         const name = el.querySelector('.pax-name').value;
         const nik = el.querySelector('.pax-nik').value;
-        // UPDATE: Ambil data tanggal lahir jika ada
         const dobInput = el.querySelector('.pax-dob');
         const dob = dobInput ? dobInput.value : '';
 
@@ -200,7 +196,7 @@ window.updatePassengerForms = function() {
     for(let i = 1; i <= adultCount; i++) {
         const valName = storedAdults[i-1] ? storedAdults[i-1].name : '';
         const valNik = storedAdults[i-1] ? storedAdults[i-1].nik : '';
-        const valDob = storedAdults[i-1] ? storedAdults[i-1].dob : ''; // Retrieve DOB
+        const valDob = storedAdults[i-1] ? storedAdults[i-1].dob : ''; 
         
         html += `
         <div class="passenger-item border border-white/10 rounded-xl p-3 bg-white/5 relative group hover:border-davka-orange/50 transition-colors" data-type="adult">
@@ -222,7 +218,7 @@ window.updatePassengerForms = function() {
     for(let i = 1; i <= infantCount; i++) {
         const valName = storedInfants[i-1] ? storedInfants[i-1].name : '';
         const valNik = storedInfants[i-1] ? storedInfants[i-1].nik : '';
-        const valDob = storedInfants[i-1] ? storedInfants[i-1].dob : ''; // Retrieve DOB
+        const valDob = storedInfants[i-1] ? storedInfants[i-1].dob : ''; 
         
         html += `
         <div class="passenger-item border border-pink-500/30 rounded-xl p-3 bg-pink-500/5 relative group hover:border-pink-500 transition-colors" data-type="infant">
@@ -241,8 +237,6 @@ window.updatePassengerForms = function() {
     }
 
     container.innerHTML = html;
-    
-    // Recalculate Total
     calcTotalFromPax();
     setTimeout(enableSmoothInputUX, 100);
 }
@@ -254,13 +248,13 @@ window.getPassengersFromForm = function() {
     items.forEach(el => {
         const nameInput = el.querySelector('.pax-name');
         const nikInput = el.querySelector('.pax-nik');
-        const dobInput = el.querySelector('.pax-dob'); // UPDATE: Capture DOB
-        const type = el.getAttribute('data-type'); // 'adult' or 'infant'
+        const dobInput = el.querySelector('.pax-dob'); 
+        const type = el.getAttribute('data-type'); 
         
         paxList.push({
             name: nameInput.value.toUpperCase() || (type === 'infant' ? 'BAYI' : 'PENUMPANG'),
             nik: nikInput.value || '-',
-            dob: dobInput ? dobInput.value : '', // Simpan DOB
+            dob: dobInput ? dobInput.value : '', 
             type: type 
         });
     });
@@ -271,17 +265,14 @@ window.getPassengersFromForm = function() {
 window.calcTotalFromPax = function() {
     const pricePerPax = parseFloat(document.getElementById('inpPricePerPax').value) || 0;
     const adultCount = parseInt(document.getElementById('inpPaxCount').value) || 1;
-    // const infantCount = parseInt(document.getElementById('inpInfantCount').value) || 0; // TIDAK DIGUNAKAN UNTUK HARGA
     
-    // LOGIC STRICT: Harga otomatis hanya dikali jumlah DEWASA.
-    // Bayi (infantCount) diabaikan dalam perkalian harga (Gratis).
     if (pricePerPax > 0) {
         document.getElementById('inpPrice').value = pricePerPax * adultCount;
         calcRemaining(); 
     }
 }
-// --- FETCH & REALTIME ---
 
+// --- FETCH & REALTIME ---
 async function fetchOrders() {
     const { data, error } = await supabase
         .from('orders')
@@ -324,7 +315,6 @@ async function fetchOrdersBg() {
         }
     }
 }
-
 // --- LOGIC UPLOAD & STORAGE ---
 async function uploadToSupabaseStorage(base64Data, fileName) {
     if (!base64Data || base64Data.startsWith('http')) return base64Data; 
@@ -381,7 +371,6 @@ orderForm.addEventListener('submit', async (e) => {
             chatUrl = await uploadToSupabaseStorage(chatBase64, `${orderId}_chat`);
         }
 
-        // AMBIL DATA PENUMPANG DARI FUNGSI PART 1
         const passengerData = getPassengersFromForm();
 
         const newOrder = {
@@ -390,13 +379,18 @@ orderForm.addEventListener('submit', async (e) => {
             contactName: document.getElementById('inpContactName').value.toUpperCase(),
             contactPhone: document.getElementById('inpContactPhone').value,
             address: document.getElementById('inpAddress').value.toUpperCase(),
-            passengers: passengerData, // Array Object dengan type 'adult'/'infant' + dob
+            passengers: passengerData, 
             origin: document.getElementById('inpOrigin').value.toUpperCase(),
             dest: document.getElementById('inpDest').value.toUpperCase(),
             date: document.getElementById('inpDate').value,
             warDate: document.getElementById('inpWarDate').value,
             train: document.getElementById('inpTrain').value.toUpperCase(),
             tripType: document.getElementById('inpTripType').value,
+            
+            // NEW FIELDS: Return Origin & Dest
+            returnOrigin: document.getElementById('inpReturnOrigin').value.toUpperCase(),
+            returnDest: document.getElementById('inpReturnDest').value.toUpperCase(),
+
             returnDate: document.getElementById('inpReturnDate').value,
             returnWarDate: document.getElementById('inpReturnWarDate').value,
             returnTrain: document.getElementById('inpReturnTrain').value.toUpperCase(),
@@ -508,7 +502,7 @@ window.navTo = function(pageId) {
     }, 400); 
 }
 
-// --- EDIT ORDER LOGIC (UPDATED FOR MULTI PASSENGER & DOB) ---
+// --- EDIT ORDER LOGIC ---
 window.editOrder = function(id) {
     const index = orders.findIndex(o => o.id === id);
     if (index === -1) return;
@@ -519,27 +513,21 @@ window.editOrder = function(id) {
     document.getElementById('inpContactPhone').value = data.contactPhone || data.phone || '';
     document.getElementById('inpAddress').value = data.address || '';
     
-    // LOGIC: Memisahkan Penumpang Dewasa & Bayi
     let paxList = [];
     if (Array.isArray(data.passengers)) {
         paxList = data.passengers;
     } else if (data.name) {
-        // Backward compatibility untuk data lama
         paxList = [{name: data.name, nik: data.nik || '-', dob: '', type: 'adult'}];
     }
     
-    // Filter Dewasa & Bayi
-    const adults = paxList.filter(p => !p.type || p.type === 'adult'); // Default adult jika type undefined
+    const adults = paxList.filter(p => !p.type || p.type === 'adult'); 
     const infants = paxList.filter(p => p.type === 'infant');
 
-    // Set nilai Dropdown
     document.getElementById('inpPaxCount').value = adults.length || 1;
     document.getElementById('inpInfantCount').value = infants.length || 0;
     
-    // Render Form Input
     updatePassengerForms(); 
     
-    // Isi Value ke Input (Pakai Timeout agar DOM ready)
     setTimeout(() => {
         const itemWrappers = document.querySelectorAll('.passenger-item');
         let adultIdx = 0;
@@ -549,7 +537,6 @@ window.editOrder = function(id) {
             const type = el.getAttribute('data-type');
             const nameInput = el.querySelector('.pax-name');
             const nikInput = el.querySelector('.pax-nik');
-            // UPDATE: Populate DOB
             const dobInput = el.querySelector('.pax-dob');
 
             if (type === 'adult' && adults[adultIdx]) {
@@ -576,6 +563,10 @@ window.editOrder = function(id) {
     toggleTripType();
     
     if(data.tripType === 'round_trip') {
+        // NEW FIELDS: Load Saved Return Origin & Dest
+        document.getElementById('inpReturnOrigin').value = data.returnOrigin || '';
+        document.getElementById('inpReturnDest').value = data.returnDest || '';
+
         document.getElementById('inpReturnDate').value = data.returnDate || '';
         document.getElementById('inpReturnWarDate').value = data.returnWarDate || '';
         document.getElementById('inpReturnTrain').value = data.returnTrain || '';
@@ -584,7 +575,6 @@ window.editOrder = function(id) {
     document.getElementById('inpPaymentMethod').value = data.paymentMethod || 'Tunai';
     document.getElementById('inpPrice').value = data.price || 0;
     
-    // Hitung estimasi harga per pax (hanya dibagi dewasa)
     const adultCount = adults.length || 1;
     const pricePerPax = data.price > 0 ? (data.price / adultCount) : 0;
     document.getElementById('inpPricePerPax').value = Math.round(pricePerPax); 
@@ -614,7 +604,6 @@ window.updateSettlement = async function(id, newVal) {
         orders[index].settlementMethod = newVal;
         orders[index].status = nextStatus;
         
-        // Refresh List & Detail
         renderOrderList(document.getElementById('searchInput').value);
         
         const isDetailOpen = !document.getElementById('page-detail').classList.contains('hidden');
@@ -627,7 +616,6 @@ window.updateSettlement = async function(id, newVal) {
         } catch(e) { console.error(e); } finally { toggleLoader(false); }
     } else toggleLoader(false);
 }
-
 // --- HELPER LAINNYA ---
 function toggleLoader(show) {
     const loader = document.getElementById('global-loader');
@@ -637,6 +625,7 @@ function toggleLoader(show) {
         loaderTimeout = setTimeout(() => { if (!loader.classList.contains('hidden')) toggleLoader(false); }, 15000); 
     } else loader.classList.add('hidden');
 }
+
 window.handleUploadZoneClick = function(zoneId, inputId) {
     const zone = document.getElementById(zoneId);
     const hint = document.getElementById(zoneId.replace('zone', 'hint')); 
@@ -717,7 +706,6 @@ function setupHistoryUploader() {
                      if (currentUploadType === 'settlement') orders[idx].settlementProof = publicUrl;
                      else orders[idx].kaiTicketFile = publicUrl;
                      
-                     // Refresh tampilan jika sedang buka detail
                      const isDetailOpen = !document.getElementById('page-detail').classList.contains('hidden');
                      if(isDetailOpen) openDetailView(currentUploadOrderId);
                 }
@@ -729,19 +717,30 @@ function setupHistoryUploader() {
         });
     });
 }
-// --- HELPER LAINNYA (LANJUTAN) ---
 
 window.toggleTripType = function() {
     const type = document.getElementById('inpTripType').value;
     const fields = document.getElementById('returnTripFields');
+    
+    // Elements for Validation
+    const inpRetDate = document.getElementById('inpReturnDate');
+    const inpRetTrain = document.getElementById('inpReturnTrain');
+    const inpRetOrg = document.getElementById('inpReturnOrigin');
+    const inpRetDest = document.getElementById('inpReturnDest');
+
     if(type === 'round_trip') {
         fields.classList.remove('hidden'); fields.classList.add('fade-in');
-        document.getElementById('inpReturnDate').required = true;
-        document.getElementById('inpReturnTrain').required = true;
+        inpRetDate.required = true;
+        inpRetTrain.required = true;
+        // NEW: Require Origin/Dest for Return
+        if(inpRetOrg) inpRetOrg.required = true;
+        if(inpRetDest) inpRetDest.required = true;
     } else {
         fields.classList.add('hidden'); fields.classList.remove('fade-in');
-        document.getElementById('inpReturnDate').required = false;
-        document.getElementById('inpReturnTrain').required = false;
+        inpRetDate.required = false;
+        inpRetTrain.required = false;
+        if(inpRetOrg) inpRetOrg.required = false;
+        if(inpRetDest) inpRetDest.required = false;
     }
     setTimeout(enableSmoothInputUX, 200);
 }
@@ -769,134 +768,113 @@ window.calcRemaining = function() {
     field.className = remaining <= 0 ? "bg-transparent text-right text-green-500 font-black text-lg outline-none w-40 cursor-default" : "bg-transparent text-right text-red-500 font-black text-lg outline-none w-40 cursor-default";
 }
 
-// Generate & Print
 window.generateAndPreviewTicket = function() {
     const contactName = document.getElementById('inpContactName').value.toUpperCase();
     if(!contactName) { alert("Isi nama kontak!"); return; }
     toggleLoader(true);
-    const data = {
-        id: Date.now().toString().slice(-6),
-        contactName, 
-        contactPhone: document.getElementById('inpContactPhone').value || '-',
-        address: document.getElementById('inpAddress').value.toUpperCase() || '-', 
-        origin: document.getElementById('inpOrigin').value.toUpperCase(),
-        dest: document.getElementById('inpDest').value.toUpperCase(),
-        train: document.getElementById('inpTrain').value.toUpperCase(), 
-        date: document.getElementById('inpDate').value,
-        warDate: document.getElementById('inpWarDate').value,
-        paymentMethod: document.getElementById('inpPaymentMethod').value,
-        price: parseFloat(document.getElementById('inpPrice').value) || 0,
-        fee: parseFloat(document.getElementById('inpFee').value) || 0, 
-        tripType: document.getElementById('inpTripType').value,
-        returnDate: document.getElementById('inpReturnDate').value,
-        returnTrain: document.getElementById('inpReturnTrain').value.toUpperCase(),
-        returnWarDate: document.getElementById('inpReturnWarDate').value,
-        passengers: getPassengersFromForm() 
-    };
-    data.remaining = data.price - data.fee;
-    renderTicketToDOM(data);
-    showToast("RENDER TIKET...");
-    setTimeout(() => { captureAndShowModal('ticket-render-area'); }, 800); 
 }
+// === NEW FEATURE: MODERN BOARDING PASS RECEIPT ===
 window.printReceipt = function(orderId) {
     const order = orders.find(o => o.id === orderId);
     if (!order) return;
     toggleLoader(true);
+    
+    // Render data ke template HTML baru
     renderReceiptToDOM(order);
-    showToast("RENDER STRUK...");
+    
+    showToast("RENDER E-TICKET...");
+    
     setTimeout(() => { captureAndShowModal('receipt-render-area'); }, 800);
 }
+
+// UPDATED: RENDER NOTA ALA BOARDING PASS (DUAL TICKET SUPPORT)
 function renderReceiptToDOM(order) {
-    const stampEl = document.getElementById('rec-stamp');
-    if (order.status === 'success') stampEl.classList.add('visible'); else stampEl.classList.remove('visible');
-    const now = new Date();
-    document.getElementById('rec-date').innerText = now.toLocaleDateString('id-ID');
-    document.getElementById('rec-time').innerText = now.toLocaleTimeString('id-ID', {hour:'2-digit', minute:'2-digit'});
-    document.getElementById('rec-id').innerText = "#" + order.id.toString().slice(-6);
-    document.getElementById('rec-full-name').innerText = (order.contactName || order.name || '').toUpperCase();
-    document.getElementById('rec-phone').innerText = order.contactPhone || order.phone || '-';
-    document.getElementById('rec-address').innerText = (order.address || '-').toUpperCase();
-    let desc = `KA ${order.train.toUpperCase()} (${order.origin}-${order.dest})`;
-    if(order.tripType === 'round_trip') desc = `PP ${order.train}/${order.returnTrain}`.toUpperCase();
-    if(desc.length > 30) desc = desc.substring(0, 28) + '..';
+    // 1. Stamp Logic (Watermark Style)
+    const stampElDepart = document.getElementById('rec-stamp-depart');
+    const stampElReturn = document.getElementById('rec-stamp-return');
     
-    // UPDATE: Hitung Dewasa & Bayi untuk Struk
-    let paxList = Array.isArray(order.passengers) ? order.passengers : (order.name ? [{name: order.name, type: 'adult'}] : []);
-    const adults = paxList.filter(p => !p.type || p.type === 'adult').length;
-    const infants = paxList.filter(p => p.type === 'infant').length;
+    const isPaid = order.status === 'success';
     
-    let qtyDesc = `${adults} Pax`;
-    if(infants > 0) qtyDesc += ` + ${infants} Bayi`;
+    if (isPaid) {
+        stampElDepart.classList.add('visible');
+        if(stampElReturn) stampElReturn.classList.add('visible');
+    } else {
+        stampElDepart.classList.remove('visible');
+        if(stampElReturn) stampElReturn.classList.remove('visible');
+    }
 
-    document.getElementById('rec-items').innerHTML = `<tr><td colspan="2" class="pb-1 uppercase">${desc}</td></tr><tr><td class="pb-1">${qtyDesc}</td><td class="text-right font-bold">${formatNumber(order.price)}</td></tr>`;
-    document.getElementById('rec-total').innerText = formatRupiah(order.price);
-    document.getElementById('rec-dp').innerText = formatRupiah(order.fee);
-    document.getElementById('rec-settlement').innerText = formatRupiah(order.price - order.fee);
-    document.getElementById('rec-method').innerText = (order.settlementMethod && order.settlementMethod !== '-') ? order.settlementMethod.toUpperCase() : order.paymentMethod.toUpperCase();
-}
+    // 2. Ticket 1: Departure
+    const origin = (order.origin || 'ORG').toUpperCase();
+    const dest = (order.dest || 'DES').toUpperCase();
+    
+    document.getElementById('rec-origin-code').innerText = origin;
+    document.getElementById('rec-dest-code').innerText = dest;
+    document.getElementById('rec-train-name').innerText = (order.train || 'TRAIN').toUpperCase();
 
-function renderTicketToDOM(data) {
-    document.getElementById('ticket-id').innerText = "#" + data.id.toString().slice(-6);
-    document.getElementById('ticket-issued-date').innerText = new Date().toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' });
-    document.getElementById('ticket-contact-name').innerText = data.contactName.length > 25 ? data.contactName.substring(0,24) + "..." : data.contactName;
-    document.getElementById('ticket-contact-phone').innerText = data.contactPhone;
-    document.getElementById('ticket-address').innerText = data.address || '-'; 
-    const formatDateIndo = (d) => d ? new Date(d).toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' }) : '-';
-    document.getElementById('ticket-train-depart').innerText = data.train;
-    document.getElementById('ticket-origin').innerText = data.origin || 'ORG';
-    document.getElementById('ticket-dest').innerText = data.dest || 'DST';
-    document.getElementById('ticket-date-depart').innerText = formatDateIndo(data.date);
-    document.getElementById('ticket-war-date-depart').innerText = formatDateIndo(data.warDate);
-    const returnBox = document.getElementById('ticket-box-return');
-    if(data.tripType === 'round_trip') {
-        returnBox.classList.remove('hidden');
-        document.getElementById('ticket-train-return').innerText = data.returnTrain;
-        document.getElementById('ticket-return-origin').innerText = data.dest || 'DST';
-        document.getElementById('ticket-return-dest').innerText = data.origin || 'ORG';
-        document.getElementById('ticket-date-return').innerText = formatDateIndo(data.returnDate);
-        document.getElementById('ticket-war-date-return').innerText = formatDateIndo(data.returnWarDate); 
-    } else returnBox.classList.add('hidden');
-    
-    // UPDATE: Render Penumpang Tiket dengan Label Bayi & Tanggal Lahir (DOB)
-    let paxHtml = '';
-    const paxList = data.passengers;
-    const adults = paxList.filter(p => !p.type || p.type === 'adult').length;
-    const infants = paxList.filter(p => p.type === 'infant').length;
-    
-    document.getElementById('ticket-pax-count').innerText = `${adults} Dws, ${infants} Bayi`;
-    
-    // Harga per pax di tiket hanya estimasi rata-rata dari total
-    const totalHead = adults + infants; 
-    const pricePerPax = data.price > 0 ? Math.round(data.price / (adults || 1)) : 0; 
-    
-    document.getElementById('ticket-val-price-per-pax').innerText = formatRupiah(pricePerPax);
-    
-    data.passengers.forEach((p, index) => {
-        const isInfant = p.type === 'infant';
-        const icon = isInfant ? 'fa-baby text-pink-500' : 'fa-user text-gray-500';
-        const typeBadge = isInfant ? '<span class="ml-2 text-[8px] bg-pink-100 text-pink-600 px-1 rounded font-bold uppercase tracking-wider">BAYI</span>' : '';
-        const dobText = p.dob ? ` | LHR: ${p.dob}` : ''; // Format DOB untuk tiket
+    const dateObj = new Date(order.date);
+    const dateStr = order.date ? dateObj.toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' }) : '-';
+    document.getElementById('rec-date-depart').innerText = dateStr.toUpperCase();
+
+    // 3. Ticket 2: Return (Jika Ada)
+    const returnSection = document.getElementById('rec-ticket-return');
+    if (order.tripType === 'round_trip') {
+        returnSection.classList.remove('hidden');
         
-        paxHtml += `<div class="flex items-center gap-3 border-b border-gray-100 pb-2 last:border-0 last:pb-0">
-                <div class="w-6 h-6 rounded-full bg-[#f8fafc] border border-gray-200 flex items-center justify-center text-[9px] font-bold shrink-0">
-                    <i class="fas ${icon}"></i>
-                </div>
-                <div class="flex-1 min-w-0"><p class="text-xs font-black uppercase text-[#0b1c38] break-words leading-tight flex items-center">${p.name} ${typeBadge}</p><p class="text-[9px] text-gray-400 font-mono tracking-wider">NIK: ${p.nik}${dobText}</p></div>
-            </div>`;
-    });
-    document.getElementById('ticket-pax-list-vertical').innerHTML = paxHtml;
-    document.getElementById('ticket-val-method').innerText = data.paymentMethod;
-    document.getElementById('ticket-val-total').innerText = formatRupiah(data.price); 
-    document.getElementById('ticket-val-fee').innerText = formatRupiah(data.fee);     
-    document.getElementById('ticket-val-remaining').innerText = formatRupiah(data.remaining);
+        // Gunakan field baru returnOrigin/returnDest, fallback ke kebalikan origin/dest jika null (backward compatibility)
+        const retOrg = (order.returnOrigin || dest).toUpperCase();
+        const retDes = (order.returnDest || origin).toUpperCase();
+        
+        document.getElementById('rec-return-origin-code').innerText = retOrg;
+        document.getElementById('rec-return-dest-code').innerText = retDes;
+        document.getElementById('rec-return-train-name').innerText = (order.returnTrain || 'TRAIN').toUpperCase();
+        
+        const retDateObj = new Date(order.returnDate);
+        const retDateStr = order.returnDate ? retDateObj.toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' }) : '-';
+        document.getElementById('rec-return-date-depart').innerText = retDateStr.toUpperCase();
+    } else {
+        returnSection.classList.add('hidden');
+    }
+
+    // 4. Passenger Info
+    let paxList = Array.isArray(order.passengers) ? order.passengers : (order.name ? [{name: order.name, type: 'adult'}] : []);
+    const mainPaxName = paxList.length > 0 ? paxList[0].name : (order.contactName || 'PASSENGER');
+    document.getElementById('rec-pax-name').innerText = mainPaxName.toUpperCase();
+
+    const adults = paxList.filter(p => !p.type || p.type === 'adult').length;
+    const infants = paxList.filter(p => p.type === 'infant').length;
+    let paxCountStr = `${adults} Adult`;
+    if(adults > 1) paxCountStr += 's';
+    if(infants > 0) paxCountStr += `, ${infants} Infant`;
+    
+    document.getElementById('rec-pax-count').innerText = paxCountStr;
+
+    // 5. Financials & ID
+    document.getElementById('rec-id').innerText = "#" + order.id.toString().slice(-6);
+    document.getElementById('rec-price-total').innerText = formatRupiah(order.price);
 }
 
 function captureAndShowModal(elementId) {
     const el = document.getElementById(elementId);
-    html2canvas(el, { scale: 3, useCORS: true, allowTaint: true, backgroundColor: "#ffffff" })
-        .then(canvas => { showImageModal(canvas.toDataURL("image/jpeg", 0.90), true); toggleLoader(false); })
-        .catch(err => { console.error("Render Error:", err); toggleLoader(false); alert("Gagal render gambar."); });
+    // Config: Scale 3 untuk ketajaman tinggi, height: null agar auto height
+    html2canvas(el, { 
+        scale: 3, 
+        useCORS: true, 
+        allowTaint: true, 
+        backgroundColor: null,
+        windowHeight: el.scrollHeight 
+    }) 
+    .then(canvas => { 
+        showImageModal(canvas.toDataURL("image/jpeg", 0.95), true); 
+        toggleLoader(false); 
+    })
+    .catch(err => { 
+        console.error("Render Error:", err); 
+        toggleLoader(false); 
+        alert("Gagal render gambar."); 
+    });
 }
+
+// --- HELPER LAINNYA (LANJUTAN) ---
 window.triggerHistoryUpload = function(orderId, type) {
     currentUploadOrderId = orderId; currentUploadType = type;
     document.getElementById('inpHistoryUpload').click();
@@ -931,7 +909,7 @@ window.showImageModal = function(src, dl=false) {
     const acts = document.getElementById('modalActions'); acts.innerHTML = '';
     if(dl) {
         const btn = document.createElement('a');
-        btn.href = src; btn.download = `Davka_IMG_${Date.now()}.jpg`; btn.target = "_blank";
+        btn.href = src; btn.download = `Davka_Ticket_${Date.now()}.jpg`; 
         btn.className = "bg-davka-orange text-white text-xs font-bold py-2 px-4 rounded-full shadow-lg flex items-center gap-2";
         btn.innerHTML = '<i class="fas fa-download"></i> Simpan ke Galeri';
         acts.appendChild(btn);
@@ -944,7 +922,7 @@ window.resetForm = function() {
     document.getElementById('editIndex').value = "-1";
     document.getElementById('btnSaveText').innerText = "SIMPAN PESANAN";
     document.getElementById('inpPaxCount').value = "1";
-    document.getElementById('inpInfantCount').value = "0"; // UPDATE: Reset Bayi
+    document.getElementById('inpInfantCount').value = "0"; 
     document.getElementById('inpTripType').value = 'one_way';
     document.getElementById('inpPricePerPax').value = '';
     toggleTripType(); clearImage('transfer'); clearImage('chat'); updatePassengerForms(); calcRemaining();
@@ -952,23 +930,18 @@ window.resetForm = function() {
     enableSmoothInputUX();
 }
 
-// --- LOGIC DETAIL VIEW (UPDATED: TAB SYSTEM & INFANT & DOB) ---
-
 window.openDetailView = function(orderId) {
     const order = orders.find(o => o.id === orderId);
     if (!order) return;
 
-    // 1. Switch Page
     document.getElementById('page-list').classList.add('hidden', 'fade-out');
     document.getElementById('page-detail').classList.remove('hidden');
     document.getElementById('page-detail').classList.add('fade-in');
     
     window.scrollTo({ top: 0, behavior: 'smooth' });
 
-    // 2. Reset Tab ke 'depart' setiap kali buka
     switchTab('depart');
 
-    // 3. Populate Header & Status
     const displayName = (order.contactName || order.name || 'No Name').toUpperCase();
     document.getElementById('detail-contact-name').innerText = displayName;
     document.getElementById('detail-id').innerText = "#" + order.id.toString().slice(-6);
@@ -986,11 +959,9 @@ window.openDetailView = function(orderId) {
         badge.classList.add('bg-orange-500/10', 'border-orange-500/30', 'text-orange-400');
     }
 
-    // 4. Populate Route Header (Origin -> Dest)
     document.getElementById('detail-origin').innerText = order.origin || 'ORG';
     document.getElementById('detail-dest').innerText = order.dest || 'DST';
     
-    // Icon Logic: Panah atau Exchange
     const iconEl = document.getElementById('detail-route-icon');
     if (order.tripType === 'round_trip') {
         iconEl.className = "fas fa-exchange-alt text-blue-400 text-xl";
@@ -998,37 +969,34 @@ window.openDetailView = function(orderId) {
         iconEl.className = "fas fa-arrow-right text-davka-orange text-xl";
     }
 
-    // 5. Populate Tab Data: PERGI (Depart)
     document.getElementById('detail-train').innerText = order.train || '-';
     document.getElementById('detail-date').innerText = order.date ? new Date(order.date).toLocaleDateString('id-ID', {day: 'numeric', month: 'short', year: 'numeric'}) : '-';
     document.getElementById('detail-war-date').innerText = order.warDate ? new Date(order.warDate).toLocaleDateString('id-ID', {day: 'numeric', month: 'short'}) : '-';
 
-    // 6. Populate Tab Data: PULANG (Return) logic
     const returnBadge = document.getElementById('badge-return-active');
     const returnDataContainer = document.getElementById('data-return-exist');
     const returnEmptyContainer = document.getElementById('data-return-empty');
 
     if (order.tripType === 'round_trip') {
-        // Aktifkan Badge di Tab Pulang
         returnBadge.classList.remove('hidden');
-        
-        // Tampilkan Container Data
         returnDataContainer.classList.remove('hidden');
         returnEmptyContainer.classList.add('hidden');
+
+        // NEW: Populate Data Return Origin/Dest di Detail View
+        const retOrg = order.returnOrigin || order.dest || 'ORG';
+        const retDes = order.returnDest || order.origin || 'DES';
+        document.getElementById('detail-return-origin').innerText = retOrg;
+        document.getElementById('detail-return-dest').innerText = retDes;
 
         document.getElementById('detail-return-train').innerText = order.returnTrain || '-';
         document.getElementById('detail-return-date').innerText = order.returnDate ? new Date(order.returnDate).toLocaleDateString('id-ID', {day: 'numeric', month: 'short', year: 'numeric'}) : '-';
         document.getElementById('detail-return-war-date').innerText = order.returnWarDate ? new Date(order.returnWarDate).toLocaleDateString('id-ID', {day: 'numeric', month: 'short'}) : '-';
     } else {
-        // Matikan Badge
         returnBadge.classList.add('hidden');
-        
-        // Tampilkan State Kosong
         returnDataContainer.classList.add('hidden');
         returnEmptyContainer.classList.remove('hidden');
     }
 
-    // 7. Populate Passengers (UPDATED with DOB)
     let paxListHtml = '';
     let paxArray = Array.isArray(order.passengers) ? order.passengers : (order.name ? [{name: order.name, nik: order.nik || '-', dob: '', type: 'adult'}] : []);
     
@@ -1037,7 +1005,6 @@ window.openDetailView = function(orderId) {
         const iconColor = isInfant ? 'text-pink-400 bg-pink-500/10' : 'text-gray-300 bg-white/10';
         const icon = isInfant ? 'fa-baby' : 'fa-user';
         const label = isInfant ? '<span class="text-[8px] ml-2 px-1.5 py-0.5 rounded bg-pink-500/20 text-pink-400 border border-pink-500/30">BAYI</span>' : '';
-        // UPDATE: Format tampilan DOB di detail history
         const dobDisplay = p.dob ? `<span class="ml-2 text-davka-orange">| LHR: ${p.dob}</span>` : '';
 
         paxListHtml += `
@@ -1054,7 +1021,6 @@ window.openDetailView = function(orderId) {
     });
     document.getElementById('detail-pax-list').innerHTML = paxListHtml;
 
-    // 8. Payment Info
     document.getElementById('detail-price').innerText = formatRupiah(order.price || 0);
     const remaining = (order.price || 0) - (order.fee || 0);
     const remEl = document.getElementById('detail-remaining');
@@ -1066,11 +1032,9 @@ window.openDetailView = function(orderId) {
     selectEl.innerHTML = settlementOptions.map(opt => `<option value="${opt}" ${order.settlementMethod === opt ? 'selected' : ''}>${opt === '-' ? 'Belum Lunas' : opt}</option>`).join('');
     selectEl.onchange = function() { updateSettlement(orderId, this.value); };
 
-    // 9. Upload Buttons (Dynamic Render with Fix)
     document.getElementById('detail-upload-settlement').innerHTML = renderUploadBtnHTML(orderId, 'settlement', order.settlementProof, 'Bukti Lunas');
     document.getElementById('detail-upload-ticket').innerHTML = renderUploadBtnHTML(orderId, 'kai_ticket', order.kaiTicketFile, 'E-Ticket KAI');
 
-    // 10. Action Buttons
     document.getElementById('btn-action-status').onclick = function() { toggleStatus(orderId); };
     document.getElementById('btn-action-edit').onclick = function() { editOrder(orderId); };
     document.getElementById('btn-action-print').onclick = function() { printReceipt(orderId); };
@@ -1080,14 +1044,11 @@ window.openDetailView = function(orderId) {
 window.closeDetailView = function() {
     document.getElementById('page-detail').classList.add('hidden', 'fade-out');
     document.getElementById('page-detail').classList.remove('fade-in');
-    
     document.getElementById('page-list').classList.remove('hidden');
     document.getElementById('page-list').classList.add('fade-in');
-    
     renderOrderList(document.getElementById('searchInput').value);
 }
 
-// --- REDESIGNED LIST VIEW: 1 BARIS COMPACT (NAVIGATE ON CLICK) ---
 window.renderOrderList = function(filterText = '') {
     const container = document.getElementById('ordersContainer');
     container.innerHTML = '';
@@ -1106,7 +1067,6 @@ window.renderOrderList = function(filterText = '') {
     }
 
     filtered.forEach((order, index) => {
-        // --- LOGIC WARNA STATUS & INDIKATOR ---
         let statusColorClass = '';
         let indicatorColor = '';
         
@@ -1167,7 +1127,6 @@ window.renderOrderList = function(filterText = '') {
     });
 }
 
-// UPDATE: FIX RENDER UPLOAD BTN AGAR TIDAK SETENGAH
 function renderUploadBtnHTML(id, type, file, label) {
     if(file) {
         return `<div class="relative w-full h-full rounded-lg overflow-hidden border border-white/10 group cursor-pointer bg-black/40">
@@ -1201,19 +1160,13 @@ function renderStats() {
             const isCurrentMonth = createdDate.getMonth() === currentMonth && createdDate.getFullYear() === currentYear;
 
             if(o.status === 'success' && isCurrentMonth) {
-                // UPDATE LOGIC: HANYA MENGHITUNG PENUMPANG DEWASA
-                // Bayi (type === 'infant') tidak dihitung sebagai tiket terjual karena gratis
-                
-                let paxCount = 1; // Default fallback data lama (1 orang dewasa)
-                
+                let paxCount = 1; 
                 if(Array.isArray(o.passengers)) {
-                    // Filter hanya yang tipe dewasa (atau undefined yg dianggap dewasa)
                     const adultsOnly = o.passengers.filter(pass => !pass.type || pass.type === 'adult');
                     paxCount = adultsOnly.length;
                 } else if(o.name) {
                     paxCount = 1; 
                 }
-                
                 ticketCountMonth += paxCount;
                 revenueMonth += (parseFloat(o.price) || 0);
             }

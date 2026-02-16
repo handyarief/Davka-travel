@@ -371,8 +371,11 @@ window.editOrder = function(id) {
     else if (data.name) paxList = [{name: data.name, nik: data.nik || '-'}];
     
     document.getElementById('inpPaxCount').value = paxList.length || 1;
+    
+    // PENTING: Panggil updatePassengerForms terlebih dahulu untuk membuat elemen input
     updatePassengerForms(); 
     
+    // PENTING: Gunakan timeout agar DOM selesai dirender sebelum diisi value
     setTimeout(() => {
         const nameInputs = document.querySelectorAll('.pax-name');
         const nikInputs = document.querySelectorAll('.pax-nik');
@@ -426,7 +429,8 @@ window.updateSettlement = async function(id, newVal) {
         const nextStatus = newVal === '-' ? 'pending' : 'success';
         orders[index].settlementMethod = newVal;
         orders[index].status = nextStatus;
-        renderOrderList(document.getElementById('searchInput').value); 
+        renderOrderList(document.getElementById('searchInput').value);
+        renderStats(); // Update stats real-time
         try {
              await supabase.from('orders').update({ settlementMethod: newVal, status: nextStatus }).eq('id', id);
             showToast("Info Pelunasan Updated");
@@ -550,9 +554,14 @@ window.toggleTripType = function() {
     }
     setTimeout(enableSmoothInputUX, 200);
 }
+
+// --- FIX: KEMBALIKAN LOGIKA PENUMPANG ASLI ---
 window.updatePassengerForms = function() {
     const count = parseInt(document.getElementById('inpPaxCount').value);
-    const container = document.getElementById('passengerForms');
+    // PASTIKAN ID SESUAI index.html
+    const container = document.getElementById('passengerForms'); 
+    
+    // Logic untuk menyimpan data lama saat jumlah diubah
     const existingNames = document.querySelectorAll('.pax-name');
     const existingNiks = document.querySelectorAll('.pax-nik');
     let storedData = [];
@@ -576,6 +585,7 @@ window.updatePassengerForms = function() {
     
     setTimeout(enableSmoothInputUX, 100);
 }
+
 window.calcTotalFromPax = function() {
     const pricePerPax = parseFloat(document.getElementById('inpPricePerPax').value) || 0;
     const paxCount = parseInt(document.getElementById('inpPaxCount').value) || 1;
@@ -966,22 +976,42 @@ function renderUploadBtnHTML(id, type, file, label) {
 }
 function renderStats() {
     const now = new Date();
-    const today = now.toISOString().split('T')[0];
+    // Gunakan filter berdasarkan BULAN SAAT INI
     const currentMonth = now.getMonth();
     const currentYear = now.getFullYear();
-    let cToday=0, rev=0, p=0, s=0, c=0;
+
+    let ticketCountMonth = 0; // Total PENUMPANG terjual (sukses) bulan ini
+    let revenueMonth = 0;     // Total OMSET (price) sukses bulan ini
+    
+    let p=0, s=0, c=0; // Status counter
     
     if(orders) {
         orders.forEach(o => {
-            if(o.status==='pending') p++; else if(o.status==='success') s++; else c++;
+            // Hitung status global
+            if(o.status==='pending') p++; 
+            else if(o.status==='success') s++; 
+            else c++;
+
+            // Parsing tanggal (handle created_at dari Supabase atau timestamp lokal)
             let createdDate = o.created_at ? new Date(o.created_at) : new Date(o.id);
-            let dateStr = createdDate.toISOString().split('T')[0];
-            if(dateStr === today) cToday++;
-            if(o.status === 'success' && createdDate.getMonth() === currentMonth && createdDate.getFullYear() === currentYear) rev += (o.fee || 0);
+            const isCurrentMonth = createdDate.getMonth() === currentMonth && createdDate.getFullYear() === currentYear;
+
+            // Logika Statistik Utama: HANYA jika SUKSES dan BULAN INI
+            if(o.status === 'success' && isCurrentMonth) {
+                // 1. Hitung Penumpang (bukan jumlah transaksi)
+                let paxCount = 1;
+                if(Array.isArray(o.passengers)) paxCount = o.passengers.length;
+                else if(o.name) paxCount = 1; // Fallback legacy
+                ticketCountMonth += paxCount;
+
+                // 2. Hitung Omset (Total Price)
+                revenueMonth += (parseFloat(o.price) || 0);
+            }
         });
     }
-    document.getElementById('stat-today').innerText = cToday;
-    document.getElementById('stat-revenue').innerText = formatRupiah(rev);
+
+    document.getElementById('stat-today').innerText = ticketCountMonth;
+    document.getElementById('stat-revenue').innerText = formatRupiah(revenueMonth);
     document.getElementById('stat-pending').innerText = p;
     document.getElementById('stat-success').innerText = s;
     document.getElementById('stat-cancel').innerText = c;

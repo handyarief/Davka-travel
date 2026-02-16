@@ -85,8 +85,15 @@ function initializeAppLogic() {
     setupRealtime(); 
     
     updatePassengerForms(); 
+    
+    // Setup Uploader Asli (Pergi)
     setupImageUploader('inpFileTransfer', 'inpTransferData', 'imgTransfer', 'previewTransfer');
     setupImageUploader('inpFileChat', 'inpChatData', 'imgChat', 'previewChat');
+    
+    // Setup Uploader Baru (Pulang)
+    setupImageUploader('inpFileTransferReturn', 'inpTransferDataReturn', 'imgTransferReturn', 'previewTransferReturn');
+    setupImageUploader('inpFileChatReturn', 'inpChatDataReturn', 'imgChatReturn', 'previewChatReturn');
+
     setupHistoryUploader();
     
     // UX ENHANCEMENT: Inisialisasi Smooth Scroll & Enter Key
@@ -118,6 +125,29 @@ window.switchTab = function(tabName) {
     } else {
         btnReturn.className = activeClass;
         contentReturn.classList.remove('hidden');
+    }
+}
+
+// --- NEW FEATURE: UPLOAD TAB SYSTEM (INPUT FORM) ---
+window.switchUploadTab = function(tabName) {
+    const btnDepart = document.getElementById('btn-upload-depart');
+    const btnReturn = document.getElementById('btn-upload-return');
+    const containerDepart = document.getElementById('uploadContainerDepart');
+    const containerReturn = document.getElementById('uploadContainerReturn');
+
+    const inactiveClass = "flex-1 py-2 text-[10px] font-bold uppercase rounded-lg transition-all text-gray-400 hover:text-white";
+    const activeClass = "flex-1 py-2 text-[10px] font-bold uppercase rounded-lg transition-all bg-davka-orange text-white shadow-lg";
+
+    if (tabName === 'depart') {
+        btnDepart.className = activeClass;
+        btnReturn.className = inactiveClass;
+        containerDepart.classList.remove('hidden');
+        containerReturn.classList.add('hidden');
+    } else {
+        btnDepart.className = inactiveClass;
+        btnReturn.className = activeClass;
+        containerDepart.classList.add('hidden');
+        containerReturn.classList.remove('hidden');
     }
 }
 
@@ -267,6 +297,7 @@ window.calcTotalFromPax = function() {
     const adultCount = parseInt(document.getElementById('inpPaxCount').value) || 1;
     
     if (pricePerPax > 0) {
+        // Hanya update harga keberangkatan, harga pulang manual (atau bisa dilogika serupa jika perlu)
         document.getElementById('inpPrice').value = pricePerPax * adultCount;
         calcRemaining(); 
     }
@@ -342,7 +373,7 @@ async function uploadToSupabaseStorage(base64Data, fileName) {
     }
 }
 
-// --- FORM HANDLING (SAVE & UPDATE) ---
+// --- FORM HANDLING (SAVE & UPDATE) - MODIFIED FOR SEPARATE PP ---
 const orderForm = document.getElementById('orderForm');
 
 orderForm.addEventListener('submit', async (e) => {
@@ -355,23 +386,43 @@ orderForm.addEventListener('submit', async (e) => {
     const orderId = existingOrder ? existingOrder.id : Date.now();
     const created_at = existingOrder ? existingOrder.created_at : new Date().toISOString();
 
+    // Data Upload Pergi
     let transferBase64 = document.getElementById('inpTransferData').value;
     let chatBase64 = document.getElementById('inpChatData').value;
+    
+    // Data Upload Pulang (New)
+    let transferReturnBase64 = document.getElementById('inpTransferDataReturn').value;
+    let chatReturnBase64 = document.getElementById('inpChatDataReturn').value;
 
     try {
         let transferUrl = existingOrder ? existingOrder.transferScreenshot : null;
         let chatUrl = existingOrder ? existingOrder.chatScreenshot : null;
+        
+        let transferReturnUrl = existingOrder ? existingOrder.transferScreenshotReturn : null;
+        let chatReturnUrl = existingOrder ? existingOrder.chatScreenshotReturn : null;
 
+        // Upload Logic Pergi
         if (transferBase64 && !transferBase64.startsWith('http')) {
-            showToast("Upload Transfer...");
-            transferUrl = await uploadToSupabaseStorage(transferBase64, `${orderId}_tf`);
+            showToast("Upload Transfer Pergi...");
+            transferUrl = await uploadToSupabaseStorage(transferBase64, `${orderId}_tf_depart`);
         }
         if (chatBase64 && !chatBase64.startsWith('http')) {
-            showToast("Upload Chat...");
-            chatUrl = await uploadToSupabaseStorage(chatBase64, `${orderId}_chat`);
+            showToast("Upload Chat Pergi...");
+            chatUrl = await uploadToSupabaseStorage(chatBase64, `${orderId}_chat_depart`);
+        }
+        
+        // Upload Logic Pulang (New)
+        if (transferReturnBase64 && !transferReturnBase64.startsWith('http')) {
+            showToast("Upload Transfer Pulang...");
+            transferReturnUrl = await uploadToSupabaseStorage(transferReturnBase64, `${orderId}_tf_return`);
+        }
+        if (chatReturnBase64 && !chatReturnBase64.startsWith('http')) {
+            showToast("Upload Chat Pulang...");
+            chatReturnUrl = await uploadToSupabaseStorage(chatReturnBase64, `${orderId}_chat_return`);
         }
 
         const passengerData = getPassengersFromForm();
+        const tripType = document.getElementById('inpTripType').value;
 
         const newOrder = {
             id: orderId, 
@@ -385,21 +436,32 @@ orderForm.addEventListener('submit', async (e) => {
             date: document.getElementById('inpDate').value,
             warDate: document.getElementById('inpWarDate').value,
             train: document.getElementById('inpTrain').value.toUpperCase(),
-            tripType: document.getElementById('inpTripType').value,
+            tripType: tripType,
             
-            // NEW FIELDS: Return Origin & Dest
+            // Return Fields
             returnOrigin: document.getElementById('inpReturnOrigin').value.toUpperCase(),
             returnDest: document.getElementById('inpReturnDest').value.toUpperCase(),
-
             returnDate: document.getElementById('inpReturnDate').value,
             returnWarDate: document.getElementById('inpReturnWarDate').value,
             returnTrain: document.getElementById('inpReturnTrain').value.toUpperCase(),
+            
             paymentMethod: document.getElementById('inpPaymentMethod').value,
-            price: parseFloat(document.getElementById('inpPrice').value),
-            fee: parseFloat(document.getElementById('inpFee').value), 
+            
+            // Financials
+            price: parseFloat(document.getElementById('inpPrice').value) || 0, // Harga Pergi
+            returnPrice: parseFloat(document.getElementById('inpReturnPrice')?.value) || 0, // Harga Pulang (New) - Optional chaining if element removed
+            fee: parseFloat(document.getElementById('inpFee').value) || 0, // DP
+            
             settlementMethod: existingOrder ? (existingOrder.settlementMethod || '-') : '-',
+            
+            // Proof Files Pergi
             transferScreenshot: transferUrl, 
             chatScreenshot: chatUrl,
+            
+            // Proof Files Pulang (New)
+            transferScreenshotReturn: transferReturnUrl,
+            chatScreenshotReturn: chatReturnUrl,
+
             settlementProof: existingOrder ? existingOrder.settlementProof : null,
             kaiTicketFile: existingOrder ? existingOrder.kaiTicketFile : null,
             status: existingOrder ? existingOrder.status : 'pending'
@@ -430,7 +492,6 @@ orderForm.addEventListener('submit', async (e) => {
         toggleLoader(false); 
     }
 });
-
 // --- UI ACTIONS & NAVIGATION ---
 
 window.deleteOrder = async function(id) {
@@ -501,8 +562,7 @@ window.navTo = function(pageId) {
         window.scrollTo({ top: 0, behavior: 'smooth' });
     }, 400); 
 }
-
-// --- EDIT ORDER LOGIC ---
+// --- EDIT ORDER LOGIC (UPDATED FOR PP) ---
 window.editOrder = function(id) {
     const index = orders.findIndex(o => o.id === id);
     if (index === -1) return;
@@ -563,13 +623,14 @@ window.editOrder = function(id) {
     toggleTripType();
     
     if(data.tripType === 'round_trip') {
-        // NEW FIELDS: Load Saved Return Origin & Dest
         document.getElementById('inpReturnOrigin').value = data.returnOrigin || '';
         document.getElementById('inpReturnDest').value = data.returnDest || '';
-
         document.getElementById('inpReturnDate').value = data.returnDate || '';
         document.getElementById('inpReturnWarDate').value = data.returnWarDate || '';
         document.getElementById('inpReturnTrain').value = data.returnTrain || '';
+        
+        // REVISI: Menghapus pengisian inpReturnPrice karena elemen dihapus
+        // document.getElementById('inpReturnPrice').value = data.returnPrice || 0; 
     }
     
     document.getElementById('inpPaymentMethod').value = data.paymentMethod || 'Tunai';
@@ -582,6 +643,7 @@ window.editOrder = function(id) {
     document.getElementById('inpFee').value = data.fee || 0;
     calcRemaining();
 
+    // Load Bukti Pergi
     if(data.transferScreenshot) {
         document.getElementById('inpTransferData').value = data.transferScreenshot;
         document.getElementById('imgTransfer').src = data.transferScreenshot;
@@ -592,10 +654,23 @@ window.editOrder = function(id) {
         document.getElementById('imgChat').src = data.chatScreenshot;
         document.getElementById('previewChat').classList.remove('hidden');
     }
+    
+    // Load Bukti Pulang (New)
+    if(data.transferScreenshotReturn) {
+        document.getElementById('inpTransferDataReturn').value = data.transferScreenshotReturn;
+        document.getElementById('imgTransferReturn').src = data.transferScreenshotReturn;
+        document.getElementById('previewTransferReturn').classList.remove('hidden');
+    }
+    if(data.chatScreenshotReturn) {
+        document.getElementById('inpChatDataReturn').value = data.chatScreenshotReturn;
+        document.getElementById('imgChatReturn').src = data.chatScreenshotReturn;
+        document.getElementById('previewChatReturn').classList.remove('hidden');
+    }
 
     document.getElementById('btnSaveText').innerText = "UPDATE DATA";
     navTo('input');
 }
+
 window.updateSettlement = async function(id, newVal) {
     toggleLoader(true);
     const index = orders.findIndex(o => o.id === id);
@@ -616,6 +691,7 @@ window.updateSettlement = async function(id, newVal) {
         } catch(e) { console.error(e); } finally { toggleLoader(false); }
     } else toggleLoader(false);
 }
+
 // --- HELPER LAINNYA ---
 function toggleLoader(show) {
     const loader = document.getElementById('global-loader');
@@ -646,12 +722,18 @@ window.handleUploadZoneClick = function(zoneId, inputId) {
 function resetUploadZones() {
     activeUploadZone = null;
     document.querySelectorAll('.upload-zone-base').forEach(el => el.classList.remove('upload-zone-active'));
-    document.getElementById('hintTransfer').classList.add('hidden');
-    document.getElementById('hintChat').classList.add('hidden');
+    // Reset hints pergi
+    const h1 = document.getElementById('hintTransfer'); if(h1) h1.classList.add('hidden');
+    const h2 = document.getElementById('hintChat'); if(h2) h2.classList.add('hidden');
+    // Reset hints pulang
+    const h3 = document.getElementById('hintTransferReturn'); if(h3) h3.classList.add('hidden');
+    const h4 = document.getElementById('hintChatReturn'); if(h4) h4.classList.add('hidden');
 }
 
 function setupImageUploader(inputId, hiddenDataId, imgId, containerId) {
     const fileInput = document.getElementById(inputId);
+    if(!fileInput) return; // Guard clause
+    
     fileInput.addEventListener('change', function(e) {
         toggleLoader(true);
         processFile(e.target.files[0], (dataUrl) => {
@@ -663,6 +745,7 @@ function setupImageUploader(inputId, hiddenDataId, imgId, containerId) {
         });
     });
 }
+
 function processFile(file, callback) {
     if (!file) { toggleLoader(false); return; }
     const reader = new FileReader();
@@ -683,6 +766,7 @@ function processFile(file, callback) {
     }
     reader.readAsDataURL(file);
 }
+
 function setupHistoryUploader() {
     const historyInput = document.getElementById('inpHistoryUpload');
     historyInput.addEventListener('change', function(e) {
@@ -721,6 +805,7 @@ function setupHistoryUploader() {
 window.toggleTripType = function() {
     const type = document.getElementById('inpTripType').value;
     const fields = document.getElementById('returnTripFields');
+    const uploadTabContainer = document.getElementById('uploadTabContainer');
     
     // Elements for Validation
     const inpRetDate = document.getElementById('inpReturnDate');
@@ -730,17 +815,34 @@ window.toggleTripType = function() {
 
     if(type === 'round_trip') {
         fields.classList.remove('hidden'); fields.classList.add('fade-in');
+        uploadTabContainer.classList.remove('hidden'); 
+        
         inpRetDate.required = true;
         inpRetTrain.required = true;
-        // NEW: Require Origin/Dest for Return
         if(inpRetOrg) inpRetOrg.required = true;
         if(inpRetDest) inpRetDest.required = true;
+        
+        // Label update
+        document.getElementById('lblUploadDepart').classList.remove('hidden');
+        document.getElementById('labelTransfer').innerText = "Bukti Transfer (Pergi)";
+        document.getElementById('labelChat').innerText = "Chat WA (Pergi)";
+        
     } else {
         fields.classList.add('hidden'); fields.classList.remove('fade-in');
+        uploadTabContainer.classList.add('hidden'); 
+        
+        // Reset view to Depart tab just in case
+        switchUploadTab('depart');
+        
         inpRetDate.required = false;
         inpRetTrain.required = false;
         if(inpRetOrg) inpRetOrg.required = false;
         if(inpRetDest) inpRetDest.required = false;
+
+        // Label reset
+        document.getElementById('lblUploadDepart').classList.add('hidden');
+        document.getElementById('labelTransfer').innerText = "Bukti Transfer";
+        document.getElementById('labelChat').innerText = "Chat WA";
     }
     setTimeout(enableSmoothInputUX, 200);
 }
@@ -759,10 +861,18 @@ window.calcReturnH45 = function() {
         document.getElementById('inpReturnWarDate').value = d.toISOString().split('T')[0];
     }
 }
+
+// UPDATED: Kalkulasi Sisa Tagihan
 window.calcRemaining = function() {
-    const price = parseFloat(document.getElementById('inpPrice').value) || 0;
+    const priceDepart = parseFloat(document.getElementById('inpPrice').value) || 0;
+    
+    // REVISI: Menggunakan ?.value karena elemen inpReturnPrice mungkin tidak ada
+    const priceReturn = parseFloat(document.getElementById('inpReturnPrice')?.value) || 0;
     const dp = parseFloat(document.getElementById('inpFee').value) || 0;
-    const remaining = price - dp;
+    
+    const total = priceDepart + priceReturn;
+    const remaining = total - dp;
+    
     const field = document.getElementById('inpRemaining');
     field.value = formatRupiah(remaining);
     field.className = remaining <= 0 ? "bg-transparent text-right text-green-500 font-black text-lg outline-none w-40 cursor-default" : "bg-transparent text-right text-red-500 font-black text-lg outline-none w-40 cursor-default";
@@ -779,17 +889,13 @@ window.printReceipt = function(orderId) {
     if (!order) return;
     toggleLoader(true);
     
-    // Render data ke template HTML baru
     renderReceiptToDOM(order);
     
     showToast("RENDER E-TICKET...");
-    
     setTimeout(() => { captureAndShowModal('receipt-render-area'); }, 800);
 }
 
-// UPDATED: RENDER NOTA ALA BOARDING PASS (DUAL TICKET SUPPORT)
 function renderReceiptToDOM(order) {
-    // 1. Stamp Logic (Watermark Style)
     const stampElDepart = document.getElementById('rec-stamp-depart');
     const stampElReturn = document.getElementById('rec-stamp-return');
     
@@ -803,7 +909,6 @@ function renderReceiptToDOM(order) {
         if(stampElReturn) stampElReturn.classList.remove('visible');
     }
 
-    // 2. Ticket 1: Departure
     const origin = (order.origin || 'ORG').toUpperCase();
     const dest = (order.dest || 'DES').toUpperCase();
     
@@ -815,12 +920,10 @@ function renderReceiptToDOM(order) {
     const dateStr = order.date ? dateObj.toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' }) : '-';
     document.getElementById('rec-date-depart').innerText = dateStr.toUpperCase();
 
-    // 3. Ticket 2: Return (Jika Ada)
     const returnSection = document.getElementById('rec-ticket-return');
     if (order.tripType === 'round_trip') {
         returnSection.classList.remove('hidden');
         
-        // Gunakan field baru returnOrigin/returnDest, fallback ke kebalikan origin/dest jika null (backward compatibility)
         const retOrg = (order.returnOrigin || dest).toUpperCase();
         const retDes = (order.returnDest || origin).toUpperCase();
         
@@ -835,7 +938,6 @@ function renderReceiptToDOM(order) {
         returnSection.classList.add('hidden');
     }
 
-    // 4. Passenger Info
     let paxList = Array.isArray(order.passengers) ? order.passengers : (order.name ? [{name: order.name, type: 'adult'}] : []);
     const mainPaxName = paxList.length > 0 ? paxList[0].name : (order.contactName || 'PASSENGER');
     document.getElementById('rec-pax-name').innerText = mainPaxName.toUpperCase();
@@ -848,14 +950,15 @@ function renderReceiptToDOM(order) {
     
     document.getElementById('rec-pax-count').innerText = paxCountStr;
 
-    // 5. Financials & ID
     document.getElementById('rec-id').innerText = "#" + order.id.toString().slice(-6);
-    document.getElementById('rec-price-total').innerText = formatRupiah(order.price);
+    
+    // Total includes return price
+    const total = (order.price || 0) + (order.returnPrice || 0);
+    document.getElementById('rec-price-total').innerText = formatRupiah(total);
 }
 
 function captureAndShowModal(elementId) {
     const el = document.getElementById(elementId);
-    // Config: Scale 3 untuk ketajaman tinggi, height: null agar auto height
     html2canvas(el, { 
         scale: 3, 
         useCORS: true, 
@@ -874,11 +977,25 @@ function captureAndShowModal(elementId) {
     });
 }
 
-// --- HELPER LAINNYA (LANJUTAN) ---
+function renderUploadBtnHTML(id, type, file, label) {
+    if(file) {
+        return `<div class="relative w-full h-full rounded-lg overflow-hidden border border-white/10 group cursor-pointer bg-black/40">
+            <img src="${file}" class="w-full h-full object-cover opacity-60 group-hover:opacity-100 transition-all" onclick="showImageModal(this.src, true); event.stopPropagation();">
+            <div class="absolute inset-0 flex items-center justify-center pointer-events-none"><p class="text-[9px] text-white font-bold drop-shadow-md px-1 text-center leading-tight">${label}</p></div>
+            <button onclick="triggerHistoryUpload(${id}, '${type}')" class="absolute top-1 right-1 bg-black/60 text-white rounded-full w-5 h-5 flex items-center justify-center hover:bg-davka-orange transition-colors z-10"><i class="fas fa-pen text-[8px]"></i></button>
+        </div>`;
+    } else {
+        return `<button onclick="triggerHistoryUpload(${id}, '${type}')" class="w-full h-full bg-white/5 border border-white/10 border-dashed text-gray-500 rounded-lg text-[9px] hover:bg-white/10 hover:border-white/30 hover:text-gray-300 transition-all flex flex-col items-center justify-center gap-1 group">
+            <i class="fas fa-upload text-xs mb-0.5"></i><span>${label}</span>
+        </button>`;
+    }
+}
+
 window.triggerHistoryUpload = function(orderId, type) {
     currentUploadOrderId = orderId; currentUploadType = type;
     document.getElementById('inpHistoryUpload').click();
 }
+
 window.clearImage = function(type) {
     if(type === 'transfer') {
         document.getElementById('inpFileTransfer').value = ''; document.getElementById('inpTransferData').value = '';
@@ -886,12 +1003,18 @@ window.clearImage = function(type) {
     } else if (type === 'chat') {
         document.getElementById('inpFileChat').value = ''; document.getElementById('inpChatData').value = '';
         document.getElementById('imgChat').src = ''; document.getElementById('previewChat').classList.add('hidden');
+    } else if (type === 'transferReturn') {
+        document.getElementById('inpFileTransferReturn').value = ''; document.getElementById('inpTransferDataReturn').value = '';
+        document.getElementById('imgTransferReturn').src = ''; document.getElementById('previewTransferReturn').classList.add('hidden');
+    } else if (type === 'chatReturn') {
+        document.getElementById('inpFileChatReturn').value = ''; document.getElementById('inpChatDataReturn').value = '';
+        document.getElementById('imgChatReturn').src = ''; document.getElementById('previewChatReturn').classList.add('hidden');
     }
     resetUploadZones(); 
 }
+
 window.searchOrders = function() { renderOrderList(document.getElementById('searchInput').value); }
 function formatRupiah(num) { return new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', minimumFractionDigits: 0 }).format(num); }
-function formatNumber(num) { return new Intl.NumberFormat('id-ID').format(num); }
 function updateDate() { document.getElementById('current-date').innerText = new Date().toLocaleDateString('id-ID', { weekday: 'short', day: 'numeric', month: 'short' }); }
 function updateGreeting() {
     const hour = new Date().getHours();
@@ -925,7 +1048,16 @@ window.resetForm = function() {
     document.getElementById('inpInfantCount').value = "0"; 
     document.getElementById('inpTripType').value = 'one_way';
     document.getElementById('inpPricePerPax').value = '';
-    toggleTripType(); clearImage('transfer'); clearImage('chat'); updatePassengerForms(); calcRemaining();
+    
+    toggleTripType(); 
+    
+    // Clear images pergi
+    clearImage('transfer'); clearImage('chat');
+    // Clear images pulang
+    clearImage('transferReturn'); clearImage('chatReturn');
+    
+    updatePassengerForms(); 
+    calcRemaining();
     resetUploadZones();
     enableSmoothInputUX();
 }
@@ -969,20 +1101,30 @@ window.openDetailView = function(orderId) {
         iconEl.className = "fas fa-arrow-right text-davka-orange text-xl";
     }
 
+    // Detail Pergi
     document.getElementById('detail-train').innerText = order.train || '-';
     document.getElementById('detail-date').innerText = order.date ? new Date(order.date).toLocaleDateString('id-ID', {day: 'numeric', month: 'short', year: 'numeric'}) : '-';
     document.getElementById('detail-war-date').innerText = order.warDate ? new Date(order.warDate).toLocaleDateString('id-ID', {day: 'numeric', month: 'short'}) : '-';
+    
+    // Render Bukti Pergi (Static Display)
+    const renderProof = (url, label) => url ? 
+        `<img src="${url}" class="w-full h-full object-cover rounded-lg cursor-pointer hover:opacity-80 transition-opacity" onclick="showImageModal(this.src, true)">` : 
+        `<div class="text-gray-600 text-[9px] text-center flex flex-col items-center justify-center h-full"><i class="fas fa-times-circle text-xs mb-1"></i>${label}</div>`;
+
+    document.getElementById('detail-img-transfer-depart').innerHTML = renderProof(order.transferScreenshot, "No TF Pergi");
+    document.getElementById('detail-img-chat-depart').innerHTML = renderProof(order.chatScreenshot, "No Chat Pergi");
 
     const returnBadge = document.getElementById('badge-return-active');
     const returnDataContainer = document.getElementById('data-return-exist');
     const returnEmptyContainer = document.getElementById('data-return-empty');
+    const containerProofReturn = document.getElementById('container-proof-return');
 
     if (order.tripType === 'round_trip') {
         returnBadge.classList.remove('hidden');
         returnDataContainer.classList.remove('hidden');
         returnEmptyContainer.classList.add('hidden');
+        containerProofReturn.classList.remove('hidden');
 
-        // NEW: Populate Data Return Origin/Dest di Detail View
         const retOrg = order.returnOrigin || order.dest || 'ORG';
         const retDes = order.returnDest || order.origin || 'DES';
         document.getElementById('detail-return-origin').innerText = retOrg;
@@ -991,10 +1133,16 @@ window.openDetailView = function(orderId) {
         document.getElementById('detail-return-train').innerText = order.returnTrain || '-';
         document.getElementById('detail-return-date').innerText = order.returnDate ? new Date(order.returnDate).toLocaleDateString('id-ID', {day: 'numeric', month: 'short', year: 'numeric'}) : '-';
         document.getElementById('detail-return-war-date').innerText = order.returnWarDate ? new Date(order.returnWarDate).toLocaleDateString('id-ID', {day: 'numeric', month: 'short'}) : '-';
+        
+        // Render Bukti Pulang
+        document.getElementById('detail-img-transfer-return').innerHTML = renderProof(order.transferScreenshotReturn, "No TF Pulang");
+        document.getElementById('detail-img-chat-return').innerHTML = renderProof(order.chatScreenshotReturn, "No Chat Pulang");
+
     } else {
         returnBadge.classList.add('hidden');
         returnDataContainer.classList.add('hidden');
         returnEmptyContainer.classList.remove('hidden');
+        containerProofReturn.classList.add('hidden');
     }
 
     let paxListHtml = '';
@@ -1021,8 +1169,26 @@ window.openDetailView = function(orderId) {
     });
     document.getElementById('detail-pax-list').innerHTML = paxListHtml;
 
-    document.getElementById('detail-price').innerText = formatRupiah(order.price || 0);
-    const remaining = (order.price || 0) - (order.fee || 0);
+    // Cost Breakdown Logic
+    const pDepart = order.price || 0;
+    const pReturn = order.returnPrice || 0;
+    const dp = order.fee || 0;
+    const total = pDepart + pReturn;
+    const remaining = total - dp;
+    
+    let costHTML = `
+        <div class="flex justify-between items-center text-[10px] text-gray-400"><span>Tiket Pergi</span> <span>${formatRupiah(pDepart)}</span></div>
+    `;
+    if(order.tripType === 'round_trip') {
+        costHTML += `<div class="flex justify-between items-center text-[10px] text-blue-400"><span>Tiket Pulang</span> <span>${formatRupiah(pReturn)}</span></div>`;
+    }
+    costHTML += `<div class="flex justify-between items-center text-[10px] text-davka-orange border-t border-dashed border-white/10 mt-1 pt-1"><span>Total DP</span> <span>- ${formatRupiah(dp)}</span></div>`;
+    
+    const costContainer = document.getElementById('detail-cost-breakdown');
+    costContainer.innerHTML = costHTML;
+    costContainer.classList.remove('hidden');
+
+    document.getElementById('detail-price').innerText = formatRupiah(total);
     const remEl = document.getElementById('detail-remaining');
     remEl.innerText = formatRupiah(remaining);
     remEl.className = remaining <= 0 ? "text-sm font-black text-green-500" : "text-sm font-black text-red-500";
@@ -1049,12 +1215,18 @@ window.closeDetailView = function() {
     renderOrderList(document.getElementById('searchInput').value);
 }
 
+// === REVISI LOGIC SORTING & PENOMORAN ===
 window.renderOrderList = function(filterText = '') {
     const container = document.getElementById('ordersContainer');
     container.innerHTML = '';
     if(!orders) return;
     
-    const filtered = orders.filter(o => {
+    // REVISI: Sort Ascending (Terlama ke Terbaru) - a - b
+    const sortedOrders = [...orders].sort((a, b) => {
+        return new Date(a.created_at || a.id) - new Date(b.created_at || b.id);
+    });
+    
+    const filtered = sortedOrders.filter(o => {
         const name = o.contactName || o.name || '';
         return name.toLowerCase().includes(filterText.toLowerCase());
     });
@@ -1083,6 +1255,8 @@ window.renderOrderList = function(filterText = '') {
 
         const dateDepart = order.date ? new Date(order.date).toLocaleDateString('id-ID', {day:'numeric', month:'short'}) : '-';
         const displayName = (order.contactName || order.name || 'No Name').toUpperCase();
+        
+        // REVISI: Penomoran 1, 2, 3 sesuai urutan list (Ascending)
         const displayNo = index + 1; 
 
         let routeIcon = '<i class="fas fa-arrow-right text-[9px] mx-1 opacity-50"></i>'; 
@@ -1127,20 +1301,6 @@ window.renderOrderList = function(filterText = '') {
     });
 }
 
-function renderUploadBtnHTML(id, type, file, label) {
-    if(file) {
-        return `<div class="relative w-full h-full rounded-lg overflow-hidden border border-white/10 group cursor-pointer bg-black/40">
-            <img src="${file}" class="w-full h-full object-cover opacity-60 group-hover:opacity-100 transition-all" onclick="showImageModal(this.src, true); event.stopPropagation();">
-            <div class="absolute inset-0 flex items-center justify-center pointer-events-none"><p class="text-[9px] text-white font-bold drop-shadow-md px-1 text-center leading-tight">${label}</p></div>
-            <button onclick="triggerHistoryUpload(${id}, '${type}')" class="absolute top-1 right-1 bg-black/60 text-white rounded-full w-5 h-5 flex items-center justify-center hover:bg-davka-orange transition-colors z-10"><i class="fas fa-pen text-[8px]"></i></button>
-        </div>`;
-    } else {
-        return `<button onclick="triggerHistoryUpload(${id}, '${type}')" class="w-full h-full bg-white/5 border border-white/10 border-dashed text-gray-500 rounded-lg text-[9px] hover:bg-white/10 hover:border-white/30 hover:text-gray-300 transition-all flex flex-col items-center justify-center gap-1 group">
-            <i class="fas fa-upload text-xs mb-0.5"></i><span>${label}</span>
-        </button>`;
-    }
-}
-
 function renderStats() {
     const now = new Date();
     const currentMonth = now.getMonth();
@@ -1168,7 +1328,10 @@ function renderStats() {
                     paxCount = 1; 
                 }
                 ticketCountMonth += paxCount;
-                revenueMonth += (parseFloat(o.price) || 0);
+                
+                // Revenue includes return price
+                const totalOrderPrice = (parseFloat(o.price) || 0) + (parseFloat(o.returnPrice) || 0);
+                revenueMonth += totalOrderPrice;
             }
         });
     }

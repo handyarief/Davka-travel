@@ -172,8 +172,7 @@
             </div>
 
             <form id="orderForm" class="space-y-5">
-                <input type="hidden" id="editIndex" value="-1"> 
-                
+                <input type="hidden" id="editIndex" value="-1">
                 <div class="glass p-5 rounded-3xl space-y-4">
                     <div class="flex items-center gap-2 mb-2">
                         <div class="w-8 h-8 rounded-full bg-blue-500/20 flex items-center justify-center text-blue-400">
@@ -241,7 +240,6 @@
                     </div>
                     <div id="passengerForms" class="space-y-4"></div>
                 </div>
-
                 <div class="glass p-5 rounded-3xl space-y-4">
                     <div class="flex items-center gap-2 mb-2">
                         <div class="w-8 h-8 rounded-full bg-davka-orange/20 flex items-center justify-center text-davka-orange">
@@ -283,7 +281,7 @@
                         </div>
                         <input type="text" id="inpTrain" required class="w-full bg-davka-surface border border-davka-border rounded-lg p-2.5 text-xs text-white focus:border-davka-orange outline-none" placeholder="Nama Kereta (Cth: Taksaka)" autocapitalize="characters">
                     </div>
-
+                    
                     <div id="returnTripFields" class="hidden bg-davka-bg/50 p-3 rounded-xl border border-white/5 relative overflow-hidden">
                         <div class="absolute left-0 top-0 bottom-0 w-1 bg-blue-500"></div>
                         <label class="text-[10px] font-bold text-blue-500 block mb-3 tracking-widest pl-2">KEPULANGAN (PP)</label>
@@ -311,8 +309,10 @@
                             </div>
                         </div>
                         <input type="text" id="inpReturnTrain" class="w-full bg-davka-surface border border-davka-border rounded-lg p-2.5 text-xs text-white focus:border-blue-500 outline-none ml-2 w-[98%]" placeholder="Nama Kereta (Cth: Argo Lawu)" autocapitalize="characters">
-                    </div>
+                        
+                        </div>
                 </div>
+                
                 <div class="glass p-5 rounded-3xl space-y-4">
                     <div class="flex items-center gap-2 mb-2">
                         <div class="w-8 h-8 rounded-full bg-purple-500/20 flex items-center justify-center text-purple-400">
@@ -320,13 +320,24 @@
                         </div>
                         <h3 class="text-sm font-bold text-white">Upload Bukti</h3>
                     </div>
+                    
+                    <div id="uploadTabContainer" class="hidden flex bg-white/5 p-1 rounded-xl mb-4 relative">
+                        <button type="button" onclick="switchUploadTab('depart')" id="btn-upload-depart" class="flex-1 py-2 text-[10px] font-bold uppercase rounded-lg transition-all bg-davka-orange text-white shadow-lg">
+                            <i class="fas fa-plane-departure mr-1"></i> Tiket Pergi
+                        </button>
+                        <button type="button" onclick="switchUploadTab('return')" id="btn-upload-return" class="flex-1 py-2 text-[10px] font-bold uppercase rounded-lg transition-all text-gray-400 hover:text-white">
+                            <i class="fas fa-plane-arrival mr-1"></i> Tiket Pulang
+                        </button>
+                    </div>
 
-                    <div class="grid grid-cols-1 gap-4">
+                    <div id="uploadContainerDepart" class="grid grid-cols-1 gap-4 animate-scale-up">
+                        <p class="text-[9px] text-gray-500 uppercase font-bold text-center mb-1 hidden" id="lblUploadDepart">Dokumen Keberangkatan</p>
+                        
                         <div id="zoneTransfer" onclick="handleUploadZoneClick('zoneTransfer', 'inpFileTransfer')" class="upload-zone-base bg-davka-bg p-4 rounded-xl border border-davka-border text-center group cursor-pointer hover:border-davka-orange transition-all duration-200 relative h-48 flex flex-col items-center justify-center select-none active:scale-[0.98]">
                             <input type="file" id="inpFileTransfer" accept="image/*" class="hidden">
                             
                             <i class="fas fa-receipt text-3xl text-gray-600 group-hover:text-davka-orange mb-3 transition-colors"></i>
-                            <p class="text-xs text-gray-400 font-bold" id="labelTransfer">Bukti Transfer</p>
+                            <p class="text-xs text-gray-400 font-bold" id="labelTransfer">Bukti Transfer (Pergi)</p>
                             <p class="text-[10px] text-gray-500 mt-1" id="subLabelTransfer">Ketuk 1x Pilih, Ketuk lagi Buka</p>
                             
                             <div id="hintTransfer" class="hidden absolute top-3 right-3 bg-davka-orange text-white text-[9px] font-bold px-3 py-1 rounded-full animate-bounce shadow-lg z-30">
@@ -352,7 +363,7 @@
                             <input type="file" id="inpFileChat" accept="image/*" class="hidden">
                             
                             <i class="fab fa-whatsapp text-3xl text-gray-600 group-hover:text-green-500 mb-3 transition-colors"></i>
-                            <p class="text-xs text-gray-400 font-bold" id="labelChat">Chat WA</p>
+                            <p class="text-xs text-gray-400 font-bold" id="labelChat">Chat WA (Pergi)</p>
                             <p class="text-[10px] text-gray-500 mt-1" id="subLabelChat">Ketuk 1x Pilih, Ketuk lagi Buka</p>
                             
                             <div id="hintChat" class="hidden absolute top-3 right-3 bg-green-500 text-white text-[9px] font-bold px-3 py-1 rounded-full animate-bounce shadow-lg z-30">
@@ -374,6 +385,61 @@
                             </div>
                         </div>
                     </div>
+                    <div id="uploadContainerReturn" class="hidden grid grid-cols-1 gap-4 animate-scale-up">
+                         <p class="text-[9px] text-blue-500 uppercase font-bold text-center mb-1">Dokumen Kepulangan</p>
+                         
+                         <div id="zoneTransferReturn" onclick="handleUploadZoneClick('zoneTransferReturn', 'inpFileTransferReturn')" class="upload-zone-base bg-davka-bg p-4 rounded-xl border border-blue-500/30 text-center group cursor-pointer hover:border-blue-500 transition-all duration-200 relative h-48 flex flex-col items-center justify-center select-none active:scale-[0.98]">
+                            <input type="file" id="inpFileTransferReturn" accept="image/*" class="hidden">
+                            
+                            <i class="fas fa-receipt text-3xl text-gray-600 group-hover:text-blue-500 mb-3 transition-colors"></i>
+                            <p class="text-xs text-gray-400 font-bold" id="labelTransferReturn">Bukti Transfer (Pulang)</p>
+                            <p class="text-[10px] text-gray-500 mt-1">Ketuk 1x Pilih, Ketuk lagi Buka</p>
+                            
+                            <div id="hintTransferReturn" class="hidden absolute top-3 right-3 bg-blue-500 text-white text-[9px] font-bold px-3 py-1 rounded-full animate-bounce shadow-lg z-30">
+                                <i class="fas fa-hand-pointer mr-1"></i> BUKA FILE
+                            </div>
+
+                            <textarea id="inpTransferDataReturn" class="hidden"></textarea>
+                            
+                            <div id="previewTransferReturn" class="hidden absolute inset-0 bg-black z-20 rounded-xl overflow-hidden">
+                                <img id="imgTransferReturn" onclick="showImageModal(this.src, true); event.stopPropagation();" class="w-full h-full object-cover opacity-90 hover:opacity-100 transition-opacity cursor-zoom-in">
+                                
+                                <button type="button" onclick="clearImage('transferReturn'); event.stopPropagation();" class="absolute top-2 right-2 bg-red-600 text-white rounded-full w-8 h-8 flex items-center justify-center z-30 shadow-lg active:scale-90 transition-transform">
+                                    <i class="fas fa-times text-xs"></i>
+                                </button>
+                                
+                                <div class="absolute bottom-0 left-0 w-full bg-black/70 backdrop-blur-sm py-2 pointer-events-none">
+                                    <p class="text-[10px] text-white font-bold text-center"><i class="fas fa-download mr-1 text-blue-500"></i> Ketuk foto untuk simpan</p>
+                                </div>
+                            </div>
+                        </div>
+
+                         <div id="zoneChatReturn" onclick="handleUploadZoneClick('zoneChatReturn', 'inpFileChatReturn')" class="upload-zone-base bg-davka-bg p-4 rounded-xl border border-blue-500/30 text-center group cursor-pointer hover:border-blue-500 transition-all duration-200 relative h-48 flex flex-col items-center justify-center select-none active:scale-[0.98]">
+                            <input type="file" id="inpFileChatReturn" accept="image/*" class="hidden">
+                            
+                            <i class="fab fa-whatsapp text-3xl text-gray-600 group-hover:text-blue-500 mb-3 transition-colors"></i>
+                            <p class="text-xs text-gray-400 font-bold" id="labelChatReturn">Chat WA (Pulang)</p>
+                            <p class="text-[10px] text-gray-500 mt-1">Ketuk 1x Pilih, Ketuk lagi Buka</p>
+                            
+                            <div id="hintChatReturn" class="hidden absolute top-3 right-3 bg-blue-500 text-white text-[9px] font-bold px-3 py-1 rounded-full animate-bounce shadow-lg z-30">
+                                <i class="fas fa-hand-pointer mr-1"></i> BUKA FILE
+                            </div>
+
+                            <textarea id="inpChatDataReturn" class="hidden"></textarea>
+                            
+                            <div id="previewChatReturn" class="hidden absolute inset-0 bg-black z-20 rounded-xl overflow-hidden">
+                                <img id="imgChatReturn" onclick="showImageModal(this.src, true); event.stopPropagation();" class="w-full h-full object-cover opacity-90 hover:opacity-100 transition-opacity cursor-zoom-in">
+                                
+                                <button type="button" onclick="clearImage('chatReturn'); event.stopPropagation();" class="absolute top-2 right-2 bg-red-600 text-white rounded-full w-8 h-8 flex items-center justify-center z-30 shadow-lg active:scale-90 transition-transform">
+                                    <i class="fas fa-times text-xs"></i>
+                                </button>
+                                
+                                <div class="absolute bottom-0 left-0 w-full bg-black/70 backdrop-blur-sm py-2 pointer-events-none">
+                                    <p class="text-[10px] text-white font-bold text-center"><i class="fas fa-download mr-1 text-blue-500"></i> Ketuk foto untuk simpan</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
                 </div>
                 <div class="glass p-5 rounded-3xl space-y-4 border-t-4 border-davka-orange">
                     <h3 class="text-sm font-bold text-davka-orange uppercase tracking-widest text-center">Rincian Pembayaran</h3>
@@ -390,7 +456,7 @@
 
                     <div class="space-y-3">
                         <div class="flex items-center justify-between bg-davka-bg p-3 rounded-xl border border-davka-border">
-                            <label class="text-xs text-gray-400">Harga/Penumpang</label>
+                            <label class="text-xs text-gray-400">Harga Pergi/Pax</label>
                             <input type="number" id="inpPricePerPax" oninput="calcTotalFromPax()" class="bg-transparent text-right text-white font-bold outline-none w-32 focus:text-davka-orange transition-colors" placeholder="0">
                         </div>
 
@@ -479,7 +545,7 @@
                     </div>
 
                     <div id="tab-content-depart" class="animate-scale-up">
-                        <div class="bg-white/5 rounded-xl p-3 border border-white/10">
+                        <div class="bg-white/5 rounded-xl p-3 border border-white/10 mb-3">
                             <p class="text-[9px] text-davka-orange font-bold uppercase mb-1 opacity-70">Detail Keberangkatan</p>
                             <div class="flex justify-between items-end">
                                 <div>
@@ -492,10 +558,19 @@
                                 </div>
                             </div>
                         </div>
+
+                        <div class="grid grid-cols-2 gap-2">
+                            <div id="detail-img-transfer-depart" class="bg-black/20 rounded-lg p-2 h-24 flex items-center justify-center border border-white/5 text-gray-500 text-[9px] text-center">
+                                No Transfer
+                            </div>
+                            <div id="detail-img-chat-depart" class="bg-black/20 rounded-lg p-2 h-24 flex items-center justify-center border border-white/5 text-gray-500 text-[9px] text-center">
+                                No Chat
+                            </div>
+                        </div>
                     </div>
 
                     <div id="tab-content-return" class="hidden animate-scale-up">
-                        <div class="bg-white/5 rounded-xl p-3 border border-blue-500/30 relative overflow-hidden">
+                        <div class="bg-white/5 rounded-xl p-3 border border-blue-500/30 relative overflow-hidden mb-3">
                             <div class="absolute left-0 top-0 bottom-0 w-1 bg-blue-500"></div>
                             <p class="text-[9px] text-blue-400 font-bold uppercase mb-1 opacity-70">Detail Kepulangan</p>
                             
@@ -522,18 +597,29 @@
                                 <p class="text-[10px] text-gray-500 italic">Tidak ada data kepulangan (Sekali Jalan)</p>
                             </div>
                         </div>
+
+                        <div id="container-proof-return" class="grid grid-cols-2 gap-2">
+                            <div id="detail-img-transfer-return" class="bg-black/20 rounded-lg p-2 h-24 flex items-center justify-center border border-white/5 text-gray-500 text-[9px] text-center">
+                                No Transfer
+                            </div>
+                            <div id="detail-img-chat-return" class="bg-black/20 rounded-lg p-2 h-24 flex items-center justify-center border border-white/5 text-gray-500 text-[9px] text-center">
+                                No Chat
+                            </div>
+                        </div>
                     </div>
                 </div>
 
                 <div class="glass p-5 rounded-3xl mb-4">
                     <h3 class="text-xs font-bold text-gray-400 uppercase tracking-widest mb-3 border-b border-white/10 pb-2">Penumpang</h3>
-                    <div id="detail-pax-list" class="space-y-3">
-                        </div>
+                    <div id="detail-pax-list" class="space-y-3"></div>
                 </div>
 
                 <div class="glass p-5 rounded-3xl mb-24">
-                     <h3 class="text-xs font-bold text-gray-400 uppercase tracking-widest mb-3 border-b border-white/10 pb-2">Pembayaran</h3>
+                     <h3 class="text-xs font-bold text-gray-400 uppercase tracking-widest mb-3 border-b border-white/10 pb-2">Pembayaran & Status</h3>
                      
+                     <div id="detail-cost-breakdown" class="hidden mb-3 border-b border-white/5 pb-2 space-y-1">
+                        </div>
+
                      <div class="grid grid-cols-2 gap-4 mb-4">
                         <div>
                             <p class="text-[9px] text-gray-500 uppercase">Total Harga</p>
@@ -552,7 +638,9 @@
                      </div>
 
                      <div class="grid grid-cols-2 gap-3 mb-4">
-                        <div id="detail-upload-settlement" class="h-32"></div> <div id="detail-upload-ticket" class="h-32"></div> </div>
+                        <div id="detail-upload-settlement" class="h-32"></div> 
+                        <div id="detail-upload-ticket" class="h-32"></div> 
+                     </div>
 
                      <div class="grid grid-cols-4 gap-2 border-t border-white/10 pt-4">
                         <button id="btn-action-status" class="col-span-1 bg-white/5 border border-white/10 rounded-xl py-3 flex flex-col items-center justify-center gap-1 hover:bg-white/10 text-gray-400 transition-all">

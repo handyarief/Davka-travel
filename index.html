@@ -199,27 +199,49 @@
                         </div>
                     </div>
                 </div>
-
                 <div class="glass p-5 rounded-3xl space-y-4">
-                    <div class="flex justify-between items-center border-b border-white/5 pb-3">
+                    <div class="flex flex-col gap-3 border-b border-white/5 pb-3">
                         <div class="flex items-center gap-2">
                             <div class="w-8 h-8 rounded-full bg-green-500/20 flex items-center justify-center text-green-400">
                                 <i class="fas fa-users text-xs"></i>
                             </div>
                             <h3 class="text-sm font-bold text-white">Penumpang</h3>
                         </div>
-                        <div class="flex items-center bg-davka-bg rounded-lg px-2 border border-davka-border">
-                            <span class="text-xs text-gray-400 mr-2">Jml:</span>
-                            <select id="inpPaxCount" onchange="updatePassengerForms()" class="bg-transparent text-white text-sm font-bold py-1 focus:outline-none">
-                                <option value="1">1</option>
-                                <option value="2">2</option>
-                                <option value="3">3</option>
-                                <option value="4">4</option>
-                            </select>
+                        
+                        <div class="grid grid-cols-2 gap-3">
+                            <div class="bg-davka-bg rounded-xl px-3 py-2 border border-davka-border flex justify-between items-center relative overflow-hidden">
+                                <div class="absolute left-0 top-0 bottom-0 w-1 bg-davka-orange"></div>
+                                <span class="text-[10px] text-gray-400 uppercase font-bold pl-2">Dewasa</span>
+                                <select id="inpPaxCount" onchange="updatePassengerForms()" class="bg-transparent text-white text-sm font-bold text-right focus:outline-none w-12 cursor-pointer appearance-none z-10">
+                                    <option value="1">1</option>
+                                    <option value="2">2</option>
+                                    <option value="3">3</option>
+                                    <option value="4">4</option>
+                                    <option value="5">5</option>
+                                    <option value="6">6</option>
+                                    <option value="7">7</option>
+                                    <option value="8">8</option>
+                                </select>
+                                <i class="fas fa-chevron-down text-[8px] text-gray-500 absolute right-0 pointer-events-none"></i>
+                            </div>
+                            
+                            <div class="bg-davka-bg rounded-xl px-3 py-2 border border-davka-border flex justify-between items-center relative overflow-hidden">
+                                <div class="absolute left-0 top-0 bottom-0 w-1 bg-pink-500"></div>
+                                <span class="text-[10px] text-gray-400 uppercase font-bold pl-2">Bayi</span>
+                                <select id="inpInfantCount" onchange="updatePassengerForms()" class="bg-transparent text-white text-sm font-bold text-right focus:outline-none w-12 cursor-pointer appearance-none z-10">
+                                    <option value="0">0</option>
+                                    <option value="1">1</option>
+                                    <option value="2">2</option>
+                                    <option value="3">3</option>
+                                    <option value="4">4</option>
+                                </select>
+                                <i class="fas fa-chevron-down text-[8px] text-gray-500 absolute right-0 pointer-events-none"></i>
+                            </div>
                         </div>
                     </div>
                     <div id="passengerForms" class="space-y-4"></div>
                 </div>
+
                 <div class="glass p-5 rounded-3xl space-y-4">
                     <div class="flex items-center gap-2 mb-2">
                         <div class="w-8 h-8 rounded-full bg-davka-orange/20 flex items-center justify-center text-davka-orange">
@@ -341,7 +363,6 @@
                         </div>
                     </div>
                 </div>
-
                 <div class="glass p-5 rounded-3xl space-y-4 border-t-4 border-davka-orange">
                     <h3 class="text-sm font-bold text-davka-orange uppercase tracking-widest text-center">Rincian Pembayaran</h3>
                     
@@ -380,14 +401,9 @@
                     <button type="submit" class="w-full bg-gradient-to-r from-davka-orange to-red-600 text-white font-bold py-4 rounded-2xl shadow-lg shadow-orange-500/30 active:scale-95 transition-transform flex justify-center items-center gap-2">
                         <i class="fas fa-save"></i> <span id="btnSaveText">SIMPAN PESANAN</span>
                     </button>
-                    
-                    <button type="button" onclick="generateAndPreviewTicket()" class="w-full bg-davka-surface border border-white/10 text-gray-300 font-bold py-3 rounded-2xl hover:bg-white/5 transition-colors flex justify-center items-center gap-2">
-                        <i class="fas fa-print text-davka-orange"></i> CETAK DATA PEMESAN
-                    </button>
-                </div>
+                    </div>
             </form>
         </section>
-
         <section id="page-list" class="hidden fade-in space-y-4">
             <div class="pt-16 pb-2">
                 <div class="mb-4">
@@ -414,7 +430,8 @@
                 </div>
             </div>
         </section>
-<section id="page-detail" class="hidden fade-in pb-32">
+        
+        <section id="page-detail" class="hidden fade-in pb-32">
             <div class="pt-16 px-1">
                 <div class="flex items-center gap-3 mb-6">
                     <div>
@@ -572,164 +589,6 @@
             <img id="modalImg" src="" class="max-w-full max-h-[70vh] rounded-xl shadow-2xl border border-gray-800 bg-white">
             <div id="modalActions" class="flex gap-3 mt-6"></div>
             <p class="mt-4 text-gray-500 text-[10px]">Ketuk area gelap untuk menutup</p>
-        </div>
-    </div>
-
-    <div id="ticket-render-area" style="width: 500px; position: fixed; left: -9999px;">
-        <div class="bg-white relative flex flex-col min-h-[900px] overflow-hidden font-sans text-slate-900 border border-gray-200">
-            
-            <div class="absolute inset-0 z-0 flex items-center justify-center opacity-[0.05] pointer-events-none">
-                 <img src="1000390242.jpg" crossorigin="anonymous" alt="Watermark" class="w-[80%] grayscale">
-            </div>
-
-            <div class="bg-[#0b1c38] px-8 py-8 rounded-b-[3rem] relative z-10 shadow-2xl">
-                <div class="flex flex-col items-center text-center">
-                    <div class="w-24 h-24 bg-white rounded-full p-2 mb-4 shadow-lg flex items-center justify-center">
-                        <img src="1000390242.jpg" crossorigin="anonymous" class="w-full h-full object-contain rounded-full">
-                    </div>
-                    <h1 class="font-black text-3xl text-white tracking-wider font-serif mb-1">DAVKA TRAVEL</h1>
-                    <p class="text-xs text-[#ff5400] font-bold tracking-[0.2em] uppercase">JASA TIKET KERETA API</p>
-                    <p class="text-[9px] text-white/60 font-medium tracking-wider mt-1">PERUM PURI NIRWANA BLOK MJ 24</p>
-                </div>
-                
-                <div class="mt-6 flex justify-between items-center border-t border-white/10 pt-4">
-                    <div>
-                        <p class="text-[9px] text-gray-400 uppercase tracking-wider">Order ID</p>
-                        <p class="text-white font-mono font-bold text-sm" id="ticket-id">#000000</p>
-                    </div>
-                    <div class="text-right">
-                        <p class="text-[9px] text-gray-400 uppercase tracking-wider">Date Issued</p>
-                        <p class="text-white font-bold text-sm" id="ticket-issued-date">-</p>
-                    </div>
-                </div>
-            </div>
-
-            <div class="px-8 -mt-6 relative z-20 pb-10 space-y-5">
-                
-                <div class="bg-white p-5 rounded-2xl shadow-lg border border-gray-100 relative overflow-hidden">
-                    <div class="absolute top-0 left-0 w-1 h-full bg-[#ff5400]"></div>
-                    <h3 class="text-xs font-black text-[#0b1c38] uppercase tracking-wider mb-3 border-b border-gray-100 pb-2">Data Pemesan</h3>
-                    <div class="space-y-2">
-                        <div class="flex">
-                            <span class="w-20 text-[10px] text-gray-400 font-bold uppercase">Nama</span>
-                            <span class="flex-1 text-xs font-bold text-gray-800" id="ticket-contact-name">-</span>
-                        </div>
-                        <div class="flex">
-                            <span class="w-20 text-[10px] text-gray-400 font-bold uppercase">Telepon</span>
-                            <span class="flex-1 text-xs font-bold text-gray-800" id="ticket-contact-phone">-</span>
-                        </div>
-                        <div class="flex">
-                            <span class="w-20 text-[10px] text-gray-400 font-bold uppercase">Alamat</span>
-                            <span class="flex-1 text-xs font-bold text-gray-800 leading-tight" id="ticket-address">-</span>
-                        </div>
-                    </div>
-                </div>
-
-                <div class="bg-[#f8fafc] p-4 rounded-2xl border border-gray-200 shadow-sm relative overflow-hidden">
-                    <div class="absolute top-0 left-0 w-1 h-full bg-[#ff5400]"></div>
-                    <div class="flex justify-between items-center mb-2 border-b border-gray-200 pb-2">
-                        <span class="text-[10px] font-black text-[#0b1c38] uppercase tracking-wider">Keberangkatan</span>
-                        <span class="text-[10px] font-bold text-[#ff5400]" id="ticket-train-depart">-</span>
-                    </div>
-                    
-                    <div class="flex justify-between items-center mb-3 px-2">
-                        <div class="text-center">
-                            <h2 class="text-2xl font-black text-[#0b1c38]" id="ticket-origin">ORG</h2>
-                        </div>
-                        <div class="flex flex-col items-center">
-                            <i class="fas fa-arrow-right text-[#ff5400] text-xl drop-shadow-sm"></i>
-                        </div>
-                        <div class="text-center">
-                            <h2 class="text-2xl font-black text-[#0b1c38]" id="ticket-dest">DES</h2>
-                        </div>
-                    </div>
-
-                    <div class="flex justify-between bg-white p-2 rounded-lg border border-gray-100">
-                        <div>
-                            <p class="text-[8px] text-gray-400 uppercase font-bold">Tgl Berangkat</p>
-                            <p class="text-[10px] font-bold text-[#0b1c38]" id="ticket-date-depart">-</p>
-                        </div>
-                        <div class="text-right">
-                            <p class="text-[8px] text-gray-400 uppercase font-bold">Tgl Beli (War)</p>
-                            <p class="text-[10px] font-bold text-[#ff5400]" id="ticket-war-date-depart">-</p>
-                        </div>
-                    </div>
-                </div>
-
-                <div id="ticket-box-return" class="hidden bg-[#f8fafc] p-4 rounded-2xl border border-gray-200 shadow-sm relative overflow-hidden">
-                    <div class="absolute top-0 left-0 w-1 h-full bg-[#0ea5e9]"></div>
-                    <div class="flex justify-between items-center mb-2 border-b border-gray-200 pb-2">
-                        <span class="text-[10px] font-black text-[#0b1c38] uppercase tracking-wider">Kepulangan</span>
-                        <span class="text-[10px] font-bold text-[#0ea5e9]" id="ticket-train-return">-</span>
-                    </div>
-                    
-                    <div class="flex justify-between items-center mb-3 px-2">
-                        <div class="text-center">
-                            <h2 class="text-2xl font-black text-[#0b1c38]" id="ticket-return-origin">DST</h2>
-                        </div>
-                        <div class="flex flex-col items-center">
-                             <i class="fas fa-arrow-right text-[#0ea5e9] text-xl drop-shadow-sm"></i>
-                        </div>
-                        <div class="text-center">
-                            <h2 class="text-2xl font-black text-[#0b1c38]" id="ticket-return-dest">ORG</h2>
-                        </div>
-                    </div>
-
-                    <div class="flex justify-between bg-white p-2 rounded-lg border border-gray-100">
-                        <div>
-                            <p class="text-[8px] text-gray-400 uppercase font-bold">Tgl Pulang</p>
-                            <p class="text-[10px] font-bold text-[#0b1c38]" id="ticket-date-return">-</p>
-                        </div>
-                        <div class="text-right">
-                            <p class="text-[8px] text-gray-400 uppercase font-bold">Tgl Beli (War)</p>
-                            <p class="text-[10px] font-bold text-[#0ea5e9]" id="ticket-war-date-return">-</p>
-                        </div>
-                    </div>
-                </div>
-
-                <div class="bg-white p-5 rounded-2xl shadow-lg border border-gray-100">
-                    <div class="flex justify-between items-center border-b border-gray-100 pb-2 mb-3">
-                        <h3 class="text-xs font-black text-[#0b1c38] uppercase tracking-wider">Daftar Penumpang</h3>
-                        <div class="bg-[#0b1c38] text-white text-[10px] font-bold px-4 py-1.5 rounded-full shadow-md flex items-center justify-center leading-none min-w-[80px]" id="ticket-pax-count">
-                            1 Penumpang
-                        </div>
-                    </div>
-                    <div id="ticket-pax-list-vertical" class="space-y-3">
-                    </div>
-                </div>
-
-                <div class="bg-[#0b1c38] rounded-2xl p-5 text-white shadow-xl relative overflow-hidden">
-                    <div class="absolute -right-10 -bottom-10 w-32 h-32 bg-[#ff5400] rounded-full blur-3xl opacity-20"></div>
-                    
-                    <div class="grid grid-cols-2 gap-y-4 gap-x-2 mb-4 border-b border-white/10 pb-4">
-                        <div>
-                            <p class="text-[9px] text-white/70 font-bold uppercase tracking-wider">Metode Pembayaran</p>
-                            <p class="text-xs font-bold text-white" id="ticket-val-method">-</p>
-                        </div>
-                        <div class="text-right">
-                             <p class="text-[9px] text-white/70 font-bold uppercase tracking-wider">Harga / Org</p>
-                             <p class="text-xs font-bold text-white" id="ticket-val-price-per-pax">Rp 0</p>
-                        </div>
-                        <div>
-                            <p class="text-[9px] text-white/70 font-bold uppercase tracking-wider">Total Harga</p>
-                            <p class="text-xs font-bold text-white" id="ticket-val-total">Rp 0</p>
-                        </div>
-                        <div class="text-right">
-                            <p class="text-[9px] text-white/70 font-bold uppercase tracking-wider">DP / Bayar Awal</p>
-                            <p class="text-xs font-bold text-[#ff5400]" id="ticket-val-fee">Rp 0</p>
-                        </div>
-                        <div class="col-span-2 text-right pt-2 border-t border-white/10">
-                            <p class="text-[9px] text-white/70 font-bold uppercase tracking-wider">Sisa Tagihan</p>
-                            <p class="text-lg font-black text-white" id="ticket-val-remaining">Rp 0</p>
-                        </div>
-                    </div>
-                    <div class="text-center">
-                        <p class="text-[9px] italic text-gray-400">Terima kasih telah mempercayakan perjalanan Anda.</p>
-                        <p class="text-[9px] font-bold text-[#ff5400] mt-1">Davka Travel &bull; Amanah &bull; Cepat</p>
-                    </div>
-                </div>
-
-            </div>
         </div>
     </div>
 

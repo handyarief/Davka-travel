@@ -123,7 +123,6 @@ window.switchTab = function(tabName) {
 
 // --- UX ENGINE: SMOOTH SCROLL & ENTER KEY NAVIGATION ---
 function enableSmoothInputUX() {
-    // Ambil semua elemen input yang relevan
     const formElements = document.querySelectorAll('input, select, textarea');
     
     formElements.forEach((el, index) => {
@@ -131,7 +130,6 @@ function enableSmoothInputUX() {
         el.removeEventListener('click', handleInputFocus); 
         el.removeEventListener('keydown', handleInputEnter);
 
-        // Tambah listener baru
         el.addEventListener('focus', handleInputFocus);
         el.addEventListener('click', handleInputFocus); 
         el.addEventListener('keydown', (e) => handleInputEnter(e, index, formElements));
@@ -139,7 +137,6 @@ function enableSmoothInputUX() {
 }
 
 function handleInputFocus(e) {
-    // Delay sedikit agar keyboard virtual muncul dulu
     setTimeout(() => {
         e.target.scrollIntoView({ 
             behavior: 'smooth', 
@@ -169,7 +166,106 @@ function handleInputEnter(e, currentIndex, allElements) {
     }
 }
 
-// FUNGSI: Ambil data dibatasi 50
+// --- UPDATE LOGIC PENUMPANG (DEWASA & BAYI) ---
+
+window.updatePassengerForms = function() {
+    const adultCount = parseInt(document.getElementById('inpPaxCount').value) || 1;
+    const infantCount = parseInt(document.getElementById('inpInfantCount').value) || 0;
+    const container = document.getElementById('passengerForms'); 
+    
+    // Simpan data lama agar tidak hilang saat resize
+    const existingItems = document.querySelectorAll('.passenger-item');
+    let storedAdults = [];
+    let storedInfants = [];
+
+    existingItems.forEach(el => {
+        const type = el.getAttribute('data-type');
+        const name = el.querySelector('.pax-name').value;
+        const nik = el.querySelector('.pax-nik').value;
+        if(type === 'infant') {
+            storedInfants.push({name, nik});
+        } else {
+            storedAdults.push({name, nik});
+        }
+    });
+
+    let html = '';
+
+    // Render Input Dewasa
+    for(let i = 1; i <= adultCount; i++) {
+        const valName = storedAdults[i-1] ? storedAdults[i-1].name : '';
+        const valNik = storedAdults[i-1] ? storedAdults[i-1].nik : '';
+        
+        html += `
+        <div class="passenger-item border border-white/10 rounded-xl p-3 bg-white/5 relative group hover:border-davka-orange/50 transition-colors" data-type="adult">
+            <div class="absolute -left-1 top-3 w-1 h-6 bg-davka-orange rounded-r"></div>
+            <p class="text-[10px] font-bold text-davka-orange mb-2 uppercase tracking-wider pl-2">
+                <i class="fas fa-user mr-1"></i> Dewasa ${i}
+            </p>
+            <div class="space-y-2 pl-2">
+                <input type="text" value="${valName}" class="pax-name w-full bg-davka-bg border border-davka-border rounded-lg p-2 text-sm text-white focus:border-davka-orange focus:outline-none placeholder-gray-600" placeholder="Nama Lengkap (Sesuai KTP)" autocapitalize="characters">
+                <input type="number" value="${valNik}" class="pax-nik w-full bg-davka-bg border border-davka-border rounded-lg p-2 text-sm text-white focus:border-davka-orange focus:outline-none placeholder-gray-600" placeholder="NIK">
+            </div>
+        </div>`;
+    }
+
+    // Render Input Bayi
+    for(let i = 1; i <= infantCount; i++) {
+        const valName = storedInfants[i-1] ? storedInfants[i-1].name : '';
+        const valNik = storedInfants[i-1] ? storedInfants[i-1].nik : '';
+        
+        html += `
+        <div class="passenger-item border border-pink-500/30 rounded-xl p-3 bg-pink-500/5 relative group hover:border-pink-500 transition-colors" data-type="infant">
+            <div class="absolute -left-1 top-3 w-1 h-6 bg-pink-500 rounded-r"></div>
+            <p class="text-[10px] font-bold text-pink-400 mb-2 uppercase tracking-wider pl-2">
+                <i class="fas fa-baby mr-1"></i> Bayi ${i}
+            </p>
+            <div class="space-y-2 pl-2">
+                <input type="text" value="${valName}" class="pax-name w-full bg-davka-bg border border-davka-border rounded-lg p-2 text-sm text-white focus:border-pink-500 focus:outline-none placeholder-gray-600" placeholder="Nama Bayi" autocapitalize="characters">
+                <input type="number" value="${valNik}" class="pax-nik w-full bg-davka-bg border border-davka-border rounded-lg p-2 text-sm text-white focus:border-pink-500 focus:outline-none placeholder-gray-600" placeholder="NIK / Tgl Lahir">
+            </div>
+        </div>`;
+    }
+
+    container.innerHTML = html;
+    
+    // Recalculate Total
+    calcTotalFromPax();
+    setTimeout(enableSmoothInputUX, 100);
+}
+
+window.getPassengersFromForm = function() {
+    const items = document.querySelectorAll('.passenger-item');
+    let paxList = [];
+    
+    items.forEach(el => {
+        const nameInput = el.querySelector('.pax-name');
+        const nikInput = el.querySelector('.pax-nik');
+        const type = el.getAttribute('data-type'); // 'adult' or 'infant'
+        
+        paxList.push({
+            name: nameInput.value.toUpperCase() || (type === 'infant' ? 'BAYI' : 'PENUMPANG'),
+            nik: nikInput.value || '-',
+            type: type 
+        });
+    });
+    
+    return paxList;
+}
+
+window.calcTotalFromPax = function() {
+    const pricePerPax = parseFloat(document.getElementById('inpPricePerPax').value) || 0;
+    const adultCount = parseInt(document.getElementById('inpPaxCount').value) || 1;
+    
+    // LOGIC: Harga otomatis hanya dikali jumlah DEWASA.
+    // Asumsi: Bayi biasanya gratis/reduksi (bisa diedit manual di Total Harga jika berbayar).
+    if (pricePerPax > 0) {
+        document.getElementById('inpPrice').value = pricePerPax * adultCount;
+        calcRemaining(); 
+    }
+}
+// --- FETCH & REALTIME ---
+
 async function fetchOrders() {
     const { data, error } = await supabase
         .from('orders')
@@ -190,7 +286,6 @@ async function fetchOrders() {
     }
 }
 
-// FUNGSI: Realtime
 function setupRealtime() {
     supabase.channel('public:orders')
         .on('postgres_changes', { event: '*', schema: 'public', table: 'orders' }, (payload) => {
@@ -213,6 +308,7 @@ async function fetchOrdersBg() {
         }
     }
 }
+
 // --- LOGIC UPLOAD & STORAGE ---
 async function uploadToSupabaseStorage(base64Data, fileName) {
     if (!base64Data || base64Data.startsWith('http')) return base64Data; 
@@ -240,7 +336,7 @@ async function uploadToSupabaseStorage(base64Data, fileName) {
     }
 }
 
-// --- FORM HANDLING ---
+// --- FORM HANDLING (SAVE & UPDATE) ---
 const orderForm = document.getElementById('orderForm');
 
 orderForm.addEventListener('submit', async (e) => {
@@ -269,13 +365,16 @@ orderForm.addEventListener('submit', async (e) => {
             chatUrl = await uploadToSupabaseStorage(chatBase64, `${orderId}_chat`);
         }
 
+        // AMBIL DATA PENUMPANG DARI FUNGSI PART 1
+        const passengerData = getPassengersFromForm();
+
         const newOrder = {
             id: orderId, 
             created_at: created_at,
             contactName: document.getElementById('inpContactName').value.toUpperCase(),
             contactPhone: document.getElementById('inpContactPhone').value,
             address: document.getElementById('inpAddress').value.toUpperCase(),
-            passengers: getPassengersFromForm(), 
+            passengers: passengerData, // Array Object dengan type 'adult'/'infant'
             origin: document.getElementById('inpOrigin').value.toUpperCase(),
             dest: document.getElementById('inpDest').value.toUpperCase(),
             date: document.getElementById('inpDate').value,
@@ -321,14 +420,14 @@ orderForm.addEventListener('submit', async (e) => {
         toggleLoader(false); 
     }
 });
-// --- UI HELPERS ---
+
+// --- UI ACTIONS & NAVIGATION ---
 
 window.deleteOrder = async function(id) {
     if(confirm("Hapus pesanan ini Permanen?")) {
         toggleLoader(true);
         orders = orders.filter(o => o.id !== id);
         
-        // Cek halaman mana yang aktif
         const isDetailOpen = !document.getElementById('page-detail').classList.contains('hidden');
         if(isDetailOpen) closeDetailView();
         
@@ -357,10 +456,8 @@ window.toggleStatus = async function(id) {
     
     orders[index].status = next;
     
-    // Update List & Detail View
     renderOrderList(document.getElementById('searchInput').value);
     
-    // Jika sedang buka detail, refresh tampilan detailnya
     const isDetailOpen = !document.getElementById('page-detail').classList.contains('hidden');
     if(isDetailOpen) openDetailView(id);
 
@@ -395,6 +492,7 @@ window.navTo = function(pageId) {
     }, 400); 
 }
 
+// --- EDIT ORDER LOGIC (UPDATED FOR MULTI PASSENGER) ---
 window.editOrder = function(id) {
     const index = orders.findIndex(o => o.id === id);
     if (index === -1) return;
@@ -405,30 +503,56 @@ window.editOrder = function(id) {
     document.getElementById('inpContactPhone').value = data.contactPhone || data.phone || '';
     document.getElementById('inpAddress').value = data.address || '';
     
+    // LOGIC: Memisahkan Penumpang Dewasa & Bayi
     let paxList = [];
-    if (Array.isArray(data.passengers)) paxList = data.passengers;
-    else if (data.name) paxList = [{name: data.name, nik: data.nik || '-'}];
+    if (Array.isArray(data.passengers)) {
+        paxList = data.passengers;
+    } else if (data.name) {
+        // Backward compatibility untuk data lama
+        paxList = [{name: data.name, nik: data.nik || '-', type: 'adult'}];
+    }
     
-    document.getElementById('inpPaxCount').value = paxList.length || 1;
+    // Filter Dewasa & Bayi
+    const adults = paxList.filter(p => !p.type || p.type === 'adult'); // Default adult jika type undefined
+    const infants = paxList.filter(p => p.type === 'infant');
+
+    // Set nilai Dropdown
+    document.getElementById('inpPaxCount').value = adults.length || 1;
+    document.getElementById('inpInfantCount').value = infants.length || 0;
     
-    // PENTING: Panggil updatePassengerForms terlebih dahulu untuk membuat elemen input
+    // Render Form Input
     updatePassengerForms(); 
     
-    // PENTING: Gunakan timeout agar DOM selesai dirender sebelum diisi value
+    // Isi Value ke Input (Pakai Timeout agar DOM ready)
     setTimeout(() => {
-        const nameInputs = document.querySelectorAll('.pax-name');
-        const nikInputs = document.querySelectorAll('.pax-nik');
-        paxList.forEach((p, i) => {
-            if(nameInputs[i]) nameInputs[i].value = p.name;
-            if(nikInputs[i]) nikInputs[i].value = p.nik;
+        const itemWrappers = document.querySelectorAll('.passenger-item');
+        let adultIdx = 0;
+        let infantIdx = 0;
+
+        itemWrappers.forEach(el => {
+            const type = el.getAttribute('data-type');
+            const nameInput = el.querySelector('.pax-name');
+            const nikInput = el.querySelector('.pax-nik');
+
+            if (type === 'adult' && adults[adultIdx]) {
+                nameInput.value = adults[adultIdx].name;
+                nikInput.value = adults[adultIdx].nik;
+                adultIdx++;
+            } else if (type === 'infant' && infants[infantIdx]) {
+                nameInput.value = infants[infantIdx].name;
+                nikInput.value = infants[infantIdx].nik;
+                infantIdx++;
+            }
         });
-    }, 0);
+    }, 50);
+
     document.getElementById('inpOrigin').value = data.origin || '';
     document.getElementById('inpDest').value = data.dest || '';
     document.getElementById('inpDate').value = data.date || '';
     document.getElementById('inpWarDate').value = data.warDate || ''; 
     document.getElementById('inpTrain').value = data.train || '';
     document.getElementById('inpTripType').value = data.tripType || 'one_way';
+    
     toggleTripType();
     
     if(data.tripType === 'round_trip') {
@@ -436,12 +560,15 @@ window.editOrder = function(id) {
         document.getElementById('inpReturnWarDate').value = data.returnWarDate || '';
         document.getElementById('inpReturnTrain').value = data.returnTrain || '';
     }
+    
     document.getElementById('inpPaymentMethod').value = data.paymentMethod || 'Tunai';
     document.getElementById('inpPrice').value = data.price || 0;
     
-    const paxCount = paxList.length || 1;
-    const pricePerPax = data.price > 0 ? (data.price / paxCount) : 0;
+    // Hitung estimasi harga per pax (hanya dibagi dewasa)
+    const adultCount = adults.length || 1;
+    const pricePerPax = data.price > 0 ? (data.price / adultCount) : 0;
     document.getElementById('inpPricePerPax').value = Math.round(pricePerPax); 
+    
     document.getElementById('inpFee').value = data.fee || 0;
     calcRemaining();
 
@@ -459,7 +586,6 @@ window.editOrder = function(id) {
     document.getElementById('btnSaveText').innerText = "UPDATE DATA";
     navTo('input');
 }
-
 window.updateSettlement = async function(id, newVal) {
     toggleLoader(true);
     const index = orders.findIndex(o => o.id === id);
@@ -601,41 +727,6 @@ window.toggleTripType = function() {
     setTimeout(enableSmoothInputUX, 200);
 }
 
-window.updatePassengerForms = function() {
-    const count = parseInt(document.getElementById('inpPaxCount').value);
-    const container = document.getElementById('passengerForms'); 
-    
-    const existingNames = document.querySelectorAll('.pax-name');
-    const existingNiks = document.querySelectorAll('.pax-nik');
-    let storedData = [];
-    existingNames.forEach((el, i) => storedData.push({ name: el.value, nik: existingNiks[i] ? existingNiks[i].value : '' }));
-
-    let html = '';
-    for(let i = 1; i <= count; i++) {
-        const valName = storedData[i-1] ? storedData[i-1].name : '';
-        const valNik = storedData[i-1] ? storedData[i-1].nik : '';
-        html += `<div class="passenger-item border border-white/10 rounded-xl p-3 bg-white/5 relative group hover:border-davka-orange/50 transition-colors">
-                <div class="absolute -left-1 top-3 w-1 h-6 bg-davka-orange rounded-r"></div>
-                <p class="text-[10px] font-bold text-davka-orange mb-2 uppercase tracking-wider pl-2">Penumpang ${i}</p>
-                <div class="space-y-2 pl-2">
-                    <input type="text" value="${valName}" class="pax-name w-full bg-davka-bg border border-davka-border rounded-lg p-2 text-sm text-white focus:border-davka-orange focus:outline-none placeholder-gray-600" placeholder="Nama Lengkap" autocapitalize="characters">
-                    <input type="number" value="${valNik}" class="pax-nik w-full bg-davka-bg border border-davka-border rounded-lg p-2 text-sm text-white focus:border-davka-orange focus:outline-none placeholder-gray-600" placeholder="NIK">
-                </div>
-            </div>`;
-    }
-    container.innerHTML = html;
-    calcTotalFromPax();
-    setTimeout(enableSmoothInputUX, 100);
-}
-
-window.calcTotalFromPax = function() {
-    const pricePerPax = parseFloat(document.getElementById('inpPricePerPax').value) || 0;
-    const paxCount = parseInt(document.getElementById('inpPaxCount').value) || 1;
-    if (pricePerPax > 0) {
-        document.getElementById('inpPrice').value = pricePerPax * paxCount;
-        calcRemaining(); 
-    }
-}
 window.calcH45 = function() {
     const dateVal = document.getElementById('inpDate').value;
     if(dateVal) {
@@ -657,13 +748,6 @@ window.calcRemaining = function() {
     const field = document.getElementById('inpRemaining');
     field.value = formatRupiah(remaining);
     field.className = remaining <= 0 ? "bg-transparent text-right text-green-500 font-black text-lg outline-none w-40 cursor-default" : "bg-transparent text-right text-red-500 font-black text-lg outline-none w-40 cursor-default";
-}
-function getPassengersFromForm() {
-    const paxNames = document.querySelectorAll('.pax-name');
-    const paxNiks = document.querySelectorAll('.pax-nik');
-    let paxList = [];
-    paxNames.forEach((input, i) => paxList.push({ name: input.value.toUpperCase() || 'PASSENGER NAME', nik: paxNiks[i] ? paxNiks[i].value : '-' }));
-    return paxList;
 }
 
 // Generate & Print
@@ -716,9 +800,16 @@ function renderReceiptToDOM(order) {
     let desc = `KA ${order.train.toUpperCase()} (${order.origin}-${order.dest})`;
     if(order.tripType === 'round_trip') desc = `PP ${order.train}/${order.returnTrain}`.toUpperCase();
     if(desc.length > 30) desc = desc.substring(0, 28) + '..';
-    let paxCount = order.passengers ? order.passengers.length : (order.name ? 1 : 1);
-    const pricePerPax = order.price > 0 ? Math.round(order.price / paxCount) : 0;
-    document.getElementById('rec-items').innerHTML = `<tr><td colspan="2" class="pb-1 uppercase">${desc}</td></tr><tr><td class="pb-1">${paxCount} x ${formatNumber(pricePerPax)}</td><td class="text-right font-bold">${formatNumber(order.price)}</td></tr>`;
+    
+    // UPDATE: Hitung Dewasa & Bayi untuk Struk
+    let paxList = Array.isArray(order.passengers) ? order.passengers : (order.name ? [{name: order.name, type: 'adult'}] : []);
+    const adults = paxList.filter(p => !p.type || p.type === 'adult').length;
+    const infants = paxList.filter(p => p.type === 'infant').length;
+    
+    let qtyDesc = `${adults} Pax`;
+    if(infants > 0) qtyDesc += ` + ${infants} Bayi`;
+
+    document.getElementById('rec-items').innerHTML = `<tr><td colspan="2" class="pb-1 uppercase">${desc}</td></tr><tr><td class="pb-1">${qtyDesc}</td><td class="text-right font-bold">${formatNumber(order.price)}</td></tr>`;
     document.getElementById('rec-total').innerText = formatRupiah(order.price);
     document.getElementById('rec-dp').innerText = formatRupiah(order.fee);
     document.getElementById('rec-settlement').innerText = formatRupiah(order.price - order.fee);
@@ -745,15 +836,31 @@ function renderTicketToDOM(data) {
         document.getElementById('ticket-date-return').innerText = formatDateIndo(data.returnDate);
         document.getElementById('ticket-war-date-return').innerText = formatDateIndo(data.returnWarDate); 
     } else returnBox.classList.add('hidden');
+    
+    // UPDATE: Render Penumpang Tiket dengan Label Bayi
     let paxHtml = '';
-    const paxCount = data.passengers.length;
-    document.getElementById('ticket-pax-count').innerText = `${paxCount} Penumpang`;
-    const pricePerPax = data.price > 0 ? Math.round(data.price / paxCount) : 0;
+    const paxList = data.passengers;
+    const adults = paxList.filter(p => !p.type || p.type === 'adult').length;
+    const infants = paxList.filter(p => p.type === 'infant').length;
+    
+    document.getElementById('ticket-pax-count').innerText = `${adults} Dws, ${infants} Bayi`;
+    
+    // Harga per pax di tiket hanya estimasi rata-rata dari total
+    const totalHead = adults + infants; 
+    const pricePerPax = data.price > 0 ? Math.round(data.price / (adults || 1)) : 0; // Asumsi harga base on adult
+    
     document.getElementById('ticket-val-price-per-pax').innerText = formatRupiah(pricePerPax);
+    
     data.passengers.forEach((p, index) => {
+        const isInfant = p.type === 'infant';
+        const icon = isInfant ? 'fa-baby text-pink-500' : 'fa-user text-gray-500';
+        const typeBadge = isInfant ? '<span class="ml-2 text-[8px] bg-pink-100 text-pink-600 px-1 rounded font-bold uppercase tracking-wider">BAYI</span>' : '';
+        
         paxHtml += `<div class="flex items-center gap-3 border-b border-gray-100 pb-2 last:border-0 last:pb-0">
-                <div class="w-6 h-6 rounded-full bg-[#f8fafc] border border-gray-200 flex items-center justify-center text-[9px] font-bold text-gray-500 shrink-0">${index + 1}</div>
-                <div class="flex-1 min-w-0"><p class="text-xs font-black uppercase text-[#0b1c38] break-words leading-tight">${p.name}</p><p class="text-[9px] text-gray-400 font-mono tracking-wider">NIK: ${p.nik}</p></div>
+                <div class="w-6 h-6 rounded-full bg-[#f8fafc] border border-gray-200 flex items-center justify-center text-[9px] font-bold shrink-0">
+                    <i class="fas ${icon}"></i>
+                </div>
+                <div class="flex-1 min-w-0"><p class="text-xs font-black uppercase text-[#0b1c38] break-words leading-tight flex items-center">${p.name} ${typeBadge}</p><p class="text-[9px] text-gray-400 font-mono tracking-wider">NIK: ${p.nik}</p></div>
             </div>`;
     });
     document.getElementById('ticket-pax-list-vertical').innerHTML = paxHtml;
@@ -815,6 +922,7 @@ window.resetForm = function() {
     document.getElementById('editIndex').value = "-1";
     document.getElementById('btnSaveText').innerText = "SIMPAN PESANAN";
     document.getElementById('inpPaxCount').value = "1";
+    document.getElementById('inpInfantCount').value = "0"; // UPDATE: Reset Bayi
     document.getElementById('inpTripType').value = 'one_way';
     document.getElementById('inpPricePerPax').value = '';
     toggleTripType(); clearImage('transfer'); clearImage('chat'); updatePassengerForms(); calcRemaining();
@@ -822,7 +930,7 @@ window.resetForm = function() {
     enableSmoothInputUX();
 }
 
-// --- LOGIC DETAIL VIEW (UPDATED: TAB SYSTEM) ---
+// --- LOGIC DETAIL VIEW (UPDATED: TAB SYSTEM & INFANT) ---
 
 window.openDetailView = function(orderId) {
     const order = orders.find(o => o.id === orderId);
@@ -898,16 +1006,23 @@ window.openDetailView = function(orderId) {
         returnEmptyContainer.classList.remove('hidden');
     }
 
-    // 7. Populate Passengers
+    // 7. Populate Passengers (UPDATED)
     let paxListHtml = '';
-    let paxArray = order.passengers || (order.name ? [{name: order.name, nik: order.nik || '-'}] : []);
+    let paxArray = Array.isArray(order.passengers) ? order.passengers : (order.name ? [{name: order.name, nik: order.nik || '-', type: 'adult'}] : []);
     
     paxArray.forEach((p, idx) => {
+        const isInfant = p.type === 'infant';
+        const iconColor = isInfant ? 'text-pink-400 bg-pink-500/10' : 'text-gray-300 bg-white/10';
+        const icon = isInfant ? 'fa-baby' : 'fa-user';
+        const label = isInfant ? '<span class="text-[8px] ml-2 px-1.5 py-0.5 rounded bg-pink-500/20 text-pink-400 border border-pink-500/30">BAYI</span>' : '';
+
         paxListHtml += `
             <div class="flex items-center gap-3 border-b border-white/5 pb-2 last:border-0 last:pb-0">
-                <div class="w-6 h-6 rounded-full bg-white/10 flex items-center justify-center text-[10px] font-bold text-gray-300 shrink-0">${idx+1}</div>
+                <div class="w-6 h-6 rounded-full ${iconColor} flex items-center justify-center text-[10px] font-bold shrink-0">
+                    <i class="fas ${icon}"></i>
+                </div>
                 <div>
-                    <p class="text-xs font-bold text-white uppercase">${p.name}</p>
+                    <p class="text-xs font-bold text-white uppercase flex items-center">${p.name} ${label}</p>
                     <p class="text-[9px] text-gray-500 font-mono">NIK: ${p.nik}</p>
                 </div>
             </div>
@@ -1029,7 +1144,6 @@ window.renderOrderList = function(filterText = '') {
 }
 
 // UPDATE: FIX RENDER UPLOAD BTN AGAR TIDAK SETENGAH
-// Menggunakan h-full dan w-full agar mengikuti parent container di HTML (h-32)
 function renderUploadBtnHTML(id, type, file, label) {
     if(file) {
         return `<div class="relative w-full h-full rounded-lg overflow-hidden border border-white/10 group cursor-pointer bg-black/40">
@@ -1063,9 +1177,12 @@ function renderStats() {
             const isCurrentMonth = createdDate.getMonth() === currentMonth && createdDate.getFullYear() === currentYear;
 
             if(o.status === 'success' && isCurrentMonth) {
+                // Hitung total penumpang (Dewasa+Bayi) atau hanya Dewasa tergantung kebijakan.
+                // Di sini kita hitung semua nyawa.
                 let paxCount = 1;
                 if(Array.isArray(o.passengers)) paxCount = o.passengers.length;
                 else if(o.name) paxCount = 1; 
+                
                 ticketCountMonth += paxCount;
                 revenueMonth += (parseFloat(o.price) || 0);
             }

@@ -309,10 +309,8 @@
                             </div>
                         </div>
                         <input type="text" id="inpReturnTrain" class="w-full bg-davka-surface border border-davka-border rounded-lg p-2.5 text-xs text-white focus:border-blue-500 outline-none ml-2 w-[98%]" placeholder="Nama Kereta (Cth: Argo Lawu)" autocapitalize="characters">
-                        
-                        </div>
+                    </div>
                 </div>
-                
                 <div class="glass p-5 rounded-3xl space-y-4">
                     <div class="flex items-center gap-2 mb-2">
                         <div class="w-8 h-8 rounded-full bg-purple-500/20 flex items-center justify-center text-purple-400">
@@ -441,55 +439,81 @@
                         </div>
                     </div>
                 </div>
-                
                 <div class="glass p-5 rounded-3xl space-y-4 border-t-4 border-davka-orange">
                     <h3 class="text-sm font-bold text-davka-orange uppercase tracking-widest text-center">Rincian Pembayaran</h3>
                     
-                    <select id="inpPaymentMethod" class="w-full bg-davka-bg border border-davka-border rounded-xl px-4 py-3 text-xs text-white focus:border-davka-orange outline-none">
-                        <option value="Tunai">Tunai</option>
-                        <option value="Transfer CIMB Niaga">Transfer CIMB Niaga</option>
-                        <option value="Transfer Seabank">Transfer Seabank</option>
-                        <option value="Dana">Dana</option>
-                        <option value="Gopay">Gopay</option>
-                        <option value="Ovo">Ovo</option>
-                        <option value="ShopeePay">ShopeePay</option>
-                    </select>
-
                     <div class="space-y-3">
-                        <div class="relative">
-                            <label class="text-[10px] font-bold text-gray-500 block mb-1 tracking-widest pl-1">BIAYA KEBERANGKATAN</label>
+                        <div class="relative bg-davka-bg/30 p-2 rounded-xl border border-white/5">
+                            <label class="text-[10px] font-bold text-davka-orange block mb-2 tracking-widest pl-1"><i class="fas fa-plane-departure mr-1"></i> BIAYA KEBERANGKATAN</label>
+                            
+                            <div class="mb-3 px-1">
+                                <label class="text-[9px] text-gray-500 font-bold uppercase mb-1 block">Metode Bayar (Pergi)</label>
+                                <select id="inpPaymentMethod" class="w-full bg-davka-bg border border-davka-border rounded-xl px-4 py-3 text-xs text-white focus:border-davka-orange outline-none">
+                                    <option value="Tunai">Tunai</option>
+                                    <option value="Transfer CIMB Niaga">Transfer CIMB Niaga</option>
+                                    <option value="Transfer Seabank">Transfer Seabank</option>
+                                    <option value="Dana">Dana</option>
+                                    <option value="Gopay">Gopay</option>
+                                    <option value="Ovo">Ovo</option>
+                                    <option value="ShopeePay">ShopeePay</option>
+                                </select>
+                            </div>
+
                             <div class="flex items-center justify-between bg-davka-bg p-3 rounded-xl border border-davka-border mb-2">
                                 <label class="text-xs text-gray-400">Harga Pergi/Pax</label>
                                 <input type="number" id="inpPricePerPax" oninput="calcTotalFromPax()" class="bg-transparent text-right text-white font-bold outline-none w-32 focus:text-davka-orange transition-colors" placeholder="0">
                             </div>
 
-                            <div class="flex items-center justify-between bg-davka-bg p-3 rounded-xl border border-davka-border">
+                            <div class="flex items-center justify-between bg-davka-bg p-3 rounded-xl border border-davka-border mb-2">
                                 <label class="text-xs text-gray-400">Total Pergi</label>
                                 <input type="number" id="inpPrice" oninput="calcRemaining()" required class="bg-transparent text-right text-white font-bold outline-none w-32 focus:text-davka-orange transition-colors" placeholder="0">
                             </div>
+
+                            <div class="flex items-center justify-between bg-davka-bg p-3 rounded-xl border border-davka-border mb-2">
+                                <label class="text-xs text-gray-400">DP Pergi</label>
+                                <input type="number" id="inpFeeDepart" oninput="calcRemaining()" class="bg-transparent text-right text-davka-orange font-bold outline-none w-32" placeholder="0">
+                            </div>
+
+                            <div class="flex items-center justify-between bg-davka-surface p-4 rounded-xl border border-white/10">
+                                <label class="text-xs font-bold text-white uppercase">Sisa Tagihan Pergi</label>
+                                <input type="text" id="inpRemainingDepart" class="bg-transparent text-right text-red-500 font-black text-lg outline-none w-40 cursor-default" placeholder="Rp 0" readonly>
+                            </div>
                         </div>
 
-                        <div id="paymentReturnSection" class="hidden relative pt-2 border-t border-dashed border-white/10">
-                            <label class="text-[10px] font-bold text-blue-500 block mb-1 tracking-widest pl-1">BIAYA KEPULANGAN (PP)</label>
+                        <div id="paymentReturnSection" class="hidden relative pt-2 border-t border-dashed border-white/10 mt-2 bg-blue-500/5 p-2 rounded-xl border border-blue-500/20">
+                            <label class="text-[10px] font-bold text-blue-500 block mb-2 tracking-widest pl-1"><i class="fas fa-plane-arrival mr-1"></i> BIAYA KEPULANGAN (PP)</label>
+                            
+                            <div class="mb-3 px-1">
+                                <label class="text-[9px] text-blue-400 font-bold uppercase mb-1 block">Metode Bayar (Pulang)</label>
+                                <select id="inpPaymentMethodReturn" class="w-full bg-davka-bg border border-blue-500/30 rounded-xl px-4 py-3 text-xs text-white focus:border-blue-500 outline-none">
+                                    <option value="Tunai">Tunai</option>
+                                    <option value="Transfer CIMB Niaga">Transfer CIMB Niaga</option>
+                                    <option value="Transfer Seabank">Transfer Seabank</option>
+                                    <option value="Dana">Dana</option>
+                                    <option value="Gopay">Gopay</option>
+                                    <option value="Ovo">Ovo</option>
+                                    <option value="ShopeePay">ShopeePay</option>
+                                </select>
+                            </div>
+
                             <div class="flex items-center justify-between bg-davka-bg p-3 rounded-xl border border-blue-500/30 mb-2">
                                 <label class="text-xs text-gray-400">Harga Pulang/Pax</label>
                                 <input type="number" id="inpReturnPricePerPax" oninput="calcTotalFromPax()" class="bg-transparent text-right text-white font-bold outline-none w-32 focus:text-blue-400 transition-colors" placeholder="0">
                             </div>
 
-                            <div class="flex items-center justify-between bg-davka-bg p-3 rounded-xl border border-blue-500/30">
+                            <div class="flex items-center justify-between bg-davka-bg p-3 rounded-xl border border-blue-500/30 mb-2">
                                 <label class="text-xs text-gray-400">Total Pulang</label>
                                 <input type="number" id="inpReturnPrice" oninput="calcRemaining()" class="bg-transparent text-right text-white font-bold outline-none w-32 focus:text-blue-400 transition-colors" placeholder="0">
                             </div>
-                        </div>
 
-                        <div class="pt-2 border-t border-white/10 mt-2">
-                            <div class="flex items-center justify-between bg-davka-bg p-3 rounded-xl border border-davka-border">
-                                <label class="text-xs text-gray-400">Bayar Awal (DP)</label>
-                                <input type="number" id="inpFee" oninput="calcRemaining()" required class="bg-transparent text-right text-davka-orange font-bold outline-none w-32" placeholder="0">
+                            <div class="flex items-center justify-between bg-davka-bg p-3 rounded-xl border border-blue-500/30 mb-2">
+                                <label class="text-xs text-gray-400">DP Pulang</label>
+                                <input type="number" id="inpFeeReturn" oninput="calcRemaining()" class="bg-transparent text-right text-blue-400 font-bold outline-none w-32" placeholder="0">
                             </div>
-                            <div class="flex items-center justify-between bg-davka-surface p-4 rounded-xl border border-white/10 mt-2">
-                                <label class="text-xs font-bold text-white uppercase">Sisa Tagihan</label>
-                                <input type="text" id="inpRemaining" class="bg-transparent text-right text-red-500 font-black text-lg outline-none w-40 cursor-default" placeholder="Rp 0" readonly>
+
+                            <div class="flex items-center justify-between bg-blue-900/20 p-4 rounded-xl border border-blue-500/30">
+                                <label class="text-xs font-bold text-blue-400 uppercase">Sisa Tagihan Pulang</label>
+                                <input type="text" id="inpRemainingReturn" class="bg-transparent text-right text-red-500 font-black text-lg outline-none w-40 cursor-default" placeholder="Rp 0" readonly>
                             </div>
                         </div>
                     </div>
@@ -499,14 +523,15 @@
                     <button type="submit" class="w-full bg-gradient-to-r from-davka-orange to-red-600 text-white font-bold py-4 rounded-2xl shadow-lg shadow-orange-500/30 active:scale-95 transition-transform flex justify-center items-center gap-2">
                         <i class="fas fa-save"></i> <span id="btnSaveText">SIMPAN PESANAN</span>
                     </button>
-                    </div>
+                </div>
             </form>
         </section>
+        
         <section id="page-list" class="hidden fade-in space-y-4">
             <div class="pt-16 pb-2">
                 <div class="mb-4">
                     <div class="flex justify-between items-center mb-3">
-                        <h2 class="text-xl font-bold text-white">Riwayat Pesanan</h2>
+                        <h2 class="text-xl font-bold text-white">Data Pemesan</h2>
                         <div class="bg-davka-surface px-2 py-1 rounded border border-white/10">
                             <i class="fas fa-history text-davka-orange text-xs"></i>
                         </div>
@@ -528,7 +553,6 @@
                 </div>
             </div>
         </section>
-        
         <section id="page-detail" class="hidden fade-in pb-32">
             <div class="pt-16 px-1">
                 <div class="flex items-center gap-3 mb-6">
@@ -546,7 +570,7 @@
                     <div class="absolute top-0 left-0 w-1 h-full bg-davka-orange"></div>
                     
                     <div class="flex justify-between items-center text-center mb-6">
-                        <div class="flex-1 min-w-0"> <h3 class="text-xl font-black text-white break-words leading-tight" id="detail-origin">ORG</h3> <p class="text-[10px] text-gray-400 uppercase tracking-wider">Keberangkatan</p>
+                        <div class="flex-1 min-w-0"> <h3 class="text-xl font-black text-white break-words leading-tight" id="detail-origin">ORG</h3> <p class="text-[10px] text-gray-400 uppercase tracking-wider">Asal</p>
                         </div>
                         <div class="px-2 shrink-0"> <i id="detail-route-icon" class="fas fa-arrow-right text-davka-orange text-xl"></i>
                         </div>
@@ -595,12 +619,6 @@
                             <p class="text-[9px] text-blue-400 font-bold uppercase mb-1 opacity-70">Detail Kepulangan</p>
                             
                             <div id="data-return-exist">
-                                <div class="flex items-center gap-2 mb-2 border-b border-white/5 pb-2">
-                                    <span class="text-[10px] font-bold text-white" id="detail-return-origin">ORG</span>
-                                    <i class="fas fa-arrow-right text-[8px] text-gray-500"></i>
-                                    <span class="text-[10px] font-bold text-white" id="detail-return-dest">DES</span>
-                                </div>
-
                                 <div class="flex justify-between items-end">
                                     <div>
                                         <p class="text-sm font-bold text-white" id="detail-return-train">Nama Kereta</p>
@@ -642,11 +660,11 @@
 
                      <div class="grid grid-cols-2 gap-4 mb-4">
                         <div>
-                            <p class="text-[9px] text-gray-500 uppercase">Total Harga</p>
+                            <p class="text-[9px] text-gray-500 uppercase">Total Keseluruhan</p>
                             <p class="text-sm font-bold text-davka-orange" id="detail-price">Rp 0</p>
                         </div>
                         <div class="text-right">
-                            <p class="text-[9px] text-gray-500 uppercase">Sisa Tagihan</p>
+                            <p class="text-[9px] text-gray-500 uppercase">Sisa Tagihan Total</p>
                             <p class="text-sm font-black text-red-500" id="detail-remaining">Rp 0</p>
                         </div>
                      </div>

@@ -11,6 +11,7 @@ let currentUploadOrderId = null;
 let currentUploadType = null;   
 let loaderTimeout = null; 
 let activeUploadZone = null;
+let currentDetailOrder = null; // NEW: Menyimpan order yang sedang dibuka detailnya
 
 // --- INIT SYSTEM ---
 document.addEventListener('DOMContentLoaded', async () => {
@@ -101,6 +102,7 @@ function initializeAppLogic() {
 }
 
 // --- NEW FEATURE: TAB SYSTEM LOGIC (PERGI / PULANG) ---
+// UPDATED: Menambahkan logika swap header Destinasi/Asal saat pindah tab
 window.switchTab = function(tabName) {
     const btnDepart = document.getElementById('tab-btn-depart');
     const btnReturn = document.getElementById('tab-btn-return');
@@ -122,9 +124,32 @@ window.switchTab = function(tabName) {
     if (tabName === 'depart') {
         btnDepart.className = activeClass;
         contentDepart.classList.remove('hidden');
+        
+        // RESET HEADER: Tampilkan rute PERGI
+        if(currentDetailOrder) {
+            document.getElementById('detail-origin').innerText = currentDetailOrder.origin || 'ORG';
+            document.getElementById('detail-dest').innerText = currentDetailOrder.dest || 'DES';
+            // Icon arrow kanan (normal) atau exchange jika PP
+            document.getElementById('detail-route-icon').className = currentDetailOrder.tripType === 'round_trip' 
+                ? "fas fa-exchange-alt text-blue-400 text-xl" 
+                : "fas fa-arrow-right text-davka-orange text-xl";
+        }
     } else {
         btnReturn.className = activeClass;
         contentReturn.classList.remove('hidden');
+
+        // UPDATE HEADER: Tampilkan rute PULANG (Swap Origin & Dest)
+        if(currentDetailOrder && currentDetailOrder.tripType === 'round_trip') {
+            // Asal menjadi Tujuan Pulang (atau Asal Pulang), Tujuan menjadi Asal (atau Tujuan Pulang)
+            const retOrg = currentDetailOrder.returnOrigin || currentDetailOrder.dest || 'ORG';
+            const retDes = currentDetailOrder.returnDest || currentDetailOrder.origin || 'DES';
+            
+            document.getElementById('detail-origin').innerText = retOrg;
+            document.getElementById('detail-dest').innerText = retDes;
+            
+            // Ubah icon untuk indikasi arah balik
+            document.getElementById('detail-route-icon').className = "fas fa-arrow-left text-blue-500 text-xl"; 
+        }
     }
 }
 
@@ -291,6 +316,49 @@ window.getPassengersFromForm = function() {
     return paxList;
 }
 
+// --- UPDATED: CALCULATE TOTAL FROM PAX ---
+window.calcTotalFromPax = function() {
+    const adultCount = parseInt(document.getElementById('inpPaxCount').value) || 1;
+
+    // Kalkulasi Harga Pergi
+    const pricePerPax = parseFloat(document.getElementById('inpPricePerPax').value) || 0;
+    if (pricePerPax > 0) {
+        document.getElementById('inpPrice').value = pricePerPax * adultCount;
+    }
+
+    // Kalkulasi Harga Pulang
+    const returnPricePerPax = parseFloat(document.getElementById('inpReturnPricePerPax').value) || 0;
+    if (returnPricePerPax > 0) {
+        document.getElementById('inpReturnPrice').value = returnPricePerPax * adultCount;
+    }
+
+    calcRemaining(); 
+}
+
+// --- REVISI TOTAL: CALCULATE REMAINING SEPARATED (PERGI & PULANG) ---
+window.calcRemaining = function() {
+    // 1. Hitung Pergi
+    const priceDepart = parseFloat(document.getElementById('inpPrice').value) || 0;
+    const dpDepart = parseFloat(document.getElementById('inpFeeDepart').value) || 0;
+    const remainingDepart = priceDepart - dpDepart;
+
+    const fieldDepart = document.getElementById('inpRemainingDepart');
+    fieldDepart.value = formatRupiah(remainingDepart);
+    fieldDepart.className = remainingDepart <= 0 
+        ? "bg-transparent text-right text-green-500 font-black text-lg outline-none w-40 cursor-default" 
+        : "bg-transparent text-right text-red-500 font-black text-lg outline-none w-40 cursor-default";
+
+    // 2. Hitung Pulang
+    const priceReturn = parseFloat(document.getElementById('inpReturnPrice').value) || 0;
+    const dpReturn = parseFloat(document.getElementById('inpFeeReturn').value) || 0;
+    const remainingReturn = priceReturn - dpReturn;
+
+    const fieldReturn = document.getElementById('inpRemainingReturn');
+    fieldReturn.value = formatRupiah(remainingReturn);
+    fieldReturn.className = remainingReturn <= 0 
+        ? "bg-transparent text-right text-green-500 font-black text-lg outline-none w-40 cursor-default" 
+        : "bg-transparent text-right text-red-500 font-black text-lg outline-none w-40 cursor-default";
+}
 // --- FETCH & REALTIME ---
 async function fetchOrders() {
     const { data, error } = await supabase
@@ -329,11 +397,18 @@ async function fetchOrdersBg() {
     if(data) {
         orders = data;
         renderStats();
+        // Update list hanya jika user tidak sedang mengetik search
         if (document.getElementById('searchInput').value === '') {
              renderOrderList('');
         }
+        // Update detail view jika sedang terbuka
+        if(currentDetailOrder && !document.getElementById('page-detail').classList.contains('hidden')) {
+            const updatedOrder = orders.find(o => o.id === currentDetailOrder.id);
+            if(updatedOrder) openDetailView(updatedOrder.id);
+        }
     }
 }
+
 // --- LOGIC UPLOAD & STORAGE ---
 async function uploadToSupabaseStorage(base64Data, fileName) {
     if (!base64Data || base64Data.startsWith('http')) return base64Data; 
@@ -361,7 +436,7 @@ async function uploadToSupabaseStorage(base64Data, fileName) {
     }
 }
 
-// --- FORM HANDLING (SAVE & UPDATE) - MODIFIED FOR SEPARATE PP ---
+// --- FORM HANDLING (SAVE & UPDATE) - REVISED FOR SPLIT PAYMENT ---
 const orderForm = document.getElementById('orderForm');
 
 orderForm.addEventListener('submit', async (e) => {
@@ -399,7 +474,7 @@ orderForm.addEventListener('submit', async (e) => {
             chatUrl = await uploadToSupabaseStorage(chatBase64, `${orderId}_chat_depart`);
         }
         
-        // Upload Logic Pulang (New)
+        // Upload Logic Pulang
         if (transferReturnBase64 && !transferReturnBase64.startsWith('http')) {
             showToast("Upload Transfer Pulang...");
             transferReturnUrl = await uploadToSupabaseStorage(transferReturnBase64, `${orderId}_tf_return`);
@@ -412,7 +487,7 @@ orderForm.addEventListener('submit', async (e) => {
         const passengerData = getPassengersFromForm();
         const tripType = document.getElementById('inpTripType').value;
 
-        // UPDATED: Save Logic untuk memisahkan harga
+        // REVISI: Object Creation dengan Field Pembayaran Terpisah
         const newOrder = {
             id: orderId, 
             created_at: created_at,
@@ -434,20 +509,25 @@ orderForm.addEventListener('submit', async (e) => {
             returnWarDate: document.getElementById('inpReturnWarDate').value,
             returnTrain: document.getElementById('inpReturnTrain').value.toUpperCase(),
             
+            // UPDATE PAYMENT METHODS (SPLIT)
             paymentMethod: document.getElementById('inpPaymentMethod').value,
+            paymentMethodReturn: document.getElementById('inpPaymentMethodReturn').value, // NEW FIELD
             
-            // Financials (UPDATED)
-            price: parseFloat(document.getElementById('inpPrice').value) || 0, // Harga Pergi
-            returnPrice: parseFloat(document.getElementById('inpReturnPrice').value) || 0, // Harga Pulang (Sekarang tersimpan)
-            fee: parseFloat(document.getElementById('inpFee').value) || 0, // DP
+            // Financials (SPLIT)
+            price: parseFloat(document.getElementById('inpPrice').value) || 0, // Total Pergi
+            feeDepart: parseFloat(document.getElementById('inpFeeDepart').value) || 0, // DP Pergi (NEW)
+            
+            returnPrice: parseFloat(document.getElementById('inpReturnPrice').value) || 0, // Total Pulang
+            feeReturn: parseFloat(document.getElementById('inpFeeReturn').value) || 0, // DP Pulang (NEW)
+
+            // Backward Compatibility (Opsional: Total Fee gabungan jika masih dibutuhkan sistem lama)
+            fee: (parseFloat(document.getElementById('inpFeeDepart').value) || 0) + (parseFloat(document.getElementById('inpFeeReturn').value) || 0),
             
             settlementMethod: existingOrder ? (existingOrder.settlementMethod || '-') : '-',
             
-            // Proof Files Pergi
+            // Proof Files
             transferScreenshot: transferUrl, 
             chatScreenshot: chatUrl,
-            
-            // Proof Files Pulang (New)
             transferScreenshotReturn: transferReturnUrl,
             chatScreenshotReturn: chatReturnUrl,
 
@@ -551,7 +631,7 @@ window.navTo = function(pageId) {
         window.scrollTo({ top: 0, behavior: 'smooth' });
     }, 400); 
 }
-// --- EDIT ORDER LOGIC (UPDATED FOR PP SPLIT) ---
+// --- EDIT ORDER LOGIC (UPDATED FOR SPLIT PAYMENT) ---
 window.editOrder = function(id) {
     const index = orders.findIndex(o => o.id === id);
     if (index === -1) return;
@@ -619,25 +699,34 @@ window.editOrder = function(id) {
         document.getElementById('inpReturnTrain').value = data.returnTrain || '';
     }
     
+    // UPDATE: Load Payment Methods
     document.getElementById('inpPaymentMethod').value = data.paymentMethod || 'Tunai';
+    // REVISI: Load Metode Bayar Pulang (New Field)
+    document.getElementById('inpPaymentMethodReturn').value = data.paymentMethodReturn || 'Tunai';
     
-    // Financials Calculation for Edit Mode (PISAH LOGIC)
+    // --- FINANCIALS LOAD (SPLIT LOGIC) ---
     const adultCount = adults.length || 1;
     
-    // Pergi
-    document.getElementById('inpPrice').value = data.price || 0;
-    const pricePerPax = data.price > 0 ? (data.price / adultCount) : 0;
-    document.getElementById('inpPricePerPax').value = Math.round(pricePerPax); 
+    // 1. Data Pergi
+    const priceDepart = data.price || 0;
+    document.getElementById('inpPrice').value = priceDepart;
+    document.getElementById('inpPricePerPax').value = priceDepart > 0 ? Math.round(priceDepart / adultCount) : 0;
     
-    // Pulang (New)
-    document.getElementById('inpReturnPrice').value = data.returnPrice || 0;
-    const returnPricePerPax = (data.returnPrice > 0) ? (data.returnPrice / adultCount) : 0;
-    document.getElementById('inpReturnPricePerPax').value = Math.round(returnPricePerPax);
+    // Fallback: Jika feeDepart kosong (data lama), gunakan data.fee
+    const feeDepart = (data.feeDepart !== undefined) ? data.feeDepart : (data.fee || 0);
+    document.getElementById('inpFeeDepart').value = feeDepart;
+    
+    // 2. Data Pulang
+    const priceReturn = data.returnPrice || 0;
+    document.getElementById('inpReturnPrice').value = priceReturn;
+    document.getElementById('inpReturnPricePerPax').value = priceReturn > 0 ? Math.round(priceReturn / adultCount) : 0;
+    
+    const feeReturn = data.feeReturn || 0;
+    document.getElementById('inpFeeReturn').value = feeReturn;
 
-    document.getElementById('inpFee').value = data.fee || 0;
-    calcRemaining();
+    calcRemaining(); // Hitung ulang sisa tagihan terpisah
 
-    // Load Bukti Pergi
+    // Load Bukti
     if(data.transferScreenshot) {
         document.getElementById('inpTransferData').value = data.transferScreenshot;
         document.getElementById('imgTransfer').src = data.transferScreenshot;
@@ -648,8 +737,6 @@ window.editOrder = function(id) {
         document.getElementById('imgChat').src = data.chatScreenshot;
         document.getElementById('previewChat').classList.remove('hidden');
     }
-    
-    // Load Bukti Pulang (New)
     if(data.transferScreenshotReturn) {
         document.getElementById('inpTransferDataReturn').value = data.transferScreenshotReturn;
         document.getElementById('imgTransferReturn').src = data.transferScreenshotReturn;
@@ -716,17 +803,15 @@ window.handleUploadZoneClick = function(zoneId, inputId) {
 function resetUploadZones() {
     activeUploadZone = null;
     document.querySelectorAll('.upload-zone-base').forEach(el => el.classList.remove('upload-zone-active'));
-    // Reset hints pergi
     const h1 = document.getElementById('hintTransfer'); if(h1) h1.classList.add('hidden');
     const h2 = document.getElementById('hintChat'); if(h2) h2.classList.add('hidden');
-    // Reset hints pulang
     const h3 = document.getElementById('hintTransferReturn'); if(h3) h3.classList.add('hidden');
     const h4 = document.getElementById('hintChatReturn'); if(h4) h4.classList.add('hidden');
 }
 
 function setupImageUploader(inputId, hiddenDataId, imgId, containerId) {
     const fileInput = document.getElementById(inputId);
-    if(!fileInput) return; // Guard clause
+    if(!fileInput) return;
     
     fileInput.addEventListener('change', function(e) {
         toggleLoader(true);
@@ -759,7 +844,6 @@ function processFile(file, callback) {
     }
     reader.readAsDataURL(file);
 }
-
 function setupHistoryUploader() {
     const historyInput = document.getElementById('inpHistoryUpload');
     historyInput.addEventListener('change', function(e) {
@@ -795,14 +879,12 @@ function setupHistoryUploader() {
     });
 }
 
-// --- UPDATED: TOGGLE TRIP TYPE (Handling Payment Section) ---
 window.toggleTripType = function() {
     const type = document.getElementById('inpTripType').value;
     const fields = document.getElementById('returnTripFields');
     const uploadTabContainer = document.getElementById('uploadTabContainer');
-    const payReturnSection = document.getElementById('paymentReturnSection'); // Section Pembayaran Pulang
+    const payReturnSection = document.getElementById('paymentReturnSection'); 
     
-    // Elements for Validation
     const inpRetDate = document.getElementById('inpReturnDate');
     const inpRetTrain = document.getElementById('inpReturnTrain');
     const inpRetOrg = document.getElementById('inpReturnOrigin');
@@ -811,14 +893,13 @@ window.toggleTripType = function() {
     if(type === 'round_trip') {
         fields.classList.remove('hidden'); fields.classList.add('fade-in');
         uploadTabContainer.classList.remove('hidden');
-        payReturnSection.classList.remove('hidden'); // Show Payment Pulang
+        payReturnSection.classList.remove('hidden'); 
         
         inpRetDate.required = true;
         inpRetTrain.required = true;
         if(inpRetOrg) inpRetOrg.required = true;
         if(inpRetDest) inpRetDest.required = true;
         
-        // Label update
         document.getElementById('lblUploadDepart').classList.remove('hidden');
         document.getElementById('labelTransfer').innerText = "Bukti Transfer (Pergi)";
         document.getElementById('labelChat').innerText = "Chat WA (Pergi)";
@@ -826,9 +907,8 @@ window.toggleTripType = function() {
     } else {
         fields.classList.add('hidden'); fields.classList.remove('fade-in');
         uploadTabContainer.classList.add('hidden'); 
-        payReturnSection.classList.add('hidden'); // Hide Payment Pulang
+        payReturnSection.classList.add('hidden'); 
         
-        // Reset view to Depart tab just in case
         switchUploadTab('depart');
         
         inpRetDate.required = false;
@@ -836,12 +916,12 @@ window.toggleTripType = function() {
         if(inpRetOrg) inpRetOrg.required = false;
         if(inpRetDest) inpRetDest.required = false;
 
-        // Reset values pulang jika switch ke one way
         document.getElementById('inpReturnPricePerPax').value = '';
         document.getElementById('inpReturnPrice').value = '';
+        document.getElementById('inpFeeReturn').value = ''; // Clear DP Pulang
+        
         calcRemaining();
 
-        // Label reset
         document.getElementById('lblUploadDepart').classList.add('hidden');
         document.getElementById('labelTransfer').innerText = "Bukti Transfer";
         document.getElementById('labelChat').innerText = "Chat WA";
@@ -863,46 +943,6 @@ window.calcReturnH45 = function() {
         document.getElementById('inpReturnWarDate').value = d.toISOString().split('T')[0];
     }
 }
-
-// --- UPDATED: CALCULATE TOTAL FROM PAX (SEPARATED) ---
-window.calcTotalFromPax = function() {
-    const adultCount = parseInt(document.getElementById('inpPaxCount').value) || 1;
-
-    // Kalkulasi Harga Pergi
-    const pricePerPax = parseFloat(document.getElementById('inpPricePerPax').value) || 0;
-    if (pricePerPax > 0) {
-        document.getElementById('inpPrice').value = pricePerPax * adultCount;
-    }
-
-    // Kalkulasi Harga Pulang
-    const returnPricePerPax = parseFloat(document.getElementById('inpReturnPricePerPax').value) || 0;
-    if (returnPricePerPax > 0) {
-        document.getElementById('inpReturnPrice').value = returnPricePerPax * adultCount;
-    }
-
-    calcRemaining(); 
-}
-
-// --- UPDATED: CALCULATE REMAINING (TOTAL = PERGI + PULANG) ---
-window.calcRemaining = function() {
-    const priceDepart = parseFloat(document.getElementById('inpPrice').value) || 0;
-    const priceReturn = parseFloat(document.getElementById('inpReturnPrice').value) || 0;
-    const dp = parseFloat(document.getElementById('inpFee').value) || 0;
-    
-    const total = priceDepart + priceReturn;
-    const remaining = total - dp;
-    
-    const field = document.getElementById('inpRemaining');
-    field.value = formatRupiah(remaining);
-    field.className = remaining <= 0 ? "bg-transparent text-right text-green-500 font-black text-lg outline-none w-40 cursor-default" : "bg-transparent text-right text-red-500 font-black text-lg outline-none w-40 cursor-default";
-}
-window.generateAndPreviewTicket = function() {
-    const contactName = document.getElementById('inpContactName').value.toUpperCase();
-    if(!contactName) { alert("Isi nama kontak!"); return; }
-    toggleLoader(true);
-}
-
-// === NEW FEATURE: MODERN BOARDING PASS RECEIPT ===
 window.printReceipt = function(orderId) {
     const order = orders.find(o => o.id === orderId);
     if (!order) return;
@@ -1059,6 +1099,8 @@ window.showImageModal = function(src, dl=false) {
     document.getElementById('imageModal').classList.remove('hidden');
 }
 window.closeImageModal = function() { document.getElementById('imageModal').classList.add('hidden'); }
+
+// --- REVISI RESET FORM ---
 window.resetForm = function() {
     document.getElementById('orderForm').reset();
     document.getElementById('editIndex').value = "-1";
@@ -1067,15 +1109,20 @@ window.resetForm = function() {
     document.getElementById('inpInfantCount').value = "0"; 
     document.getElementById('inpTripType').value = 'one_way';
     
-    // Reset Price fields
+    // Reset Price & Split fields
     document.getElementById('inpPricePerPax').value = '';
     if(document.getElementById('inpReturnPricePerPax')) document.getElementById('inpReturnPricePerPax').value = '';
     
-    toggleTripType(); 
+    // Explicitly reset remaining fields
+    document.getElementById('inpRemainingDepart').value = 'Rp 0';
+    if(document.getElementById('inpRemainingReturn')) document.getElementById('inpRemainingReturn').value = 'Rp 0';
     
-    // Clear images pergi
+    // REVISI: Reset Payment Methods
+    document.getElementById('inpPaymentMethod').value = 'Tunai';
+    if(document.getElementById('inpPaymentMethodReturn')) document.getElementById('inpPaymentMethodReturn').value = 'Tunai';
+
+    toggleTripType(); 
     clearImage('transfer'); clearImage('chat');
-    // Clear images pulang
     clearImage('transferReturn'); clearImage('chatReturn');
     
     updatePassengerForms(); 
@@ -1083,10 +1130,13 @@ window.resetForm = function() {
     resetUploadZones();
     enableSmoothInputUX();
 }
-
+// --- REVISI TOTAL: DETAIL VIEW DENGAN SPLIT PAYMENT ---
 window.openDetailView = function(orderId) {
     const order = orders.find(o => o.id === orderId);
     if (!order) return;
+
+    // UPDATE: Set global variable untuk logic header swap
+    currentDetailOrder = order;
 
     document.getElementById('page-list').classList.add('hidden', 'fade-out');
     document.getElementById('page-detail').classList.remove('hidden');
@@ -1094,6 +1144,7 @@ window.openDetailView = function(orderId) {
     
     window.scrollTo({ top: 0, behavior: 'smooth' });
 
+    // Reset ke tab Pergi saat dibuka & Reset Header
     switchTab('depart');
 
     const displayName = (order.contactName || order.name || 'No Name').toUpperCase();
@@ -1113,6 +1164,7 @@ window.openDetailView = function(orderId) {
         badge.classList.add('bg-orange-500/10', 'border-orange-500/30', 'text-orange-400');
     }
 
+    // Default Header (Pergi)
     document.getElementById('detail-origin').innerText = order.origin || 'ORG';
     document.getElementById('detail-dest').innerText = order.dest || 'DST';
     
@@ -1123,12 +1175,10 @@ window.openDetailView = function(orderId) {
         iconEl.className = "fas fa-arrow-right text-davka-orange text-xl";
     }
 
-    // Detail Pergi
     document.getElementById('detail-train').innerText = order.train || '-';
     document.getElementById('detail-date').innerText = order.date ? new Date(order.date).toLocaleDateString('id-ID', {day: 'numeric', month: 'short', year: 'numeric'}) : '-';
     document.getElementById('detail-war-date').innerText = order.warDate ? new Date(order.warDate).toLocaleDateString('id-ID', {day: 'numeric', month: 'short'}) : '-';
     
-    // Render Bukti Pergi (Static Display)
     const renderProof = (url, label) => url ? 
         `<img src="${url}" class="w-full h-full object-cover rounded-lg cursor-pointer hover:opacity-80 transition-opacity" onclick="showImageModal(this.src, true)">` : 
         `<div class="text-gray-600 text-[9px] text-center flex flex-col items-center justify-center h-full"><i class="fas fa-times-circle text-xs mb-1"></i>${label}</div>`;
@@ -1147,16 +1197,13 @@ window.openDetailView = function(orderId) {
         returnEmptyContainer.classList.add('hidden');
         containerProofReturn.classList.remove('hidden');
 
-        const retOrg = order.returnOrigin || order.dest || 'ORG';
-        const retDes = order.returnDest || order.origin || 'DES';
-        document.getElementById('detail-return-origin').innerText = retOrg;
-        document.getElementById('detail-return-dest').innerText = retDes;
+        // NOTE: Detail Origin/Dest Return dihapus dari sini karena sekarang ikut Header Utama (via switchTab)
+        // Kita hanya populate data spesifik rute pulang (Kereta, Tanggal, War)
 
         document.getElementById('detail-return-train').innerText = order.returnTrain || '-';
         document.getElementById('detail-return-date').innerText = order.returnDate ? new Date(order.returnDate).toLocaleDateString('id-ID', {day: 'numeric', month: 'short', year: 'numeric'}) : '-';
         document.getElementById('detail-return-war-date').innerText = order.returnWarDate ? new Date(order.returnWarDate).toLocaleDateString('id-ID', {day: 'numeric', month: 'short'}) : '-';
         
-        // Render Bukti Pulang
         document.getElementById('detail-img-transfer-return').innerHTML = renderProof(order.transferScreenshotReturn, "No TF Pulang");
         document.getElementById('detail-img-chat-return').innerHTML = renderProof(order.chatScreenshotReturn, "No Chat Pulang");
 
@@ -1191,65 +1238,79 @@ window.openDetailView = function(orderId) {
     });
     document.getElementById('detail-pax-list').innerHTML = paxListHtml;
 
-    // --- REVISI TOTAL: PEMISAHAN HARGA DI DETAIL VIEW ---
-    // Logic: Menampilkan dua blok terpisah (Card Pergi & Card Pulang)
-    
+    // --- LOGIC PEMISAHAN HARGA DI DETAIL VIEW ---
     const pDepart = order.price || 0;
+    const dpDepart = (order.feeDepart !== undefined) ? order.feeDepart : (order.fee || 0); // Fallback for old data
+    const remDepart = pDepart - dpDepart;
+
     const pReturn = order.returnPrice || 0;
-    const dp = order.fee || 0;
-    const total = pDepart + pReturn;
-    const remaining = total - dp;
-    
+    const dpReturn = order.feeReturn || 0;
+    const remReturn = pReturn - dpReturn;
+    // REVISI: Get Payment Return
+    const methodReturn = order.paymentMethodReturn || 'Tunai';
+
     let costHTML = '';
 
-    // CARD 1: BIAYA PERGI
+    // CARD 1: PERGI (DETAIL LENGKAP)
     costHTML += `
     <div class="bg-davka-bg border border-white/10 rounded-xl p-3 mb-2">
         <div class="flex items-center gap-2 mb-2 border-b border-white/5 pb-2">
             <i class="fas fa-train text-davka-orange text-xs"></i>
-            <span class="text-[10px] font-bold text-gray-300 uppercase">Biaya Pergi</span>
+            <span class="text-[10px] font-bold text-gray-300 uppercase">Rincian Pergi</span>
         </div>
-        <div class="flex justify-between items-center">
+        <div class="flex justify-between items-center mb-1">
              <span class="text-[10px] text-gray-500">Harga Tiket</span>
              <span class="text-xs font-bold text-white">${formatRupiah(pDepart)}</span>
         </div>
+        <div class="flex justify-between items-center mb-1">
+             <span class="text-[10px] text-gray-500">DP (Bayar Awal)</span>
+             <span class="text-xs font-bold text-davka-orange">- ${formatRupiah(dpDepart)}</span>
+        </div>
+        <div class="flex justify-between items-center border-t border-dashed border-white/10 pt-1 mt-1">
+             <span class="text-[10px] text-gray-400 font-bold">Sisa Tagihan Pergi</span>
+             <span class="text-xs font-black ${remDepart <= 0 ? 'text-green-500' : 'text-red-500'}">${formatRupiah(remDepart)}</span>
+        </div>
+        <p class="text-[9px] text-gray-600 mt-1 italic text-right">Via: ${order.paymentMethod || 'Tunai'}</p>
     </div>
     `;
 
-    // CARD 2: BIAYA PULANG (JIKA ADA)
+    // CARD 2: PULANG (JIKA PP - DETAIL LENGKAP)
     if(order.tripType === 'round_trip') {
         costHTML += `
         <div class="bg-davka-bg border border-blue-500/30 rounded-xl p-3 mb-2">
             <div class="flex items-center gap-2 mb-2 border-b border-blue-500/20 pb-2">
                 <i class="fas fa-exchange-alt text-blue-400 text-xs"></i>
-                <span class="text-[10px] font-bold text-gray-300 uppercase">Biaya Pulang</span>
+                <span class="text-[10px] font-bold text-gray-300 uppercase">Rincian Pulang</span>
             </div>
-            <div class="flex justify-between items-center">
+            <div class="flex justify-between items-center mb-1">
                  <span class="text-[10px] text-gray-500">Harga Tiket</span>
                  <span class="text-xs font-bold text-white">${formatRupiah(pReturn)}</span>
             </div>
+            <div class="flex justify-between items-center mb-1">
+                 <span class="text-[10px] text-gray-500">DP (Bayar Awal)</span>
+                 <span class="text-xs font-bold text-blue-400">- ${formatRupiah(dpReturn)}</span>
+            </div>
+            <div class="flex justify-between items-center border-t border-dashed border-blue-500/20 pt-1 mt-1">
+                 <span class="text-[10px] text-gray-400 font-bold">Sisa Tagihan Pulang</span>
+                 <span class="text-xs font-black ${remReturn <= 0 ? 'text-green-500' : 'text-red-500'}">${formatRupiah(remReturn)}</span>
+            </div>
+            <p class="text-[9px] text-blue-500/60 mt-1 italic text-right">Via: ${methodReturn}</p>
         </div>
         `;
     }
-
-    // CARD 3: PEMBAYARAN & SISA
-    costHTML += `
-    <div class="bg-davka-bg border border-white/10 rounded-xl p-3 mt-1">
-        <div class="flex justify-between items-center mb-1">
-             <span class="text-[10px] text-gray-500 uppercase font-bold">Total DP (Bayar Awal)</span>
-             <span class="text-xs font-bold text-davka-orange">- ${formatRupiah(dp)}</span>
-        </div>
-    </div>
-    `;
     
     const costContainer = document.getElementById('detail-cost-breakdown');
     costContainer.innerHTML = costHTML;
     costContainer.classList.remove('hidden');
 
-    document.getElementById('detail-price').innerText = formatRupiah(total);
+    // Total Aggregation
+    const grandTotal = pDepart + pReturn;
+    const totalRemaining = remDepart + remReturn;
+
+    document.getElementById('detail-price').innerText = formatRupiah(grandTotal);
     const remEl = document.getElementById('detail-remaining');
-    remEl.innerText = formatRupiah(remaining);
-    remEl.className = remaining <= 0 ? "text-sm font-black text-green-500" : "text-sm font-black text-red-500";
+    remEl.innerText = formatRupiah(totalRemaining);
+    remEl.className = totalRemaining <= 0 ? "text-sm font-black text-green-500" : "text-sm font-black text-red-500";
 
     const settlementOptions = ["-", "Tunai", "Transfer CIMB Niaga", "Transfer Seabank", "Dana", "Gopay", "Ovo", "ShopeePay"];
     const selectEl = document.getElementById('detail-settlement-select');
@@ -1270,10 +1331,13 @@ window.closeDetailView = function() {
     document.getElementById('page-detail').classList.remove('fade-in');
     document.getElementById('page-list').classList.remove('hidden');
     document.getElementById('page-list').classList.add('fade-in');
+    
+    // Reset variable global
+    currentDetailOrder = null;
     renderOrderList(document.getElementById('searchInput').value);
 }
 
-// === REVISI TOTAL: RENDER LIST PESANAN (PEMISAHAN HARGA) ===
+// === REVISI TOTAL: RENDER LIST DENGAN LOGIKA BARU ===
 window.renderOrderList = function(filterText = '') {
     const container = document.getElementById('ordersContainer');
     container.innerHTML = '';
@@ -1296,6 +1360,7 @@ window.renderOrderList = function(filterText = '') {
     }
 
     filtered.forEach((order, index) => {
+        // --- LOGIC STATUS COLORS ---
         let statusColorClass = '';
         let indicatorColor = '';
         
@@ -1310,62 +1375,86 @@ window.renderOrderList = function(filterText = '') {
             indicatorColor = 'bg-orange-500';
         }
 
-        const dateDepart = order.date ? new Date(order.date).toLocaleDateString('id-ID', {day:'numeric', month:'short'}) : '-';
         const displayName = (order.contactName || order.name || 'No Name').toUpperCase();
         const displayNo = index + 1; 
 
-        let routeIcon = '<i class="fas fa-arrow-right text-[9px] mx-1 opacity-50"></i>'; 
-        if (order.tripType === 'round_trip') {
-            routeIcon = '<i class="fas fa-exchange-alt text-[9px] mx-1 text-blue-400"></i>';
-        }
-
-        const routeInfo = `${order.origin || '?'} ${routeIcon} ${order.dest || '?'}`;
-
-        // LOGIC HARGA TERPISAH DI LIST
-        const pDepart = order.price || 0;
-        const pReturn = order.returnPrice || 0;
+        // --- NEW: LOGIC TANGGAL & RUTE ---
+        const dateObj = new Date(order.date);
+        const dateStr = order.date ? dateObj.toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' }) : '-';
         
-        let priceDisplayHTML = `<div class="text-right">
-             <p class="text-[9px] text-gray-500 font-bold uppercase">Pergi</p>
-             <p class="text-[10px] font-bold text-white">${formatRupiah(pDepart)}</p>
-        </div>`;
+        // Rute Pergi
+        let routeHtml = `
+            <div class="mt-1">
+                <p class="text-[10px] text-gray-300 font-bold flex items-center">
+                    <i class="fas fa-train text-davka-orange mr-1.5 text-[10px]"></i> 
+                    ${order.origin || '?'} 
+                    <i class="fas fa-arrow-right text-[8px] mx-1 opacity-50"></i> 
+                    ${order.dest || '?'}
+                </p>
+                <p class="text-[10px] text-gray-500 pl-4 font-mono">${dateStr}</p>
+            </div>
+        `;
 
-        if(order.tripType === 'round_trip') {
-            priceDisplayHTML += `<div class="text-right mt-1 pt-1 border-t border-white/5">
-                 <p class="text-[9px] text-blue-400 font-bold uppercase">Pulang</p>
-                 <p class="text-[10px] font-bold text-white">${formatRupiah(pReturn)}</p>
+        // Rute Pulang (Jika PP)
+        if (order.tripType === 'round_trip') {
+            const retDateObj = new Date(order.returnDate);
+            const retDateStr = order.returnDate ? retDateObj.toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' }) : '-';
+            
+            const retOrg = order.returnOrigin || order.dest || '?';
+            const retDest = order.returnDest || order.origin || '?';
+
+            // UPDATE: Menambahkan Status Badge juga di baris Pulang
+            routeHtml += `
+            <div class="mt-1 pt-1 border-t border-white/5 relative">
+                <div class="absolute left-1.5 top-2 w-0.5 h-full bg-blue-500/20"></div>
+                <div class="flex justify-between items-start">
+                    <div>
+                        <p class="text-[10px] text-gray-300 font-bold flex items-center">
+                            <i class="fas fa-exchange-alt text-blue-400 mr-1.5 text-[10px]"></i> 
+                            ${retOrg} 
+                            <i class="fas fa-arrow-right text-[8px] mx-1 opacity-50"></i> 
+                            ${retDest}
+                        </p>
+                        <p class="text-[10px] text-gray-500 pl-4 font-mono">${retDateStr}</p>
+                    </div>
+                    
+                    <div class="px-1.5 py-0.5 rounded bg-black/20 border border-white/5 self-center mt-1">
+                        <p class="text-[8px] ${statusColorClass.split(' ')[2]} font-bold uppercase tracking-wide">
+                            ${order.status}
+                        </p>
+                    </div>
+                </div>
             </div>`;
         }
 
         const item = document.createElement('div');
         item.className = `rounded-xl border ${statusColorClass.split(' ')[1]} ${statusColorClass.split(' ')[0]} overflow-hidden mb-2 transition-all duration-300 active:scale-95`;
-        
         item.onclick = function() { openDetailView(order.id); };
 
         const mainRow = `
-        <div class="flex items-center justify-between p-3 cursor-pointer select-none relative">
+        <div class="flex items-start justify-between p-3 cursor-pointer select-none relative">
             <div class="absolute left-0 top-0 bottom-0 w-1 ${indicatorColor}"></div>
-            <div class="flex items-center gap-3 pl-2 overflow-hidden flex-1">
-                <div class="w-7 h-7 rounded-lg bg-black/20 flex items-center justify-center font-mono text-xs font-bold ${statusColorClass.split(' ')[2]} shrink-0 border border-white/5">
+            
+            <div class="flex items-start gap-3 pl-2 overflow-hidden flex-1">
+                <div class="w-7 h-7 rounded-lg bg-black/20 flex items-center justify-center font-mono text-xs font-bold ${statusColorClass.split(' ')[2]} shrink-0 border border-white/5 mt-0.5">
                     ${displayNo}
                 </div>
+                
                 <div class="min-w-0 flex-1">
-                    <div class="flex items-baseline gap-2">
-                         <h4 class="text-xs font-bold text-white truncate leading-tight">${displayName}</h4>
+                    <div class="flex justify-between items-start">
+                        <h4 class="text-sm font-bold text-white truncate leading-tight">${displayName}</h4>
+                        <div class="px-2 py-0.5 rounded border border-white/10 bg-black/20">
+                            <p class="text-[9px] ${statusColorClass.split(' ')[2]} font-bold uppercase tracking-wide">
+                                ${order.status}
+                            </p>
+                        </div>
                     </div>
-                    <p class="text-[10px] text-gray-400 truncate mt-0.5 font-medium flex items-center">
-                        ${routeInfo}
-                    </p>
-                     <p class="text-[9px] ${statusColorClass.split(' ')[2]} mt-1 font-bold uppercase tracking-wide opacity-80 border border-current px-1 rounded inline-block">
-                        ${order.status}
-                    </p>
+                    
+                    ${routeHtml}
                 </div>
             </div>
             
-            <div class="flex flex-col items-end gap-1 shrink-0 pl-2 border-l border-white/5 ml-1">
-                 ${priceDisplayHTML}
-            </div>
-            <div class="pl-2">
+            <div class="pl-2 flex items-center self-center">
                 <i class="fas fa-chevron-right text-white/30 text-xs"></i>
             </div>
         </div>`;

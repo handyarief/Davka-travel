@@ -270,7 +270,6 @@ window.updatePassengerForms = function() {
     calcTotalFromPax();
     setTimeout(enableSmoothInputUX, 100);
 }
-
 window.getPassengersFromForm = function() {
     const items = document.querySelectorAll('.passenger-item');
     let paxList = [];
@@ -290,17 +289,6 @@ window.getPassengersFromForm = function() {
     });
     
     return paxList;
-}
-
-window.calcTotalFromPax = function() {
-    const pricePerPax = parseFloat(document.getElementById('inpPricePerPax').value) || 0;
-    const adultCount = parseInt(document.getElementById('inpPaxCount').value) || 1;
-    
-    if (pricePerPax > 0) {
-        // Hanya update harga keberangkatan, harga pulang manual (atau bisa dilogika serupa jika perlu)
-        document.getElementById('inpPrice').value = pricePerPax * adultCount;
-        calcRemaining(); 
-    }
 }
 
 // --- FETCH & REALTIME ---
@@ -424,6 +412,7 @@ orderForm.addEventListener('submit', async (e) => {
         const passengerData = getPassengersFromForm();
         const tripType = document.getElementById('inpTripType').value;
 
+        // UPDATED: Save Logic untuk memisahkan harga
         const newOrder = {
             id: orderId, 
             created_at: created_at,
@@ -447,9 +436,9 @@ orderForm.addEventListener('submit', async (e) => {
             
             paymentMethod: document.getElementById('inpPaymentMethod').value,
             
-            // Financials
+            // Financials (UPDATED)
             price: parseFloat(document.getElementById('inpPrice').value) || 0, // Harga Pergi
-            returnPrice: parseFloat(document.getElementById('inpReturnPrice')?.value) || 0, // Harga Pulang (New) - Optional chaining if element removed
+            returnPrice: parseFloat(document.getElementById('inpReturnPrice').value) || 0, // Harga Pulang (Sekarang tersimpan)
             fee: parseFloat(document.getElementById('inpFee').value) || 0, // DP
             
             settlementMethod: existingOrder ? (existingOrder.settlementMethod || '-') : '-',
@@ -562,7 +551,7 @@ window.navTo = function(pageId) {
         window.scrollTo({ top: 0, behavior: 'smooth' });
     }, 400); 
 }
-// --- EDIT ORDER LOGIC (UPDATED FOR PP) ---
+// --- EDIT ORDER LOGIC (UPDATED FOR PP SPLIT) ---
 window.editOrder = function(id) {
     const index = orders.findIndex(o => o.id === id);
     if (index === -1) return;
@@ -628,18 +617,23 @@ window.editOrder = function(id) {
         document.getElementById('inpReturnDate').value = data.returnDate || '';
         document.getElementById('inpReturnWarDate').value = data.returnWarDate || '';
         document.getElementById('inpReturnTrain').value = data.returnTrain || '';
-        
-        // REVISI: Menghapus pengisian inpReturnPrice karena elemen dihapus
-        // document.getElementById('inpReturnPrice').value = data.returnPrice || 0; 
     }
     
     document.getElementById('inpPaymentMethod').value = data.paymentMethod || 'Tunai';
-    document.getElementById('inpPrice').value = data.price || 0;
     
+    // Financials Calculation for Edit Mode (PISAH LOGIC)
     const adultCount = adults.length || 1;
+    
+    // Pergi
+    document.getElementById('inpPrice').value = data.price || 0;
     const pricePerPax = data.price > 0 ? (data.price / adultCount) : 0;
     document.getElementById('inpPricePerPax').value = Math.round(pricePerPax); 
     
+    // Pulang (New)
+    document.getElementById('inpReturnPrice').value = data.returnPrice || 0;
+    const returnPricePerPax = (data.returnPrice > 0) ? (data.returnPrice / adultCount) : 0;
+    document.getElementById('inpReturnPricePerPax').value = Math.round(returnPricePerPax);
+
     document.getElementById('inpFee').value = data.fee || 0;
     calcRemaining();
 
@@ -745,7 +739,6 @@ function setupImageUploader(inputId, hiddenDataId, imgId, containerId) {
         });
     });
 }
-
 function processFile(file, callback) {
     if (!file) { toggleLoader(false); return; }
     const reader = new FileReader();
@@ -802,10 +795,12 @@ function setupHistoryUploader() {
     });
 }
 
+// --- UPDATED: TOGGLE TRIP TYPE (Handling Payment Section) ---
 window.toggleTripType = function() {
     const type = document.getElementById('inpTripType').value;
     const fields = document.getElementById('returnTripFields');
     const uploadTabContainer = document.getElementById('uploadTabContainer');
+    const payReturnSection = document.getElementById('paymentReturnSection'); // Section Pembayaran Pulang
     
     // Elements for Validation
     const inpRetDate = document.getElementById('inpReturnDate');
@@ -815,7 +810,8 @@ window.toggleTripType = function() {
 
     if(type === 'round_trip') {
         fields.classList.remove('hidden'); fields.classList.add('fade-in');
-        uploadTabContainer.classList.remove('hidden'); 
+        uploadTabContainer.classList.remove('hidden');
+        payReturnSection.classList.remove('hidden'); // Show Payment Pulang
         
         inpRetDate.required = true;
         inpRetTrain.required = true;
@@ -830,6 +826,7 @@ window.toggleTripType = function() {
     } else {
         fields.classList.add('hidden'); fields.classList.remove('fade-in');
         uploadTabContainer.classList.add('hidden'); 
+        payReturnSection.classList.add('hidden'); // Hide Payment Pulang
         
         // Reset view to Depart tab just in case
         switchUploadTab('depart');
@@ -838,6 +835,11 @@ window.toggleTripType = function() {
         inpRetTrain.required = false;
         if(inpRetOrg) inpRetOrg.required = false;
         if(inpRetDest) inpRetDest.required = false;
+
+        // Reset values pulang jika switch ke one way
+        document.getElementById('inpReturnPricePerPax').value = '';
+        document.getElementById('inpReturnPrice').value = '';
+        calcRemaining();
 
         // Label reset
         document.getElementById('lblUploadDepart').classList.add('hidden');
@@ -862,12 +864,29 @@ window.calcReturnH45 = function() {
     }
 }
 
-// UPDATED: Kalkulasi Sisa Tagihan
+// --- UPDATED: CALCULATE TOTAL FROM PAX (SEPARATED) ---
+window.calcTotalFromPax = function() {
+    const adultCount = parseInt(document.getElementById('inpPaxCount').value) || 1;
+
+    // Kalkulasi Harga Pergi
+    const pricePerPax = parseFloat(document.getElementById('inpPricePerPax').value) || 0;
+    if (pricePerPax > 0) {
+        document.getElementById('inpPrice').value = pricePerPax * adultCount;
+    }
+
+    // Kalkulasi Harga Pulang
+    const returnPricePerPax = parseFloat(document.getElementById('inpReturnPricePerPax').value) || 0;
+    if (returnPricePerPax > 0) {
+        document.getElementById('inpReturnPrice').value = returnPricePerPax * adultCount;
+    }
+
+    calcRemaining(); 
+}
+
+// --- UPDATED: CALCULATE REMAINING (TOTAL = PERGI + PULANG) ---
 window.calcRemaining = function() {
     const priceDepart = parseFloat(document.getElementById('inpPrice').value) || 0;
-    
-    // REVISI: Menggunakan ?.value karena elemen inpReturnPrice mungkin tidak ada
-    const priceReturn = parseFloat(document.getElementById('inpReturnPrice')?.value) || 0;
+    const priceReturn = parseFloat(document.getElementById('inpReturnPrice').value) || 0;
     const dp = parseFloat(document.getElementById('inpFee').value) || 0;
     
     const total = priceDepart + priceReturn;
@@ -877,12 +896,12 @@ window.calcRemaining = function() {
     field.value = formatRupiah(remaining);
     field.className = remaining <= 0 ? "bg-transparent text-right text-green-500 font-black text-lg outline-none w-40 cursor-default" : "bg-transparent text-right text-red-500 font-black text-lg outline-none w-40 cursor-default";
 }
-
 window.generateAndPreviewTicket = function() {
     const contactName = document.getElementById('inpContactName').value.toUpperCase();
     if(!contactName) { alert("Isi nama kontak!"); return; }
     toggleLoader(true);
 }
+
 // === NEW FEATURE: MODERN BOARDING PASS RECEIPT ===
 window.printReceipt = function(orderId) {
     const order = orders.find(o => o.id === orderId);
@@ -1047,7 +1066,10 @@ window.resetForm = function() {
     document.getElementById('inpPaxCount').value = "1";
     document.getElementById('inpInfantCount').value = "0"; 
     document.getElementById('inpTripType').value = 'one_way';
+    
+    // Reset Price fields
     document.getElementById('inpPricePerPax').value = '';
+    if(document.getElementById('inpReturnPricePerPax')) document.getElementById('inpReturnPricePerPax').value = '';
     
     toggleTripType(); 
     
@@ -1169,20 +1191,56 @@ window.openDetailView = function(orderId) {
     });
     document.getElementById('detail-pax-list').innerHTML = paxListHtml;
 
-    // Cost Breakdown Logic
+    // --- REVISI TOTAL: PEMISAHAN HARGA DI DETAIL VIEW ---
+    // Logic: Menampilkan dua blok terpisah (Card Pergi & Card Pulang)
+    
     const pDepart = order.price || 0;
     const pReturn = order.returnPrice || 0;
     const dp = order.fee || 0;
     const total = pDepart + pReturn;
     const remaining = total - dp;
     
-    let costHTML = `
-        <div class="flex justify-between items-center text-[10px] text-gray-400"><span>Tiket Pergi</span> <span>${formatRupiah(pDepart)}</span></div>
+    let costHTML = '';
+
+    // CARD 1: BIAYA PERGI
+    costHTML += `
+    <div class="bg-davka-bg border border-white/10 rounded-xl p-3 mb-2">
+        <div class="flex items-center gap-2 mb-2 border-b border-white/5 pb-2">
+            <i class="fas fa-train text-davka-orange text-xs"></i>
+            <span class="text-[10px] font-bold text-gray-300 uppercase">Biaya Pergi</span>
+        </div>
+        <div class="flex justify-between items-center">
+             <span class="text-[10px] text-gray-500">Harga Tiket</span>
+             <span class="text-xs font-bold text-white">${formatRupiah(pDepart)}</span>
+        </div>
+    </div>
     `;
+
+    // CARD 2: BIAYA PULANG (JIKA ADA)
     if(order.tripType === 'round_trip') {
-        costHTML += `<div class="flex justify-between items-center text-[10px] text-blue-400"><span>Tiket Pulang</span> <span>${formatRupiah(pReturn)}</span></div>`;
+        costHTML += `
+        <div class="bg-davka-bg border border-blue-500/30 rounded-xl p-3 mb-2">
+            <div class="flex items-center gap-2 mb-2 border-b border-blue-500/20 pb-2">
+                <i class="fas fa-exchange-alt text-blue-400 text-xs"></i>
+                <span class="text-[10px] font-bold text-gray-300 uppercase">Biaya Pulang</span>
+            </div>
+            <div class="flex justify-between items-center">
+                 <span class="text-[10px] text-gray-500">Harga Tiket</span>
+                 <span class="text-xs font-bold text-white">${formatRupiah(pReturn)}</span>
+            </div>
+        </div>
+        `;
     }
-    costHTML += `<div class="flex justify-between items-center text-[10px] text-davka-orange border-t border-dashed border-white/10 mt-1 pt-1"><span>Total DP</span> <span>- ${formatRupiah(dp)}</span></div>`;
+
+    // CARD 3: PEMBAYARAN & SISA
+    costHTML += `
+    <div class="bg-davka-bg border border-white/10 rounded-xl p-3 mt-1">
+        <div class="flex justify-between items-center mb-1">
+             <span class="text-[10px] text-gray-500 uppercase font-bold">Total DP (Bayar Awal)</span>
+             <span class="text-xs font-bold text-davka-orange">- ${formatRupiah(dp)}</span>
+        </div>
+    </div>
+    `;
     
     const costContainer = document.getElementById('detail-cost-breakdown');
     costContainer.innerHTML = costHTML;
@@ -1215,13 +1273,12 @@ window.closeDetailView = function() {
     renderOrderList(document.getElementById('searchInput').value);
 }
 
-// === REVISI LOGIC SORTING & PENOMORAN ===
+// === REVISI TOTAL: RENDER LIST PESANAN (PEMISAHAN HARGA) ===
 window.renderOrderList = function(filterText = '') {
     const container = document.getElementById('ordersContainer');
     container.innerHTML = '';
     if(!orders) return;
     
-    // REVISI: Sort Ascending (Terlama ke Terbaru) - a - b
     const sortedOrders = [...orders].sort((a, b) => {
         return new Date(a.created_at || a.id) - new Date(b.created_at || b.id);
     });
@@ -1255,8 +1312,6 @@ window.renderOrderList = function(filterText = '') {
 
         const dateDepart = order.date ? new Date(order.date).toLocaleDateString('id-ID', {day:'numeric', month:'short'}) : '-';
         const displayName = (order.contactName || order.name || 'No Name').toUpperCase();
-        
-        // REVISI: Penomoran 1, 2, 3 sesuai urutan list (Ascending)
         const displayNo = index + 1; 
 
         let routeIcon = '<i class="fas fa-arrow-right text-[9px] mx-1 opacity-50"></i>'; 
@@ -1265,6 +1320,22 @@ window.renderOrderList = function(filterText = '') {
         }
 
         const routeInfo = `${order.origin || '?'} ${routeIcon} ${order.dest || '?'}`;
+
+        // LOGIC HARGA TERPISAH DI LIST
+        const pDepart = order.price || 0;
+        const pReturn = order.returnPrice || 0;
+        
+        let priceDisplayHTML = `<div class="text-right">
+             <p class="text-[9px] text-gray-500 font-bold uppercase">Pergi</p>
+             <p class="text-[10px] font-bold text-white">${formatRupiah(pDepart)}</p>
+        </div>`;
+
+        if(order.tripType === 'round_trip') {
+            priceDisplayHTML += `<div class="text-right mt-1 pt-1 border-t border-white/5">
+                 <p class="text-[9px] text-blue-400 font-bold uppercase">Pulang</p>
+                 <p class="text-[10px] font-bold text-white">${formatRupiah(pReturn)}</p>
+            </div>`;
+        }
 
         const item = document.createElement('div');
         item.className = `rounded-xl border ${statusColorClass.split(' ')[1]} ${statusColorClass.split(' ')[0]} overflow-hidden mb-2 transition-all duration-300 active:scale-95`;
@@ -1285,13 +1356,16 @@ window.renderOrderList = function(filterText = '') {
                     <p class="text-[10px] text-gray-400 truncate mt-0.5 font-medium flex items-center">
                         ${routeInfo}
                     </p>
+                     <p class="text-[9px] ${statusColorClass.split(' ')[2]} mt-1 font-bold uppercase tracking-wide opacity-80 border border-current px-1 rounded inline-block">
+                        ${order.status}
+                    </p>
                 </div>
             </div>
-            <div class="flex items-center gap-3 shrink-0 pl-2">
-                <div class="text-right">
-                     <p class="text-[9px] ${statusColorClass.split(' ')[2]} font-bold uppercase tracking-wide opacity-80">Berangkat</p>
-                     <p class="text-xs font-bold text-white">${dateDepart}</p>
-                </div>
+            
+            <div class="flex flex-col items-end gap-1 shrink-0 pl-2 border-l border-white/5 ml-1">
+                 ${priceDisplayHTML}
+            </div>
+            <div class="pl-2">
                 <i class="fas fa-chevron-right text-white/30 text-xs"></i>
             </div>
         </div>`;

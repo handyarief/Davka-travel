@@ -509,7 +509,6 @@ async function uploadToSupabaseStorage(base64Data, fileName) {
         return null; 
     }
 }
-
 // --- FORM HANDLING (SAVE & UPDATE) ---
 const orderForm = document.getElementById('orderForm');
 
@@ -554,6 +553,10 @@ orderForm.addEventListener('submit', async (e) => {
         const passengerData = getPassengersFromForm();
         const tripType = document.getElementById('inpTripType').value;
 
+        // FIX 1: SANITASI TANGGAL UNTUK MENCEGAH POSTGRES FATAL ERROR
+        // Jika string kosong (""), ubah jadi null agar DB tidak crash
+        const getValidDate = (val) => val ? val : null;
+
         const newOrder = {
             id: orderId, 
             created_at: created_at,
@@ -563,15 +566,21 @@ orderForm.addEventListener('submit', async (e) => {
             passengers: passengerData, 
             origin: document.getElementById('inpOrigin').value.toUpperCase(),
             dest: document.getElementById('inpDest').value.toUpperCase(),
-            date: document.getElementById('inpDate').value,
-            warDate: document.getElementById('inpWarDate').value,
+            
+            // Terapkan sanitasi tanggal di sini
+            date: getValidDate(document.getElementById('inpDate').value),
+            warDate: getValidDate(document.getElementById('inpWarDate').value),
+            
             train: document.getElementById('inpTrain').value.toUpperCase(),
             tripType: tripType,
             
             returnOrigin: document.getElementById('inpReturnOrigin').value.toUpperCase(),
             returnDest: document.getElementById('inpReturnDest').value.toUpperCase(),
-            returnDate: document.getElementById('inpReturnDate').value,
-            returnWarDate: document.getElementById('inpReturnWarDate').value,
+            
+            // Terapkan sanitasi tanggal pulang di sini
+            returnDate: getValidDate(document.getElementById('inpReturnDate').value),
+            returnWarDate: getValidDate(document.getElementById('inpReturnWarDate').value),
+            
             returnTrain: document.getElementById('inpReturnTrain').value.toUpperCase(),
             
             paymentMethod: document.getElementById('inpPaymentMethod').value,
@@ -597,11 +606,22 @@ orderForm.addEventListener('submit', async (e) => {
             status: existingOrder ? existingOrder.status : 'pending'
         };
 
+        // FIX 2: EKSEKUSI KE SERVER DULU! (Optimistic UI Reordering)
+        const { error } = existingOrder 
+            ? await supabase.from('orders').update(newOrder).eq('id', orderId)
+            : await supabase.from('orders').insert([newOrder]);
+
+        // Jika server gagal (error koneksi / db), throw ke catch block
+        // Form TIDAK AKAN direset, user tidak perlu mengetik ulang
+        if(error) throw error;
+
+        // JIKA SERVER SUKSES, BARU UPDATE UI DAN LOKAL RAM
         if (existingOrder) {
             orders[editIndex] = newOrder;
         } else {
             orders.push(newOrder); 
         }
+        
         renderStats();
         document.getElementById('searchInput').value = ''; 
         renderOrderList(''); 
@@ -609,19 +629,14 @@ orderForm.addEventListener('submit', async (e) => {
         showToast("Data Tersimpan!");
         resetForm();
 
-        const { error } = existingOrder 
-            ? await supabase.from('orders').update(newOrder).eq('id', orderId)
-            : await supabase.from('orders').insert([newOrder]);
-
-        if(error) throw error;
-
     } catch (err) {
         console.error("Save Failed:", err);
-        alert("Gagal simpan ke server, tapi data lokal aman sementara. Cek koneksi!");
+        alert(`Gagal simpan ke server: ${err.message || "Cek koneksi internet Anda"}. Data belum dihapus dari form.`);
     } finally {
         toggleLoader(false); 
     }
 });
+
 window.deleteOrder = async function(id) {
     if(confirm("Hapus pesanan ini Permanen?")) {
         toggleLoader(true);

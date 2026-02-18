@@ -342,7 +342,7 @@ window.updatePassengerForms = function() {
                 <input type="text" value="${valName}" class="pax-name w-full bg-davka-bg border border-davka-border rounded-lg p-2 text-sm text-white focus:border-davka-orange focus:outline-none placeholder-gray-600" placeholder="Nama Lengkap (Sesuai KTP)" autocapitalize="characters">
                 <div class="grid grid-cols-2 gap-2">
                     <input type="number" value="${valNik}" class="pax-nik w-full bg-davka-bg border border-davka-border rounded-lg p-2 text-sm text-white focus:border-davka-orange focus:outline-none placeholder-gray-600" placeholder="NIK / Paspor">
-                    <input type="text" onfocus="(this.type='date')" onblur="(this.type='text')" value="${valDob}" class="pax-dob w-full bg-davka-bg border border-davka-border rounded-lg p-2 text-sm text-white focus:border-davka-orange focus:outline-none placeholder-gray-600" placeholder="Tgl Lahir">
+                    <input type="text" onfocus="(this.type='date')" onblur="(this.type='text')" value="${valDob}" class="pax-dob w-full bg-davka-bg border border-davka-border rounded-lg p-2 text-sm text-white focus:border-davka-orange focus:outline-none placeholder-gray-600" placeholder="Tanggal Lahir">
                 </div>
             </div>
         </div>`;
@@ -363,7 +363,7 @@ window.updatePassengerForms = function() {
                 <input type="text" value="${valName}" class="pax-name w-full bg-davka-bg border border-davka-border rounded-lg p-2 text-sm text-white focus:border-pink-500 focus:outline-none placeholder-gray-600" placeholder="Nama Bayi" autocapitalize="characters">
                 <div class="grid grid-cols-2 gap-2">
                     <input type="number" value="${valNik}" class="pax-nik w-full bg-davka-bg border border-davka-border rounded-lg p-2 text-sm text-white focus:border-pink-500 focus:outline-none placeholder-gray-600" placeholder="NIK / KIA">
-                    <input type="text" onfocus="(this.type='date')" onblur="(this.type='text')" value="${valDob}" class="pax-dob w-full bg-davka-bg border border-davka-border rounded-lg p-2 text-sm text-white focus:border-pink-500 focus:outline-none placeholder-gray-600" placeholder="Tgl Lahir">
+                    <input type="text" onfocus="(this.type='date')" onblur="(this.type='text')" value="${valDob}" class="pax-dob w-full bg-davka-bg border border-davka-border rounded-lg p-2 text-sm text-white focus:border-pink-500 focus:outline-none placeholder-gray-600" placeholder="Tanggal Lahir">
                 </div>
             </div>
         </div>`;
@@ -373,7 +373,6 @@ window.updatePassengerForms = function() {
     calcTotalFromPax();
     setTimeout(enableSmoothInputUX, 100);
 }
-
 window.getPassengersFromForm = function() {
     const items = document.querySelectorAll('.passenger-item');
     let paxList = [];
@@ -634,7 +633,6 @@ orderForm.addEventListener('submit', async (e) => {
         toggleLoader(false); 
     }
 });
-
 window.deleteOrder = async function(id) {
     if(confirm("Hapus pesanan ini Permanen?")) {
         toggleLoader(true);
@@ -1055,15 +1053,15 @@ function renderReceiptToDOM(order) {
             }
         }
         
-        // UX UPDATE 1 & 2: Ubah LHR jadi TGL LAHIR, perbesar text jadi [10px] font-black orange
-        const dobDisplayReceipt = dobStr ? `<span class="block text-[10px] text-davka-orange mt-1 font-black">TGL LAHIR: ${dobStr}</span>` : '';
+        // FIX NOTA 1: TGL LAHIR lebih elegan & sinkron (font-mono, abu-abu rapi)
+        const dobDisplayReceipt = dobStr ? `<span class="block text-[10px] text-gray-400 mt-1.5 font-mono tracking-wider">TGL LAHIR: <span class="text-gray-200">${dobStr}</span></span>` : '';
 
-        // UX UPDATE 3: Perbesar NIK di nota jadi [11px] text-white/blue-200 agar kontras
+        // FIX NOTA 2: NIK lebih jelas dengan contrast tinggi & background pill
         paxHtml += `
             <div class="flex justify-between items-start bg-white/5 p-2 rounded mb-1 gap-2">
                 <p class="text-[11px] font-bold text-white uppercase break-words flex-1 leading-tight">${p.name} ${paxTypeLabel}</p>
                 <div class="text-right shrink-0">
-                    <p class="text-[11px] text-blue-200 font-bold font-mono whitespace-nowrap">ID: ${p.nik || '-'}</p>
+                    <p class="text-[11px] text-white bg-white/10 px-1.5 py-0.5 border border-white/10 rounded font-bold font-mono whitespace-nowrap">ID: ${p.nik || '-'}</p>
                     ${dobDisplayReceipt}
                 </div>
             </div>
@@ -1111,7 +1109,6 @@ function renderReceiptToDOM(order) {
 
         document.getElementById('rec-return-contact-name').innerText = (order.contactName || mainPaxName).toUpperCase();
         
-        // UX UPDATE 3: Override Class HTML untuk memperjelas Nomor HP
         const phoneElReturn = document.getElementById('rec-return-contact-phone');
         phoneElReturn.innerText = order.contactPhone || '-';
         phoneElReturn.className = "text-[13px] font-bold text-white tracking-wider font-mono mb-1"; 
@@ -1160,7 +1157,6 @@ function renderReceiptToDOM(order) {
 
         document.getElementById('rec-contact-name').innerText = (order.contactName || mainPaxName).toUpperCase();
         
-        // UX UPDATE 3: Override Class HTML untuk memperjelas Nomor HP
         const phoneElDepart = document.getElementById('rec-contact-phone');
         phoneElDepart.innerText = order.contactPhone || '-';
         phoneElDepart.className = "text-[13px] font-bold text-white tracking-wider font-mono mb-1";
@@ -1357,23 +1353,26 @@ window.openDetailView = function(orderId) {
         const icon = isInfant ? 'fa-baby' : 'fa-user';
         const label = isInfant ? '<span class="text-[8px] ml-2 px-1.5 py-0.5 rounded bg-pink-500/20 text-pink-400 border border-pink-500/30">BAYI</span>' : '';
         
-        // UX UPDATE 2: Tanggal Lahir menjadi Badge yang LEBIH BESAR [10px] & Tappable di Detail View
+        // FIX DETAIL VIEW 1: Tanggal Lahir menjadi Badge dengan shrink-0 agar tidak merusak layout
         let dobBadge = '';
         if (p.dob) {
             const d = new Date(p.dob);
             const dobFormat = !isNaN(d) ? d.toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' }).toUpperCase() : p.dob;
-            dobBadge = `<span class="ml-2 inline-flex items-center gap-1 bg-davka-orange/20 text-davka-orange border border-davka-orange/30 px-2 py-1 rounded-md text-[10px] font-bold tracking-wider uppercase"><i class="fas fa-calendar-alt"></i> ${dobFormat}</span>`;
+            dobBadge = `<span class="inline-flex items-center gap-1 bg-davka-orange/20 text-davka-orange border border-davka-orange/30 px-2 py-1 rounded-md text-[10px] font-bold tracking-wider uppercase shrink-0"><i class="fas fa-calendar-alt"></i> ${dobFormat}</span>`;
         }
 
-        // UX UPDATE 2: NIK diperjelas (font-bold text-gray-300 text-[11px]) di Detail View
+        // FIX DETAIL VIEW 2: Layout flex-wrap agar NIK dan badge Tgl Lahir otomatis turun jika layar sempit tanpa memotong teks
         paxListHtml += `
-            <div class="flex items-center gap-3 border-b border-white/5 pb-2 last:border-0 last:pb-0">
-                <div class="w-6 h-6 rounded-full ${iconColor} flex items-center justify-center text-[10px] font-bold shrink-0">
+            <div class="flex items-start gap-3 border-b border-white/5 pb-3 pt-1 last:border-0 last:pb-0">
+                <div class="w-6 h-6 rounded-full ${iconColor} flex items-center justify-center text-[10px] font-bold shrink-0 mt-0.5">
                     <i class="fas ${icon}"></i>
                 </div>
-                <div>
-                    <p class="text-xs font-bold text-white uppercase flex items-center">${p.name} ${label}</p>
-                    <p class="text-[11px] text-gray-300 font-bold font-mono flex items-center mt-1.5">NIK: ${p.nik} ${dobBadge}</p>
+                <div class="flex-1 min-w-0">
+                    <p class="text-xs font-bold text-white uppercase flex flex-wrap items-center gap-1">${p.name} ${label}</p>
+                    <div class="flex flex-wrap items-center gap-2 mt-1.5">
+                        <p class="text-[11px] text-gray-300 font-bold font-mono whitespace-nowrap">NIK: ${p.nik}</p>
+                        ${dobBadge}
+                    </div>
                 </div>
             </div>
         `;

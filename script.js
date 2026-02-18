@@ -552,8 +552,7 @@ orderForm.addEventListener('submit', async (e) => {
         const passengerData = getPassengersFromForm();
         const tripType = document.getElementById('inpTripType').value;
 
-        // FIX 1: SANITASI TANGGAL UNTUK MENCEGAH POSTGRES FATAL ERROR
-        // Jika string kosong (""), ubah jadi null agar DB tidak crash
+        // SANITASI TANGGAL
         const getValidDate = (val) => val ? val : null;
 
         const newOrder = {
@@ -566,7 +565,6 @@ orderForm.addEventListener('submit', async (e) => {
             origin: document.getElementById('inpOrigin').value.toUpperCase(),
             dest: document.getElementById('inpDest').value.toUpperCase(),
             
-            // Terapkan sanitasi tanggal di sini
             date: getValidDate(document.getElementById('inpDate').value),
             warDate: getValidDate(document.getElementById('inpWarDate').value),
             
@@ -576,7 +574,6 @@ orderForm.addEventListener('submit', async (e) => {
             returnOrigin: document.getElementById('inpReturnOrigin').value.toUpperCase(),
             returnDest: document.getElementById('inpReturnDest').value.toUpperCase(),
             
-            // Terapkan sanitasi tanggal pulang di sini
             returnDate: getValidDate(document.getElementById('inpReturnDate').value),
             returnWarDate: getValidDate(document.getElementById('inpReturnWarDate').value),
             
@@ -605,14 +602,12 @@ orderForm.addEventListener('submit', async (e) => {
             status: existingOrder ? existingOrder.status : 'pending'
         };
 
-        // FIX 2: EKSEKUSI KE SERVER DULU! (Optimistic UI Reordering)
         const { error } = existingOrder 
             ? await supabase.from('orders').update(newOrder).eq('id', orderId)
             : await supabase.from('orders').insert([newOrder]);
 
         if(error) throw error;
 
-        // JIKA SERVER SUKSES, BARU UPDATE UI DAN LOKAL RAM
         if (existingOrder) {
             orders[editIndex] = newOrder;
         } else {
@@ -1057,15 +1052,18 @@ function renderReceiptToDOM(order) {
             }
         }
         
-        // FIX NOTA 1: TGL LAHIR ganti warna orange, tebalkan, dan perbesar dikit
-        const dobDisplayReceipt = dobStr ? `<span class="block text-[11px] text-davka-orange font-bold mt-1.5 tracking-wider">TGL LAHIR: ${dobStr}</span>` : '';
+        // UPDATE NOTA: 
+        // 1. TGL LAHIR ukurannya disamakan dengan ID (text-[10px]) dan posisinya diselaraskan ke kanan.
+        // 2. Teks NIK/ID berada di tengah kotaknya (text-center).
+        const dobDisplayReceipt = dobStr ? `<span class="block text-[10px] text-davka-orange font-bold mt-1.5 tracking-wider text-right">TGL LAHIR: ${dobStr}</span>` : '';
 
-        // FIX NOTA 2: NIK ukuran disejajarkan dengan nama (text-[12px])
         paxHtml += `
-            <div class="flex justify-between items-start bg-white/5 p-2 rounded mb-1 gap-2">
-                <p class="text-[12px] font-bold text-white uppercase break-words flex-1 leading-tight mt-0.5">${p.name} ${paxTypeLabel}</p>
-                <div class="text-right shrink-0">
-                    <p class="text-[12px] text-white bg-white/10 px-2 py-1 border border-white/10 rounded font-bold font-mono whitespace-nowrap">ID: ${p.nik || '-'}</p>
+            <div class="flex justify-between items-start bg-white/5 p-2.5 rounded mb-1 gap-2">
+                <p class="text-[11px] font-bold text-white uppercase break-words flex-1 leading-tight mt-1">${p.name} ${paxTypeLabel}</p>
+                <div class="shrink-0 min-w-[130px] flex flex-col items-end">
+                    <div class="w-full bg-white/10 px-2 py-1.5 rounded border border-white/5">
+                        <p class="text-[10px] text-white font-bold font-mono text-center tracking-widest">ID: ${p.nik || '-'}</p>
+                    </div>
                     ${dobDisplayReceipt}
                 </div>
             </div>

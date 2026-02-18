@@ -233,7 +233,6 @@ select:focus {
 .text-shadow-glow {
     text-shadow: 0 0 10px rgba(14, 165, 233, 0.5);
 }
-
 /* === PAGE ANIMATIONS === */
 .fade-in {
     animation: fadeInUp 0.6s cubic-bezier(0.165, 0.84, 0.44, 1) forwards;
@@ -295,7 +294,6 @@ select:focus {
     from { transform: translateX(-50%) scale(0); }
     to { transform: translateX(-50%) scale(1); }
 }
-
 /* === UTILITIES & PRINT === */
 input[type="date"]::-webkit-calendar-picker-indicator {
     filter: invert(1);
@@ -324,35 +322,42 @@ input[type="date"]::-webkit-calendar-picker-indicator:hover {
     print-color-adjust: exact !important;
 }
 
-/* Update Stamp Style: Watermark Effect */
+/* Update Stamp Style: Watermark Effect -> MODIFIED FOR LOGO DAVKA */
 .stamp-lunas-modern {
     position: absolute;
     top: 50%; 
     left: 50%;
-    transform: translate(-50%, -50%) rotate(-15deg) scale(0.9);
+    transform: translate(-50%, -50%) scale(1);
     display: none; 
     z-index: 5; /* Low z-index to stay behind text */
     pointer-events: none;
-    width: 300px;
-    height: auto;
+    
+    /* UPDATE: Dimensi fix 1:1, border-radius 50% untuk bulat sempurna */
+    width: 280px; 
+    height: 280px; 
+    object-fit: cover;
+    border-radius: 50%;
     
     /* Watermark Effect Key Properties */
-    opacity: 0.15; /* Sangat transparan */
-    mix-blend-mode: hard-light; /* Blend halus dengan background gelap */
-    filter: drop-shadow(0 0 10px rgba(255,255,255,0.2));
+    opacity: 0.15; 
+    mix-blend-mode: screen; /* Screen blend lebih cocok untuk logo di background gelap */
+    
+    /* UPDATE: Penambahan box-shadow dan peningkatan filter untuk glow bulat yang estetik */
+    box-shadow: 0 0 40px rgba(255, 84, 0, 0.4);
+    filter: drop-shadow(0 0 15px rgba(255, 84, 0, 0.5)); 
     
     transition: all 0.5s ease;
-    border-radius: 50%; 
 }
 
 .stamp-lunas-modern.visible {
     display: block !important;
-    animation: stampBounce 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    animation: stampPop 0.6s cubic-bezier(0.175, 0.885, 0.32, 1.275);
 }
 
-@keyframes stampBounce {
-    0% { transform: translate(-50%, -50%) rotate(-45deg) scale(2); opacity: 0; }
-    100% { transform: translate(-50%, -50%) rotate(-15deg) scale(0.9); opacity: 0.15; }
+/* MODIFIED ANIMATION: Pop lurus tanpa rotasi */
+@keyframes stampPop {
+    0% { transform: translate(-50%, -50%) scale(0.5); opacity: 0; }
+    100% { transform: translate(-50%, -50%) scale(1); opacity: 0.15; }
 }
 
 .truncate-text {

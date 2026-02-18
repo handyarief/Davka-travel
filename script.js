@@ -301,7 +301,6 @@ function handleInputEnter(e, currentIndex, allElements) {
         }
     }
 }
-
 // --- LOGIC PENUMPANG (DEWASA & BAYI) ---
 window.updatePassengerForms = function() {
     const adultCount = parseInt(document.getElementById('inpPaxCount').value) || 1;
@@ -623,7 +622,6 @@ orderForm.addEventListener('submit', async (e) => {
         toggleLoader(false); 
     }
 });
-
 window.deleteOrder = async function(id) {
     if(confirm("Hapus pesanan ini Permanen?")) {
         toggleLoader(true);
@@ -1004,10 +1002,9 @@ window.printReceipt = function(orderId) {
     
     renderReceiptToDOM(order);
     
-    showToast("RENDER E-TICKET...");
+    showToast("RENDER E-TIKET...");
     setTimeout(() => { captureAndShowModal('receipt-render-area'); }, 800);
 }
-
 // --- CORE: RENDER NOTA BERDASARKAN TAB AKTIF & DATA LENGKAP ---
 function renderReceiptToDOM(order) {
     const sectionDepart = document.getElementById('rec-ticket-depart');
@@ -1023,22 +1020,28 @@ function renderReceiptToDOM(order) {
 
     // --- SHARED DATA (PENUMPANG) ---
     let paxList = Array.isArray(order.passengers) ? order.passengers : (order.name ? [{name: order.name, nik: order.nik || '-', type: 'adult'}] : []);
-    const mainPaxName = paxList.length > 0 ? paxList[0].name : (order.contactName || 'PASSENGER');
+    const mainPaxName = paxList.length > 0 ? paxList[0].name : (order.contactName || 'PENUMPANG');
     
     const adults = paxList.filter(p => !p.type || p.type === 'adult').length;
     const infants = paxList.filter(p => p.type === 'infant').length;
-    let paxCountStr = `${adults} Adult`;
-    if(adults > 1) paxCountStr += 's';
-    if(infants > 0) paxCountStr += `, ${infants} Infant`;
+    
+    // UPDATE: Terjemahan bahasa Inggris -> Indonesia untuk teks penumpang
+    let paxCountStr = `${adults} Dewasa`;
+    if(infants > 0) paxCountStr += `, ${infants} Bayi`;
 
     let paxHtml = '';
     paxList.forEach(p => {
         const isInfant = p.type === 'infant';
-        const paxTypeLabel = isInfant ? '<span class="text-[6px] bg-white/20 px-1 rounded ml-1 text-pink-300">BAYI</span>' : '';
+        const paxTypeLabel = isInfant ? '<span class="text-[8px] bg-white/20 px-1 rounded ml-1 text-pink-300 inline-block align-middle">BAYI</span>' : '';
+        
+        // UPDATE UX PENUMPANG: 
+        // 1. Ubah flex items-center menjadi items-start agar sejajar rapi saat multiline
+        // 2. Hapus truncate, ganti break-words
+        // 3. Perbesar font size NIK dan Nama
         paxHtml += `
-            <div class="flex justify-between items-center bg-white/5 p-1.5 rounded mb-1">
-                <p class="text-[9px] font-bold text-white uppercase truncate flex-1">${p.name} ${paxTypeLabel}</p>
-                <p class="text-[8px] text-gray-300 font-mono ml-2">ID: ${p.nik || '-'}</p>
+            <div class="flex justify-between items-start bg-white/5 p-2 rounded mb-1 gap-2">
+                <p class="text-[11px] font-bold text-white uppercase break-words flex-1 leading-tight">${p.name} ${paxTypeLabel}</p>
+                <p class="text-[10px] text-gray-300 font-mono shrink-0 pt-0.5 whitespace-nowrap">ID: ${p.nik || '-'}</p>
             </div>
         `;
     });
@@ -1055,14 +1058,15 @@ function renderReceiptToDOM(order) {
         
         document.getElementById('rec-return-origin-code').innerText = retOrg;
         document.getElementById('rec-return-dest-code').innerText = retDes;
-        document.getElementById('rec-return-train-name').innerText = (order.returnTrain || 'TRAIN').toUpperCase();
+        
+        document.getElementById('rec-return-train-name').innerText = (order.returnTrain || 'KERETA').toUpperCase();
         
         const retDateObj = new Date(order.returnDate);
-        const retDateStr = order.returnDate ? retDateObj.toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' }) : '-';
+        const retDateStr = order.returnDate ? retDateObj.toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' }) : '-';
         document.getElementById('rec-return-date-depart').innerText = retDateStr.toUpperCase();
 
         const retWarDateObj = new Date(order.returnWarDate);
-        const retWarDateStr = order.returnWarDate ? retWarDateObj.toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' }) : '-';
+        const retWarDateStr = order.returnWarDate ? retWarDateObj.toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' }) : '-';
         document.getElementById('rec-return-war-date').innerText = retWarDateStr.toUpperCase();
         
         const stampElReturn = document.getElementById('rec-stamp-return');
@@ -1078,7 +1082,7 @@ function renderReceiptToDOM(order) {
         priceTotalEl.innerText = formatRupiah(returnTotal);
         priceDpEl.innerText = formatRupiah(returnDp);
         priceRemainingEl.innerText = formatRupiah(returnRemaining);
-        priceRemainingEl.className = returnRemaining <= 0 ? "text-xl font-black text-green-500" : "text-xl font-black text-red-500";
+        priceRemainingEl.className = returnRemaining <= 0 ? "text-[22px] font-black text-green-500" : "text-[22px] font-black text-red-500";
 
         document.getElementById('rec-id').innerText = "#" + order.id.toString().slice(-6) + "-R";
 
@@ -1086,6 +1090,7 @@ function renderReceiptToDOM(order) {
         document.getElementById('rec-return-contact-name').innerText = (order.contactName || mainPaxName).toUpperCase();
         document.getElementById('rec-return-contact-phone').innerText = order.contactPhone || '-';
         document.getElementById('rec-return-address').innerText = address.toUpperCase();
+        
         document.getElementById('rec-return-payment-method').innerText = (order.paymentMethodReturn || order.paymentMethod || 'TUNAI').toUpperCase();
         document.getElementById('rec-return-pax-count').innerText = paxCountStr;
         document.getElementById('rec-return-pax-list').innerHTML = paxHtml;
@@ -1099,14 +1104,15 @@ function renderReceiptToDOM(order) {
 
         document.getElementById('rec-origin-code').innerText = origin;
         document.getElementById('rec-dest-code').innerText = dest;
-        document.getElementById('rec-train-name').innerText = (order.train || 'TRAIN').toUpperCase();
+        
+        document.getElementById('rec-train-name').innerText = (order.train || 'KERETA').toUpperCase();
 
         const dateObj = new Date(order.date);
-        const dateStr = order.date ? dateObj.toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' }) : '-';
+        const dateStr = order.date ? dateObj.toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' }) : '-';
         document.getElementById('rec-date-depart').innerText = dateStr.toUpperCase();
 
         const warDateObj = new Date(order.warDate);
-        const warDateStr = order.warDate ? warDateObj.toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' }) : '-';
+        const warDateStr = order.warDate ? warDateObj.toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' }) : '-';
         document.getElementById('rec-war-date').innerText = warDateStr.toUpperCase();
         
         const stampElDepart = document.getElementById('rec-stamp-depart');
@@ -1122,7 +1128,7 @@ function renderReceiptToDOM(order) {
         priceTotalEl.innerText = formatRupiah(departTotal);
         priceDpEl.innerText = formatRupiah(departDp);
         priceRemainingEl.innerText = formatRupiah(departRemaining);
-        priceRemainingEl.className = departRemaining <= 0 ? "text-xl font-black text-green-500" : "text-xl font-black text-red-500";
+        priceRemainingEl.className = departRemaining <= 0 ? "text-[22px] font-black text-green-500" : "text-[22px] font-black text-red-500";
 
         document.getElementById('rec-id').innerText = "#" + order.id.toString().slice(-6);
 
@@ -1130,6 +1136,7 @@ function renderReceiptToDOM(order) {
         document.getElementById('rec-contact-name').innerText = (order.contactName || mainPaxName).toUpperCase();
         document.getElementById('rec-contact-phone').innerText = order.contactPhone || '-';
         document.getElementById('rec-address').innerText = address.toUpperCase();
+        
         document.getElementById('rec-payment-method').innerText = (order.paymentMethod || 'TUNAI').toUpperCase();
         document.getElementById('rec-pax-count').innerText = paxCountStr;
         document.getElementById('rec-pax-list').innerHTML = paxHtml;
@@ -1155,7 +1162,6 @@ function captureAndShowModal(elementId) {
         alert("Gagal render gambar."); 
     });
 }
-
 function renderUploadBtnHTML(id, type, file, label) {
     if(file) {
         return `<div class="relative w-full h-full rounded-lg overflow-hidden border border-white/10 group cursor-pointer bg-black/40">

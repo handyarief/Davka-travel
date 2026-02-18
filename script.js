@@ -633,6 +633,7 @@ orderForm.addEventListener('submit', async (e) => {
         toggleLoader(false); 
     }
 });
+
 window.deleteOrder = async function(id) {
     if(confirm("Hapus pesanan ini Permanen?")) {
         toggleLoader(true);
@@ -863,6 +864,7 @@ window.handleUploadZoneClick = function(zoneId, inputId) {
         }, 300);
     }
 }
+
 function resetUploadZones() {
     activeUploadZone = null;
     document.querySelectorAll('.upload-zone-base').forEach(el => el.classList.remove('upload-zone-active'));
@@ -887,6 +889,7 @@ function setupImageUploader(inputId, hiddenDataId, imgId, containerId) {
         });
     });
 }
+
 function processFile(file, callback) {
     if (!file) { toggleLoader(false); return; }
     const reader = new FileReader();
@@ -907,6 +910,7 @@ function processFile(file, callback) {
     }
     reader.readAsDataURL(file);
 }
+
 function setupHistoryUploader() {
     const historyInput = document.getElementById('inpHistoryUpload');
     historyInput.addEventListener('change', function(e) {
@@ -1053,15 +1057,15 @@ function renderReceiptToDOM(order) {
             }
         }
         
-        // FIX NOTA 1: TGL LAHIR lebih elegan & sinkron (font-mono, abu-abu rapi)
-        const dobDisplayReceipt = dobStr ? `<span class="block text-[10px] text-gray-400 mt-1.5 font-mono tracking-wider">TGL LAHIR: <span class="text-gray-200">${dobStr}</span></span>` : '';
+        // FIX NOTA 1: TGL LAHIR ganti warna orange, tebalkan, dan perbesar dikit
+        const dobDisplayReceipt = dobStr ? `<span class="block text-[11px] text-davka-orange font-bold mt-1.5 tracking-wider">TGL LAHIR: ${dobStr}</span>` : '';
 
-        // FIX NOTA 2: NIK lebih jelas dengan contrast tinggi & background pill
+        // FIX NOTA 2: NIK ukuran disejajarkan dengan nama (text-[12px])
         paxHtml += `
             <div class="flex justify-between items-start bg-white/5 p-2 rounded mb-1 gap-2">
-                <p class="text-[11px] font-bold text-white uppercase break-words flex-1 leading-tight">${p.name} ${paxTypeLabel}</p>
+                <p class="text-[12px] font-bold text-white uppercase break-words flex-1 leading-tight mt-0.5">${p.name} ${paxTypeLabel}</p>
                 <div class="text-right shrink-0">
-                    <p class="text-[11px] text-white bg-white/10 px-1.5 py-0.5 border border-white/10 rounded font-bold font-mono whitespace-nowrap">ID: ${p.nik || '-'}</p>
+                    <p class="text-[12px] text-white bg-white/10 px-2 py-1 border border-white/10 rounded font-bold font-mono whitespace-nowrap">ID: ${p.nik || '-'}</p>
                     ${dobDisplayReceipt}
                 </div>
             </div>
@@ -1168,7 +1172,6 @@ function renderReceiptToDOM(order) {
         document.getElementById('rec-pax-list').innerHTML = paxHtml;
     }
 }
-
 function captureAndShowModal(elementId) {
     const el = document.getElementById(elementId);
     html2canvas(el, { 
@@ -1188,6 +1191,7 @@ function captureAndShowModal(elementId) {
         alert("Gagal render gambar."); 
     });
 }
+
 function renderUploadBtnHTML(id, type, file, label) {
     if(file) {
         return `<div class="relative w-full h-full rounded-lg overflow-hidden border border-white/10 group cursor-pointer bg-black/40">
@@ -1406,6 +1410,7 @@ window.closeDetailView = function() {
     currentDetailOrder = null;
     renderOrderList(document.getElementById('searchInput').value);
 }
+
 window.renderOrderList = function(filterText = '') {
     const container = document.getElementById('ordersContainer');
     container.innerHTML = '';

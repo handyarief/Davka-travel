@@ -526,7 +526,6 @@
                 </div>
             </form>
         </section>
-        
         <section id="page-list" class="hidden fade-in space-y-4">
             <div class="pt-16 pb-2">
                 <div class="mb-4">
@@ -733,7 +732,6 @@
             <p class="mt-4 text-gray-500 text-[10px]">Ketuk area gelap untuk menutup</p>
         </div>
     </div>
-
     <div id="receipt-render-area" style="width: 480px; position: fixed; left: -9999px;">
         <div class="relative bg-[#0f172a] text-white font-sans overflow-hidden min-h-[800px] border-none flex flex-col">
             
@@ -758,10 +756,10 @@
                 </div>
             </div>
 
-            <div id="rec-ticket-depart" class="px-8 relative z-10 flex-1">
+            <div id="rec-ticket-depart" class="px-8 relative z-10 flex-1 flex flex-col gap-4">
                 <img id="rec-stamp-depart" src="stampel.jpg" crossorigin="anonymous" class="stamp-lunas-modern" alt="LUNAS">
                 
-                <div class="bg-[#0b1221]/80 border border-davka-orange/30 rounded-3xl p-0 mb-4 backdrop-blur-md relative overflow-hidden shadow-2xl">
+                <div class="bg-[#0b1221]/80 border border-davka-orange/30 rounded-3xl p-0 backdrop-blur-md relative overflow-hidden shadow-2xl">
                     <div class="absolute top-0 left-0 w-2 h-full bg-gradient-to-b from-davka-orange to-red-600"></div>
                     
                     <div class="p-6">
@@ -797,7 +795,7 @@
                     </div>
                 </div>
 
-                <div class="bg-[#0b1221]/60 border border-white/10 rounded-2xl p-4 mb-4 relative flex justify-between items-center">
+                <div class="bg-[#0b1221]/60 border border-white/10 rounded-2xl p-4 relative flex justify-between items-center">
                     <div>
                         <p class="text-[9px] text-blue-300 uppercase font-bold mb-1">Passenger Name</p>
                         <p class="text-lg font-bold text-white uppercase tracking-wide" id="rec-pax-name">PASSENGER NAME</p>
@@ -809,10 +807,10 @@
                 </div>
             </div>
 
-            <div id="rec-ticket-return" class="hidden px-8 relative z-10 flex-1 mt-0">
+            <div id="rec-ticket-return" class="hidden px-8 relative z-10 flex-1 flex flex-col gap-4 mt-0">
                 <img id="rec-stamp-return" src="stampel.jpg" crossorigin="anonymous" class="stamp-lunas-modern" alt="LUNAS">
                 
-                <div class="bg-[#0b1221]/80 border border-blue-500/30 rounded-3xl p-0 mb-4 backdrop-blur-md relative overflow-hidden shadow-2xl">
+                <div class="bg-[#0b1221]/80 border border-blue-500/30 rounded-3xl p-0 backdrop-blur-md relative overflow-hidden shadow-2xl">
                     <div class="absolute top-0 left-0 w-2 h-full bg-gradient-to-b from-blue-400 to-blue-700"></div>
                     
                      <div class="p-6">
@@ -824,12 +822,14 @@
                         <div class="flex justify-between items-center mb-4">
                             <div class="text-left">
                                 <h2 class="text-3xl font-black text-white leading-none tracking-tight" id="rec-return-origin-code">ORG</h2>
+                                <p class="text-[9px] text-blue-300 uppercase mt-1">Origin</p>
                             </div>
                             <div class="flex flex-col items-center px-4 opacity-50">
                                 <i class="fas fa-chevron-right text-blue-400 text-lg"></i>
                             </div>
                             <div class="text-right">
                                 <h2 class="text-3xl font-black text-white leading-none tracking-tight" id="rec-return-dest-code">DES</h2>
+                                <p class="text-[9px] text-blue-300 uppercase mt-1">Destination</p>
                             </div>
                         </div>
                         
@@ -838,7 +838,22 @@
                                 <p class="text-[9px] text-blue-300 uppercase font-bold">Train Name</p>
                                 <p class="text-sm font-bold text-white uppercase tracking-wide" id="rec-return-train-name">TRAIN</p>
                             </div>
+                             <div class="text-right">
+                                <p class="text-[9px] text-blue-300 uppercase font-bold">Class</p>
+                                <p class="text-sm font-bold text-blue-400 uppercase">Executive</p>
+                            </div>
                         </div>
+                    </div>
+                </div>
+
+                <div class="bg-[#0b1221]/60 border border-white/10 rounded-2xl p-4 relative flex justify-between items-center">
+                    <div>
+                        <p class="text-[9px] text-blue-300 uppercase font-bold mb-1">Passenger Name</p>
+                        <p class="text-lg font-bold text-white uppercase tracking-wide" id="rec-return-pax-name">PASSENGER NAME</p>
+                    </div>
+                    <div class="text-right">
+                         <p class="text-[9px] text-blue-300 uppercase font-bold mb-1">Pax</p>
+                        <p class="text-xs font-bold text-white" id="rec-return-pax-count">1 Adult</p>
                     </div>
                 </div>
             </div>

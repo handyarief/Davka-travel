@@ -11,7 +11,8 @@ let currentUploadOrderId = null;
 let currentUploadType = null;   
 let loaderTimeout = null; 
 let activeUploadZone = null;
-let currentDetailOrder = null; // NEW: Menyimpan order yang sedang dibuka detailnya
+let currentDetailOrder = null; // Menyimpan order yang sedang dibuka detailnya
+let currentDetailTab = 'depart'; // NEW: Melacak tab aktif (depart/return) untuk logika Nota
 
 // --- INIT SYSTEM ---
 document.addEventListener('DOMContentLoaded', async () => {
@@ -102,12 +103,15 @@ function initializeAppLogic() {
 }
 
 // --- NEW FEATURE: TAB SYSTEM LOGIC (PERGI / PULANG) ---
-// UPDATED: Menambahkan logika renderFinancials saat pindah tab
+// UPDATED: Menambahkan logika renderFinancials saat pindah tab DAN tracking currentDetailTab
 window.switchTab = function(tabName) {
     const btnDepart = document.getElementById('tab-btn-depart');
     const btnReturn = document.getElementById('tab-btn-return');
     const contentDepart = document.getElementById('tab-content-depart');
     const contentReturn = document.getElementById('tab-content-return');
+
+    // Update Global Tracker
+    currentDetailTab = tabName;
 
     // Reset Styles (Inactive State)
     const inactiveClass = "flex-1 py-2 text-[10px] font-bold uppercase rounded-lg transition-all text-gray-400 hover:text-white relative";
@@ -153,7 +157,6 @@ window.switchTab = function(tabName) {
         }
     }
 }
-
 // --- CORE UPDATE: FUNGSI RENDER FINANSIAL DINAMIS ---
 function renderDetailFinancials(mode) {
     if(!currentDetailOrder) return;
@@ -189,7 +192,6 @@ function renderDetailFinancials(mode) {
 
     // --- [UPDATE: FIX STATUS LUNAS] ---
     // Jika status global 'success', kita anggap sisa tagihan 0 (LUNAS)
-    // Ini menangani kasus di mana user memilih "Tunai" di pelunasan tapi tidak mengubah nominal DP
     if (order.status === 'success') {
         remaining = 0;
     }
@@ -644,6 +646,7 @@ orderForm.addEventListener('submit', async (e) => {
         toggleLoader(false); 
     }
 });
+
 // --- UI ACTIONS & NAVIGATION ---
 
 window.deleteOrder = async function(id) {
@@ -1036,52 +1039,90 @@ window.printReceipt = function(orderId) {
     setTimeout(() => { captureAndShowModal('receipt-render-area'); }, 800);
 }
 
+// --- REVISI TOTAL: RENDER NOTA BERDASARKAN TAB AKTIF ---
 function renderReceiptToDOM(order) {
-    const stampElDepart = document.getElementById('rec-stamp-depart');
-    const stampElReturn = document.getElementById('rec-stamp-return');
+    // Elements Container
+    const sectionDepart = document.getElementById('rec-ticket-depart');
+    const sectionReturn = document.getElementById('rec-ticket-return');
+    const priceEl = document.getElementById('rec-price-total');
     
-    const isPaid = order.status === 'success';
+    // Reset Visibility (Sembunyikan keduanya dulu)
+    sectionDepart.classList.add('hidden');
+    sectionReturn.classList.add('hidden');
+
+    // --- LOGIKA: TAMPILKAN BERDASARKAN TAB YANG SEDANG DIBUKA ---
+    // Gunakan variabel global 'currentDetailTab' yang kita set di Part 1
     
-    if (isPaid) {
-        stampElDepart.classList.add('visible');
-        if(stampElReturn) stampElReturn.classList.add('visible');
-    } else {
-        stampElDepart.classList.remove('visible');
-        if(stampElReturn) stampElReturn.classList.remove('visible');
-    }
-
-    const origin = (order.origin || 'ORG').toUpperCase();
-    const dest = (order.dest || 'DES').toUpperCase();
-    
-    document.getElementById('rec-origin-code').innerText = origin;
-    document.getElementById('rec-dest-code').innerText = dest;
-    document.getElementById('rec-train-name').innerText = (order.train || 'TRAIN').toUpperCase();
-
-    const dateObj = new Date(order.date);
-    const dateStr = order.date ? dateObj.toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' }) : '-';
-    document.getElementById('rec-date-depart').innerText = dateStr.toUpperCase();
-
-    const returnSection = document.getElementById('rec-ticket-return');
-    if (order.tripType === 'round_trip') {
-        returnSection.classList.remove('hidden');
+    if (currentDetailTab === 'return' && order.tripType === 'round_trip') {
+        // === MODE: NOTA PULANG ===
+        sectionReturn.classList.remove('hidden');
         
-        const retOrg = (order.returnOrigin || dest).toUpperCase();
-        const retDes = (order.returnDest || origin).toUpperCase();
+        // 1. Data Rute Pulang
+        const retOrg = (order.returnOrigin || order.dest || 'ORG').toUpperCase();
+        const retDes = (order.returnDest || order.origin || 'DES').toUpperCase();
         
         document.getElementById('rec-return-origin-code').innerText = retOrg;
         document.getElementById('rec-return-dest-code').innerText = retDes;
         document.getElementById('rec-return-train-name').innerText = (order.returnTrain || 'TRAIN').toUpperCase();
         
+        // 2. Tanggal Pulang
         const retDateObj = new Date(order.returnDate);
         const retDateStr = order.returnDate ? retDateObj.toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' }) : '-';
         document.getElementById('rec-return-date-depart').innerText = retDateStr.toUpperCase();
+        
+        // 3. Stempel Lunas (Cek status global)
+        const stampElReturn = document.getElementById('rec-stamp-return');
+        if (order.status === 'success') stampElReturn.classList.add('visible');
+        else stampElReturn.classList.remove('visible');
+
+        // 4. Harga (KHUSUS PULANG)
+        const returnTotal = order.returnPrice || 0;
+        priceEl.innerText = formatRupiah(returnTotal);
+
+        // 5. Update ID Booking (Opsional: Tambahkan suffix -R agar unik)
+        document.getElementById('rec-id').innerText = "#" + order.id.toString().slice(-6) + "-R";
+
     } else {
-        returnSection.classList.add('hidden');
+        // === MODE: NOTA PERGI (Default) ===
+        sectionDepart.classList.remove('hidden');
+
+        // 1. Data Rute Pergi
+        const origin = (order.origin || 'ORG').toUpperCase();
+        const dest = (order.dest || 'DES').toUpperCase();
+
+        document.getElementById('rec-origin-code').innerText = origin;
+        document.getElementById('rec-dest-code').innerText = dest;
+        document.getElementById('rec-train-name').innerText = (order.train || 'TRAIN').toUpperCase();
+
+        // 2. Tanggal Pergi
+        const dateObj = new Date(order.date);
+        const dateStr = order.date ? dateObj.toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' }) : '-';
+        document.getElementById('rec-date-depart').innerText = dateStr.toUpperCase();
+        
+        // 3. Stempel Lunas
+        const stampElDepart = document.getElementById('rec-stamp-depart');
+        if (order.status === 'success') stampElDepart.classList.add('visible');
+        else stampElDepart.classList.remove('visible');
+
+        // 4. Harga (KHUSUS PERGI)
+        const departTotal = order.price || 0;
+        priceEl.innerText = formatRupiah(departTotal);
+
+        // 5. ID Booking
+        document.getElementById('rec-id').innerText = "#" + order.id.toString().slice(-6);
     }
 
+    // --- SHARED DATA (PENUMPANG) ---
+    // Update data penumpang (akan dirender di elemen yang visible)
     let paxList = Array.isArray(order.passengers) ? order.passengers : (order.name ? [{name: order.name, type: 'adult'}] : []);
     const mainPaxName = paxList.length > 0 ? paxList[0].name : (order.contactName || 'PASSENGER');
-    document.getElementById('rec-pax-name').innerText = mainPaxName.toUpperCase();
+    
+    // Kita update kedua ID (untuk depart dan return - structure html nanti akan disesuaikan)
+    const paxNameEl = document.getElementById('rec-pax-name');
+    const paxNameReturnEl = document.getElementById('rec-return-pax-name'); // New Element Target
+    
+    if(paxNameEl) paxNameEl.innerText = mainPaxName.toUpperCase();
+    if(paxNameReturnEl) paxNameReturnEl.innerText = mainPaxName.toUpperCase();
 
     const adults = paxList.filter(p => !p.type || p.type === 'adult').length;
     const infants = paxList.filter(p => p.type === 'infant').length;
@@ -1089,13 +1130,11 @@ function renderReceiptToDOM(order) {
     if(adults > 1) paxCountStr += 's';
     if(infants > 0) paxCountStr += `, ${infants} Infant`;
     
-    document.getElementById('rec-pax-count').innerText = paxCountStr;
-
-    document.getElementById('rec-id').innerText = "#" + order.id.toString().slice(-6);
+    const paxCountEl = document.getElementById('rec-pax-count');
+    const paxCountReturnEl = document.getElementById('rec-return-pax-count'); // New Element Target
     
-    // Total includes return price
-    const total = (order.price || 0) + (order.returnPrice || 0);
-    document.getElementById('rec-price-total').innerText = formatRupiah(total);
+    if(paxCountEl) paxCountEl.innerText = paxCountStr;
+    if(paxCountReturnEl) paxCountReturnEl.innerText = paxCountStr;
 }
 
 function captureAndShowModal(elementId) {

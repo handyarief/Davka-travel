@@ -12,7 +12,7 @@ let currentUploadType = null;
 let loaderTimeout = null; 
 let activeUploadZone = null;
 let currentDetailOrder = null; // Menyimpan order yang sedang dibuka detailnya
-let currentDetailTab = 'depart'; // NEW: Melacak tab aktif (depart/return) untuk logika Nota
+let currentDetailTab = 'depart'; // Melacak tab aktif (depart/return) untuk logika Nota
 
 // --- INIT SYSTEM ---
 document.addEventListener('DOMContentLoaded', async () => {
@@ -102,8 +102,7 @@ function initializeAppLogic() {
     enableSmoothInputUX();
 }
 
-// --- NEW FEATURE: TAB SYSTEM LOGIC (PERGI / PULANG) ---
-// UPDATED: Menambahkan logika renderFinancials saat pindah tab DAN tracking currentDetailTab
+// --- FEATURE: TAB SYSTEM LOGIC (PERGI / PULANG) ---
 window.switchTab = function(tabName) {
     const btnDepart = document.getElementById('tab-btn-depart');
     const btnReturn = document.getElementById('tab-btn-return');
@@ -135,7 +134,7 @@ window.switchTab = function(tabName) {
             document.getElementById('detail-dest').innerText = currentDetailOrder.dest || 'DES';
             document.getElementById('detail-route-icon').className = "fas fa-chevron-right text-davka-orange text-xl";
             
-            // UPDATE: Render Finansial Khusus Pergi
+            // Render Finansial Khusus Pergi
             renderDetailFinancials('depart');
         }
     } else {
@@ -152,12 +151,13 @@ window.switchTab = function(tabName) {
             
             document.getElementById('detail-route-icon').className = "fas fa-chevron-right text-blue-500 text-xl"; 
             
-            // UPDATE: Render Finansial Khusus Pulang
+            // Render Finansial Khusus Pulang
             renderDetailFinancials('return');
         }
     }
 }
-// --- CORE UPDATE: FUNGSI RENDER FINANSIAL DINAMIS ---
+
+// --- CORE: FUNGSI RENDER FINANSIAL DINAMIS ---
 function renderDetailFinancials(mode) {
     if(!currentDetailOrder) return;
     const order = currentDetailOrder;
@@ -173,7 +173,6 @@ function renderDetailFinancials(mode) {
     // Tentukan data berdasarkan mode (Pergi/Pulang)
     if(mode === 'depart') {
         price = order.price || 0;
-        // Fallback untuk data lama yang mungkin pakai field 'fee' tunggal
         dp = (order.feeDepart !== undefined) ? order.feeDepart : (order.fee || 0);
         method = order.paymentMethod || 'Tunai';
         label = 'Pergi';
@@ -190,12 +189,10 @@ function renderDetailFinancials(mode) {
 
     remaining = price - dp;
 
-    // --- [UPDATE: FIX STATUS LUNAS] ---
-    // Jika status global 'success', kita anggap sisa tagihan 0 (LUNAS)
+    // Jika status global 'success', sisa tagihan 0 (LUNAS)
     if (order.status === 'success') {
         remaining = 0;
     }
-    // ----------------------------------
 
     // Render HTML Kartu Pembayaran
     const html = `
@@ -239,7 +236,6 @@ function renderDetailFinancials(mode) {
     remEl.className = remaining <= 0 ? "text-sm font-black text-green-500" : "text-sm font-black text-red-500";
 }
 
-// --- NEW FEATURE: UPLOAD TAB SYSTEM (INPUT FORM) ---
 window.switchUploadTab = function(tabName) {
     const btnDepart = document.getElementById('btn-upload-depart');
     const btnReturn = document.getElementById('btn-upload-return');
@@ -305,13 +301,13 @@ function handleInputEnter(e, currentIndex, allElements) {
         }
     }
 }
-// --- UPDATE LOGIC PENUMPANG (DEWASA & BAYI) ---
+
+// --- LOGIC PENUMPANG (DEWASA & BAYI) ---
 window.updatePassengerForms = function() {
     const adultCount = parseInt(document.getElementById('inpPaxCount').value) || 1;
     const infantCount = parseInt(document.getElementById('inpInfantCount').value) || 0;
     const container = document.getElementById('passengerForms'); 
     
-    // Simpan data lama agar tidak hilang saat resize (Termasuk DOB)
     const existingItems = document.querySelectorAll('.passenger-item');
     let storedAdults = [];
     let storedInfants = [];
@@ -332,7 +328,6 @@ window.updatePassengerForms = function() {
 
     let html = '';
 
-    // Render Input Dewasa
     for(let i = 1; i <= adultCount; i++) {
         const valName = storedAdults[i-1] ? storedAdults[i-1].name : '';
         const valNik = storedAdults[i-1] ? storedAdults[i-1].nik : '';
@@ -354,7 +349,6 @@ window.updatePassengerForms = function() {
         </div>`;
     }
 
-    // Render Input Bayi
     for(let i = 1; i <= infantCount; i++) {
         const valName = storedInfants[i-1] ? storedInfants[i-1].name : '';
         const valNik = storedInfants[i-1] ? storedInfants[i-1].nik : '';
@@ -380,6 +374,7 @@ window.updatePassengerForms = function() {
     calcTotalFromPax();
     setTimeout(enableSmoothInputUX, 100);
 }
+
 window.getPassengersFromForm = function() {
     const items = document.querySelectorAll('.passenger-item');
     let paxList = [];
@@ -401,17 +396,15 @@ window.getPassengersFromForm = function() {
     return paxList;
 }
 
-// --- UPDATED: CALCULATE TOTAL FROM PAX ---
+// --- CALCULATE TOTAL FROM PAX ---
 window.calcTotalFromPax = function() {
     const adultCount = parseInt(document.getElementById('inpPaxCount').value) || 1;
 
-    // Kalkulasi Harga Pergi
     const pricePerPax = parseFloat(document.getElementById('inpPricePerPax').value) || 0;
     if (pricePerPax > 0) {
         document.getElementById('inpPrice').value = pricePerPax * adultCount;
     }
 
-    // Kalkulasi Harga Pulang
     const returnPricePerPax = parseFloat(document.getElementById('inpReturnPricePerPax').value) || 0;
     if (returnPricePerPax > 0) {
         document.getElementById('inpReturnPrice').value = returnPricePerPax * adultCount;
@@ -420,9 +413,8 @@ window.calcTotalFromPax = function() {
     calcRemaining(); 
 }
 
-// --- REVISI TOTAL: CALCULATE REMAINING SEPARATED (PERGI & PULANG) ---
+// --- CALCULATE REMAINING SEPARATED (PERGI & PULANG) ---
 window.calcRemaining = function() {
-    // 1. Hitung Pergi
     const priceDepart = parseFloat(document.getElementById('inpPrice').value) || 0;
     const dpDepart = parseFloat(document.getElementById('inpFeeDepart').value) || 0;
     const remainingDepart = priceDepart - dpDepart;
@@ -433,7 +425,6 @@ window.calcRemaining = function() {
         ? "bg-transparent text-right text-green-500 font-black text-lg outline-none w-40 cursor-default" 
         : "bg-transparent text-right text-red-500 font-black text-lg outline-none w-40 cursor-default";
 
-    // 2. Hitung Pulang
     const priceReturn = parseFloat(document.getElementById('inpReturnPrice').value) || 0;
     const dpReturn = parseFloat(document.getElementById('inpFeeReturn').value) || 0;
     const remainingReturn = priceReturn - dpReturn;
@@ -444,6 +435,7 @@ window.calcRemaining = function() {
         ? "bg-transparent text-right text-green-500 font-black text-lg outline-none w-40 cursor-default" 
         : "bg-transparent text-right text-red-500 font-black text-lg outline-none w-40 cursor-default";
 }
+
 // --- FETCH & REALTIME ---
 async function fetchOrders() {
     const { data, error } = await supabase
@@ -482,11 +474,9 @@ async function fetchOrdersBg() {
     if(data) {
         orders = data;
         renderStats();
-        // Update list hanya jika user tidak sedang mengetik search
         if (document.getElementById('searchInput').value === '') {
              renderOrderList('');
         }
-        // Update detail view jika sedang terbuka
         if(currentDetailOrder && !document.getElementById('page-detail').classList.contains('hidden')) {
             const updatedOrder = orders.find(o => o.id === currentDetailOrder.id);
             if(updatedOrder) openDetailView(updatedOrder.id);
@@ -521,7 +511,7 @@ async function uploadToSupabaseStorage(base64Data, fileName) {
     }
 }
 
-// --- FORM HANDLING (SAVE & UPDATE) - REVISED FOR SPLIT PAYMENT ---
+// --- FORM HANDLING (SAVE & UPDATE) ---
 const orderForm = document.getElementById('orderForm');
 
 orderForm.addEventListener('submit', async (e) => {
@@ -534,22 +524,17 @@ orderForm.addEventListener('submit', async (e) => {
     const orderId = existingOrder ? existingOrder.id : Date.now();
     const created_at = existingOrder ? existingOrder.created_at : new Date().toISOString();
 
-    // Data Upload Pergi
     let transferBase64 = document.getElementById('inpTransferData').value;
     let chatBase64 = document.getElementById('inpChatData').value;
-    
-    // Data Upload Pulang (New)
     let transferReturnBase64 = document.getElementById('inpTransferDataReturn').value;
     let chatReturnBase64 = document.getElementById('inpChatDataReturn').value;
 
     try {
         let transferUrl = existingOrder ? existingOrder.transferScreenshot : null;
         let chatUrl = existingOrder ? existingOrder.chatScreenshot : null;
-        
         let transferReturnUrl = existingOrder ? existingOrder.transferScreenshotReturn : null;
         let chatReturnUrl = existingOrder ? existingOrder.chatScreenshotReturn : null;
 
-        // Upload Logic Pergi
         if (transferBase64 && !transferBase64.startsWith('http')) {
             showToast("Upload Transfer Pergi...");
             transferUrl = await uploadToSupabaseStorage(transferBase64, `${orderId}_tf_depart`);
@@ -558,8 +543,6 @@ orderForm.addEventListener('submit', async (e) => {
             showToast("Upload Chat Pergi...");
             chatUrl = await uploadToSupabaseStorage(chatBase64, `${orderId}_chat_depart`);
         }
-        
-        // Upload Logic Pulang
         if (transferReturnBase64 && !transferReturnBase64.startsWith('http')) {
             showToast("Upload Transfer Pulang...");
             transferReturnUrl = await uploadToSupabaseStorage(transferReturnBase64, `${orderId}_tf_return`);
@@ -572,7 +555,6 @@ orderForm.addEventListener('submit', async (e) => {
         const passengerData = getPassengersFromForm();
         const tripType = document.getElementById('inpTripType').value;
 
-        // REVISI: Object Creation dengan Field Pembayaran Terpisah
         const newOrder = {
             id: orderId, 
             created_at: created_at,
@@ -587,30 +569,25 @@ orderForm.addEventListener('submit', async (e) => {
             train: document.getElementById('inpTrain').value.toUpperCase(),
             tripType: tripType,
             
-            // Return Fields
             returnOrigin: document.getElementById('inpReturnOrigin').value.toUpperCase(),
             returnDest: document.getElementById('inpReturnDest').value.toUpperCase(),
             returnDate: document.getElementById('inpReturnDate').value,
             returnWarDate: document.getElementById('inpReturnWarDate').value,
             returnTrain: document.getElementById('inpReturnTrain').value.toUpperCase(),
             
-            // UPDATE PAYMENT METHODS (SPLIT)
             paymentMethod: document.getElementById('inpPaymentMethod').value,
-            paymentMethodReturn: document.getElementById('inpPaymentMethodReturn').value, // NEW FIELD
+            paymentMethodReturn: document.getElementById('inpPaymentMethodReturn').value, 
             
-            // Financials (SPLIT)
-            price: parseFloat(document.getElementById('inpPrice').value) || 0, // Total Pergi
-            feeDepart: parseFloat(document.getElementById('inpFeeDepart').value) || 0, // DP Pergi (NEW)
+            price: parseFloat(document.getElementById('inpPrice').value) || 0,
+            feeDepart: parseFloat(document.getElementById('inpFeeDepart').value) || 0,
             
-            returnPrice: parseFloat(document.getElementById('inpReturnPrice').value) || 0, // Total Pulang
-            feeReturn: parseFloat(document.getElementById('inpFeeReturn').value) || 0, // DP Pulang (NEW)
+            returnPrice: parseFloat(document.getElementById('inpReturnPrice').value) || 0,
+            feeReturn: parseFloat(document.getElementById('inpFeeReturn').value) || 0,
 
-            // Backward Compatibility (Opsional: Total Fee gabungan jika masih dibutuhkan sistem lama)
             fee: (parseFloat(document.getElementById('inpFeeDepart').value) || 0) + (parseFloat(document.getElementById('inpFeeReturn').value) || 0),
             
             settlementMethod: existingOrder ? (existingOrder.settlementMethod || '-') : '-',
             
-            // Proof Files
             transferScreenshot: transferUrl, 
             chatScreenshot: chatUrl,
             transferScreenshotReturn: transferReturnUrl,
@@ -646,8 +623,6 @@ orderForm.addEventListener('submit', async (e) => {
         toggleLoader(false); 
     }
 });
-
-// --- UI ACTIONS & NAVIGATION ---
 
 window.deleteOrder = async function(id) {
     if(confirm("Hapus pesanan ini Permanen?")) {
@@ -717,7 +692,7 @@ window.navTo = function(pageId) {
         window.scrollTo({ top: 0, behavior: 'smooth' });
     }, 400); 
 }
-// --- EDIT ORDER LOGIC (UPDATED FOR SPLIT PAYMENT) ---
+
 window.editOrder = function(id) {
     const index = orders.findIndex(o => o.id === id);
     if (index === -1) return;
@@ -785,24 +760,18 @@ window.editOrder = function(id) {
         document.getElementById('inpReturnTrain').value = data.returnTrain || '';
     }
     
-    // UPDATE: Load Payment Methods
     document.getElementById('inpPaymentMethod').value = data.paymentMethod || 'Tunai';
-    // REVISI: Load Metode Bayar Pulang (New Field)
     document.getElementById('inpPaymentMethodReturn').value = data.paymentMethodReturn || 'Tunai';
     
-    // --- FINANCIALS LOAD (SPLIT LOGIC) ---
     const adultCount = adults.length || 1;
     
-    // 1. Data Pergi
     const priceDepart = data.price || 0;
     document.getElementById('inpPrice').value = priceDepart;
     document.getElementById('inpPricePerPax').value = priceDepart > 0 ? Math.round(priceDepart / adultCount) : 0;
     
-    // Fallback: Jika feeDepart kosong (data lama), gunakan data.fee
     const feeDepart = (data.feeDepart !== undefined) ? data.feeDepart : (data.fee || 0);
     document.getElementById('inpFeeDepart').value = feeDepart;
     
-    // 2. Data Pulang
     const priceReturn = data.returnPrice || 0;
     document.getElementById('inpReturnPrice').value = priceReturn;
     document.getElementById('inpReturnPricePerPax').value = priceReturn > 0 ? Math.round(priceReturn / adultCount) : 0;
@@ -810,9 +779,8 @@ window.editOrder = function(id) {
     const feeReturn = data.feeReturn || 0;
     document.getElementById('inpFeeReturn').value = feeReturn;
 
-    calcRemaining(); // Hitung ulang sisa tagihan terpisah
+    calcRemaining();
 
-    // Load Bukti
     if(data.transferScreenshot) {
         document.getElementById('inpTransferData').value = data.transferScreenshot;
         document.getElementById('imgTransfer').src = data.transferScreenshot;
@@ -858,7 +826,6 @@ window.updateSettlement = async function(id, newVal) {
         } catch(e) { console.error(e); } finally { toggleLoader(false); }
     } else toggleLoader(false);
 }
-
 // --- HELPER LAINNYA ---
 function toggleLoader(show) {
     const loader = document.getElementById('global-loader');
@@ -964,6 +931,7 @@ function setupHistoryUploader() {
         });
     });
 }
+
 window.toggleTripType = function() {
     const type = document.getElementById('inpTripType').value;
     const fields = document.getElementById('returnTripFields');
@@ -1003,7 +971,7 @@ window.toggleTripType = function() {
 
         document.getElementById('inpReturnPricePerPax').value = '';
         document.getElementById('inpReturnPrice').value = '';
-        document.getElementById('inpFeeReturn').value = ''; // Clear DP Pulang
+        document.getElementById('inpFeeReturn').value = ''; 
         
         calcRemaining();
 
@@ -1028,6 +996,7 @@ window.calcReturnH45 = function() {
         document.getElementById('inpReturnWarDate').value = d.toISOString().split('T')[0];
     }
 }
+
 window.printReceipt = function(orderId) {
     const order = orders.find(o => o.id === orderId);
     if (!order) return;
@@ -1039,25 +1008,48 @@ window.printReceipt = function(orderId) {
     setTimeout(() => { captureAndShowModal('receipt-render-area'); }, 800);
 }
 
-// --- REVISI TOTAL: RENDER NOTA BERDASARKAN TAB AKTIF ---
+// --- CORE: RENDER NOTA BERDASARKAN TAB AKTIF & DATA LENGKAP ---
 function renderReceiptToDOM(order) {
-    // Elements Container
     const sectionDepart = document.getElementById('rec-ticket-depart');
     const sectionReturn = document.getElementById('rec-ticket-return');
-    const priceEl = document.getElementById('rec-price-total');
     
-    // Reset Visibility (Sembunyikan keduanya dulu)
+    const priceTotalEl = document.getElementById('rec-price-total');
+    const priceDpEl = document.getElementById('rec-price-dp');
+    const priceRemainingEl = document.getElementById('rec-price-remaining');
+    
+    // Reset Visibility
     sectionDepart.classList.add('hidden');
     sectionReturn.classList.add('hidden');
 
-    // --- LOGIKA: TAMPILKAN BERDASARKAN TAB YANG SEDANG DIBUKA ---
-    // Gunakan variabel global 'currentDetailTab' yang kita set di Part 1
+    // --- SHARED DATA (PENUMPANG) ---
+    let paxList = Array.isArray(order.passengers) ? order.passengers : (order.name ? [{name: order.name, nik: order.nik || '-', type: 'adult'}] : []);
+    const mainPaxName = paxList.length > 0 ? paxList[0].name : (order.contactName || 'PASSENGER');
     
+    const adults = paxList.filter(p => !p.type || p.type === 'adult').length;
+    const infants = paxList.filter(p => p.type === 'infant').length;
+    let paxCountStr = `${adults} Adult`;
+    if(adults > 1) paxCountStr += 's';
+    if(infants > 0) paxCountStr += `, ${infants} Infant`;
+
+    let paxHtml = '';
+    paxList.forEach(p => {
+        const isInfant = p.type === 'infant';
+        const paxTypeLabel = isInfant ? '<span class="text-[6px] bg-white/20 px-1 rounded ml-1 text-pink-300">BAYI</span>' : '';
+        paxHtml += `
+            <div class="flex justify-between items-center bg-white/5 p-1.5 rounded mb-1">
+                <p class="text-[9px] font-bold text-white uppercase truncate flex-1">${p.name} ${paxTypeLabel}</p>
+                <p class="text-[8px] text-gray-300 font-mono ml-2">ID: ${p.nik || '-'}</p>
+            </div>
+        `;
+    });
+
+    const address = order.address || '-';
+
+    // --- TAMPILKAN BERDASARKAN TAB YANG AKTIF ---
     if (currentDetailTab === 'return' && order.tripType === 'round_trip') {
-        // === MODE: NOTA PULANG ===
+        // === NOTA PULANG ===
         sectionReturn.classList.remove('hidden');
         
-        // 1. Data Rute Pulang
         const retOrg = (order.returnOrigin || order.dest || 'ORG').toUpperCase();
         const retDes = (order.returnDest || order.origin || 'DES').toUpperCase();
         
@@ -1065,28 +1057,43 @@ function renderReceiptToDOM(order) {
         document.getElementById('rec-return-dest-code').innerText = retDes;
         document.getElementById('rec-return-train-name').innerText = (order.returnTrain || 'TRAIN').toUpperCase();
         
-        // 2. Tanggal Pulang
         const retDateObj = new Date(order.returnDate);
         const retDateStr = order.returnDate ? retDateObj.toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' }) : '-';
         document.getElementById('rec-return-date-depart').innerText = retDateStr.toUpperCase();
+
+        const retWarDateObj = new Date(order.returnWarDate);
+        const retWarDateStr = order.returnWarDate ? retWarDateObj.toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' }) : '-';
+        document.getElementById('rec-return-war-date').innerText = retWarDateStr.toUpperCase();
         
-        // 3. Stempel Lunas (Cek status global)
         const stampElReturn = document.getElementById('rec-stamp-return');
         if (order.status === 'success') stampElReturn.classList.add('visible');
         else stampElReturn.classList.remove('visible');
 
-        // 4. Harga (KHUSUS PULANG)
+        // Finansial Khusus Pulang
         const returnTotal = order.returnPrice || 0;
-        priceEl.innerText = formatRupiah(returnTotal);
+        const returnDp = order.feeReturn || 0;
+        let returnRemaining = returnTotal - returnDp;
+        if(order.status === 'success') returnRemaining = 0;
 
-        // 5. Update ID Booking (Opsional: Tambahkan suffix -R agar unik)
+        priceTotalEl.innerText = formatRupiah(returnTotal);
+        priceDpEl.innerText = formatRupiah(returnDp);
+        priceRemainingEl.innerText = formatRupiah(returnRemaining);
+        priceRemainingEl.className = returnRemaining <= 0 ? "text-xl font-black text-green-500" : "text-xl font-black text-red-500";
+
         document.getElementById('rec-id').innerText = "#" + order.id.toString().slice(-6) + "-R";
 
+        // Injeksi Data Lengkap
+        document.getElementById('rec-return-contact-name').innerText = (order.contactName || mainPaxName).toUpperCase();
+        document.getElementById('rec-return-contact-phone').innerText = order.contactPhone || '-';
+        document.getElementById('rec-return-address').innerText = address.toUpperCase();
+        document.getElementById('rec-return-payment-method').innerText = (order.paymentMethodReturn || order.paymentMethod || 'TUNAI').toUpperCase();
+        document.getElementById('rec-return-pax-count').innerText = paxCountStr;
+        document.getElementById('rec-return-pax-list').innerHTML = paxHtml;
+
     } else {
-        // === MODE: NOTA PERGI (Default) ===
+        // === NOTA PERGI ===
         sectionDepart.classList.remove('hidden');
 
-        // 1. Data Rute Pergi
         const origin = (order.origin || 'ORG').toUpperCase();
         const dest = (order.dest || 'DES').toUpperCase();
 
@@ -1094,47 +1101,39 @@ function renderReceiptToDOM(order) {
         document.getElementById('rec-dest-code').innerText = dest;
         document.getElementById('rec-train-name').innerText = (order.train || 'TRAIN').toUpperCase();
 
-        // 2. Tanggal Pergi
         const dateObj = new Date(order.date);
         const dateStr = order.date ? dateObj.toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' }) : '-';
         document.getElementById('rec-date-depart').innerText = dateStr.toUpperCase();
+
+        const warDateObj = new Date(order.warDate);
+        const warDateStr = order.warDate ? warDateObj.toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' }) : '-';
+        document.getElementById('rec-war-date').innerText = warDateStr.toUpperCase();
         
-        // 3. Stempel Lunas
         const stampElDepart = document.getElementById('rec-stamp-depart');
         if (order.status === 'success') stampElDepart.classList.add('visible');
         else stampElDepart.classList.remove('visible');
 
-        // 4. Harga (KHUSUS PERGI)
+        // Finansial Khusus Pergi
         const departTotal = order.price || 0;
-        priceEl.innerText = formatRupiah(departTotal);
+        const departDp = (order.feeDepart !== undefined) ? order.feeDepart : (order.fee || 0);
+        let departRemaining = departTotal - departDp;
+        if(order.status === 'success') departRemaining = 0;
 
-        // 5. ID Booking
+        priceTotalEl.innerText = formatRupiah(departTotal);
+        priceDpEl.innerText = formatRupiah(departDp);
+        priceRemainingEl.innerText = formatRupiah(departRemaining);
+        priceRemainingEl.className = departRemaining <= 0 ? "text-xl font-black text-green-500" : "text-xl font-black text-red-500";
+
         document.getElementById('rec-id').innerText = "#" + order.id.toString().slice(-6);
+
+        // Injeksi Data Lengkap
+        document.getElementById('rec-contact-name').innerText = (order.contactName || mainPaxName).toUpperCase();
+        document.getElementById('rec-contact-phone').innerText = order.contactPhone || '-';
+        document.getElementById('rec-address').innerText = address.toUpperCase();
+        document.getElementById('rec-payment-method').innerText = (order.paymentMethod || 'TUNAI').toUpperCase();
+        document.getElementById('rec-pax-count').innerText = paxCountStr;
+        document.getElementById('rec-pax-list').innerHTML = paxHtml;
     }
-
-    // --- SHARED DATA (PENUMPANG) ---
-    // Update data penumpang (akan dirender di elemen yang visible)
-    let paxList = Array.isArray(order.passengers) ? order.passengers : (order.name ? [{name: order.name, type: 'adult'}] : []);
-    const mainPaxName = paxList.length > 0 ? paxList[0].name : (order.contactName || 'PASSENGER');
-    
-    // Kita update kedua ID (untuk depart dan return - structure html nanti akan disesuaikan)
-    const paxNameEl = document.getElementById('rec-pax-name');
-    const paxNameReturnEl = document.getElementById('rec-return-pax-name'); // New Element Target
-    
-    if(paxNameEl) paxNameEl.innerText = mainPaxName.toUpperCase();
-    if(paxNameReturnEl) paxNameReturnEl.innerText = mainPaxName.toUpperCase();
-
-    const adults = paxList.filter(p => !p.type || p.type === 'adult').length;
-    const infants = paxList.filter(p => p.type === 'infant').length;
-    let paxCountStr = `${adults} Adult`;
-    if(adults > 1) paxCountStr += 's';
-    if(infants > 0) paxCountStr += `, ${infants} Infant`;
-    
-    const paxCountEl = document.getElementById('rec-pax-count');
-    const paxCountReturnEl = document.getElementById('rec-return-pax-count'); // New Element Target
-    
-    if(paxCountEl) paxCountEl.innerText = paxCountStr;
-    if(paxCountReturnEl) paxCountReturnEl.innerText = paxCountStr;
 }
 
 function captureAndShowModal(elementId) {
@@ -1221,7 +1220,6 @@ window.showImageModal = function(src, dl=false) {
 }
 window.closeImageModal = function() { document.getElementById('imageModal').classList.add('hidden'); }
 
-// --- REVISI RESET FORM ---
 window.resetForm = function() {
     document.getElementById('orderForm').reset();
     document.getElementById('editIndex').value = "-1";
@@ -1230,15 +1228,12 @@ window.resetForm = function() {
     document.getElementById('inpInfantCount').value = "0"; 
     document.getElementById('inpTripType').value = 'one_way';
     
-    // Reset Price & Split fields
     document.getElementById('inpPricePerPax').value = '';
     if(document.getElementById('inpReturnPricePerPax')) document.getElementById('inpReturnPricePerPax').value = '';
     
-    // Explicitly reset remaining fields
     document.getElementById('inpRemainingDepart').value = 'Rp 0';
     if(document.getElementById('inpRemainingReturn')) document.getElementById('inpRemainingReturn').value = 'Rp 0';
     
-    // REVISI: Reset Payment Methods
     document.getElementById('inpPaymentMethod').value = 'Tunai';
     if(document.getElementById('inpPaymentMethodReturn')) document.getElementById('inpPaymentMethodReturn').value = 'Tunai';
 
@@ -1251,12 +1246,11 @@ window.resetForm = function() {
     resetUploadZones();
     enableSmoothInputUX();
 }
-// --- REVISI TOTAL: DETAIL VIEW DENGAN TAB ISOLATED FINANCIALS ---
+
 window.openDetailView = function(orderId) {
     const order = orders.find(o => o.id === orderId);
     if (!order) return;
 
-    // UPDATE: Set global variable untuk logic header & financial swap
     currentDetailOrder = order;
 
     document.getElementById('page-list').classList.add('hidden', 'fade-out');
@@ -1342,13 +1336,9 @@ window.openDetailView = function(orderId) {
     });
     document.getElementById('detail-pax-list').innerHTML = paxListHtml;
 
-    // --- REVISI: HAPUS LOGIKA LAMA, GUNAKAN SWITCH TAB ---
-    // 1. Bersihkan kontainer finansial
     document.getElementById('detail-cost-breakdown').innerHTML = '';
     
-    // 2. Default View: Tab Pergi
-    // Ini akan otomatis memanggil renderDetailFinancials('depart') yang kita buat di Part 1
-    // dan merender detail pembayaran HANYA untuk Pergi
+    // Default View: Tab Pergi (Ini akan merender Rincian Finansial khusus pergi)
     switchTab('depart');
 
     const settlementOptions = ["-", "Tunai", "Transfer CIMB Niaga", "Transfer Seabank", "Dana", "Gopay", "Ovo", "ShopeePay"];
@@ -1371,12 +1361,10 @@ window.closeDetailView = function() {
     document.getElementById('page-list').classList.remove('hidden');
     document.getElementById('page-list').classList.add('fade-in');
     
-    // Reset variable global
     currentDetailOrder = null;
     renderOrderList(document.getElementById('searchInput').value);
 }
 
-// === REVISI TOTAL: RENDER LIST DENGAN LOGIKA BARU ===
 window.renderOrderList = function(filterText = '') {
     const container = document.getElementById('ordersContainer');
     container.innerHTML = '';
@@ -1399,7 +1387,6 @@ window.renderOrderList = function(filterText = '') {
     }
 
     filtered.forEach((order, index) => {
-        // --- LOGIC STATUS COLORS ---
         let statusColorClass = '';
         let indicatorColor = '';
         
@@ -1417,11 +1404,9 @@ window.renderOrderList = function(filterText = '') {
         const displayName = (order.contactName || order.name || 'No Name').toUpperCase();
         const displayNo = index + 1; 
 
-        // --- NEW: LOGIC TANGGAL & RUTE ---
         const dateObj = new Date(order.date);
         const dateStr = order.date ? dateObj.toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' }) : '-';
         
-        // Rute Pergi
         let routeHtml = `
             <div class="mt-1">
                 <p class="text-[10px] text-gray-300 font-bold flex items-center">
@@ -1434,7 +1419,6 @@ window.renderOrderList = function(filterText = '') {
             </div>
         `;
 
-        // Rute Pulang (Jika PP)
         if (order.tripType === 'round_trip') {
             const retDateObj = new Date(order.returnDate);
             const retDateStr = order.returnDate ? retDateObj.toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' }) : '-';
@@ -1442,8 +1426,6 @@ window.renderOrderList = function(filterText = '') {
             const retOrg = order.returnOrigin || order.dest || '?';
             const retDest = order.returnDest || order.origin || '?';
 
-            // UPDATE: Menambahkan Status Badge juga di baris Pulang
-            // FIX: Menggunakan chevron-right di list juga
             routeHtml += `
             <div class="mt-1 pt-1 border-t border-white/5 relative">
                 <div class="absolute left-1.5 top-2 w-0.5 h-full bg-blue-500/20"></div>
@@ -1532,7 +1514,6 @@ function renderStats() {
                 }
                 ticketCountMonth += paxCount;
                 
-                // Revenue includes return price
                 const totalOrderPrice = (parseFloat(o.price) || 0) + (parseFloat(o.returnPrice) || 0);
                 revenueMonth += totalOrderPrice;
             }

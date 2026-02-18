@@ -732,6 +732,7 @@
             <p class="mt-4 text-gray-500 text-[10px]">Ketuk area gelap untuk menutup</p>
         </div>
     </div>
+
     <div id="receipt-render-area" style="width: 480px; position: fixed; left: -9999px;">
         <div class="relative bg-[#0f172a] text-white font-sans overflow-hidden min-h-[800px] border-none flex flex-col">
             
@@ -782,27 +783,44 @@
                             </div>
                         </div>
                         
-                        <div class="bg-black/40 rounded-xl p-3 flex justify-between items-center border border-white/5">
-                            <div>
+                        <div class="bg-black/40 rounded-xl p-3 grid grid-cols-3 gap-2 border border-white/5">
+                            <div class="col-span-1">
                                 <p class="text-[9px] text-blue-300 uppercase font-bold">Train Name</p>
-                                <p class="text-sm font-bold text-white uppercase tracking-wide" id="rec-train-name">TRAIN</p>
+                                <p class="text-xs font-bold text-white uppercase tracking-wide" id="rec-train-name">TRAIN</p>
                             </div>
-                             <div class="text-right">
+                             <div class="col-span-1 text-center border-l border-r border-white/10">
                                 <p class="text-[9px] text-blue-300 uppercase font-bold">Class</p>
-                                <p class="text-sm font-bold text-davka-orange uppercase">Executive</p>
+                                <p class="text-xs font-bold text-davka-orange uppercase">Executive</p>
+                            </div>
+                            <div class="col-span-1 text-right">
+                                <p class="text-[9px] text-blue-300 uppercase font-bold">War Tiket</p>
+                                <p class="text-xs font-bold text-red-400 uppercase tracking-wide" id="rec-war-date">DD MMM YYYY</p>
                             </div>
                         </div>
                     </div>
                 </div>
 
-                <div class="bg-[#0b1221]/60 border border-white/10 rounded-2xl p-4 relative flex justify-between items-center">
-                    <div>
-                        <p class="text-[9px] text-blue-300 uppercase font-bold mb-1">Passenger Name</p>
-                        <p class="text-lg font-bold text-white uppercase tracking-wide" id="rec-pax-name">PASSENGER NAME</p>
+                <div class="bg-[#0b1221]/60 border border-white/10 rounded-2xl p-4 relative flex flex-col gap-3">
+                    <div class="flex justify-between border-b border-white/10 pb-2">
+                        <div class="w-2/3 pr-2">
+                            <p class="text-[8px] text-blue-300 uppercase font-bold mb-0.5">Contact Person</p>
+                            <p class="text-[10px] font-bold text-white uppercase truncate" id="rec-contact-name">NAME</p>
+                            <p class="text-[9px] text-gray-400 font-mono mb-1" id="rec-contact-phone">08XX</p>
+                            <p class="text-[8px] text-blue-300 uppercase font-bold mb-0.5">Alamat</p>
+                            <p class="text-[9px] text-gray-300 leading-tight" id="rec-address">ALAMAT</p>
+                        </div>
+                        <div class="text-right w-1/3 border-l border-white/10 pl-2">
+                            <p class="text-[8px] text-blue-300 uppercase font-bold mb-0.5">Payment Method</p>
+                            <p class="text-[10px] font-bold text-davka-orange uppercase break-words" id="rec-payment-method">METHOD</p>
+                        </div>
                     </div>
-                    <div class="text-right">
-                         <p class="text-[9px] text-blue-300 uppercase font-bold mb-1">Pax</p>
-                        <p class="text-xs font-bold text-white" id="rec-pax-count">1 Adult</p>
+                    <div>
+                         <div class="flex justify-between items-center mb-2">
+                             <p class="text-[8px] text-blue-300 uppercase font-bold">Passenger(s)</p>
+                             <p class="text-[8px] font-bold text-white bg-white/10 px-1.5 py-0.5 rounded" id="rec-pax-count">1 Adult</p>
+                         </div>
+                         <div id="rec-pax-list" class="space-y-1">
+                         </div>
                     </div>
                 </div>
             </div>
@@ -833,40 +851,68 @@
                             </div>
                         </div>
                         
-                         <div class="bg-black/40 rounded-xl p-3 flex justify-between items-center border border-white/5">
-                            <div>
+                         <div class="bg-black/40 rounded-xl p-3 grid grid-cols-3 gap-2 border border-white/5">
+                            <div class="col-span-1">
                                 <p class="text-[9px] text-blue-300 uppercase font-bold">Train Name</p>
-                                <p class="text-sm font-bold text-white uppercase tracking-wide" id="rec-return-train-name">TRAIN</p>
+                                <p class="text-xs font-bold text-white uppercase tracking-wide" id="rec-return-train-name">TRAIN</p>
                             </div>
-                             <div class="text-right">
+                             <div class="col-span-1 text-center border-l border-r border-white/10">
                                 <p class="text-[9px] text-blue-300 uppercase font-bold">Class</p>
-                                <p class="text-sm font-bold text-blue-400 uppercase">Executive</p>
+                                <p class="text-xs font-bold text-blue-400 uppercase">Executive</p>
+                            </div>
+                            <div class="col-span-1 text-right">
+                                <p class="text-[9px] text-blue-300 uppercase font-bold">War Tiket</p>
+                                <p class="text-xs font-bold text-red-400 uppercase tracking-wide" id="rec-return-war-date">DD MMM YYYY</p>
                             </div>
                         </div>
                     </div>
                 </div>
 
-                <div class="bg-[#0b1221]/60 border border-white/10 rounded-2xl p-4 relative flex justify-between items-center">
-                    <div>
-                        <p class="text-[9px] text-blue-300 uppercase font-bold mb-1">Passenger Name</p>
-                        <p class="text-lg font-bold text-white uppercase tracking-wide" id="rec-return-pax-name">PASSENGER NAME</p>
+                <div class="bg-[#0b1221]/60 border border-white/10 rounded-2xl p-4 relative flex flex-col gap-3">
+                    <div class="flex justify-between border-b border-white/10 pb-2">
+                        <div class="w-2/3 pr-2">
+                            <p class="text-[8px] text-blue-300 uppercase font-bold mb-0.5">Contact Person</p>
+                            <p class="text-[10px] font-bold text-white uppercase truncate" id="rec-return-contact-name">NAME</p>
+                            <p class="text-[9px] text-gray-400 font-mono mb-1" id="rec-return-contact-phone">08XX</p>
+                            <p class="text-[8px] text-blue-300 uppercase font-bold mb-0.5">Alamat</p>
+                            <p class="text-[9px] text-gray-300 leading-tight" id="rec-return-address">ALAMAT</p>
+                        </div>
+                        <div class="text-right w-1/3 border-l border-white/10 pl-2">
+                            <p class="text-[8px] text-blue-300 uppercase font-bold mb-0.5">Payment Method</p>
+                            <p class="text-[10px] font-bold text-blue-400 uppercase break-words" id="rec-return-payment-method">METHOD</p>
+                        </div>
                     </div>
-                    <div class="text-right">
-                         <p class="text-[9px] text-blue-300 uppercase font-bold mb-1">Pax</p>
-                        <p class="text-xs font-bold text-white" id="rec-return-pax-count">1 Adult</p>
+                    <div>
+                         <div class="flex justify-between items-center mb-2">
+                             <p class="text-[8px] text-blue-300 uppercase font-bold">Passenger(s)</p>
+                             <p class="text-[8px] font-bold text-white bg-white/10 px-1.5 py-0.5 rounded" id="rec-return-pax-count">1 Adult</p>
+                         </div>
+                         <div id="rec-return-pax-list" class="space-y-1">
+                         </div>
                     </div>
                 </div>
             </div>
 
             <div class="px-8 pb-8 relative z-10 mt-auto">
-                <div class="border-t-2 border-dashed border-davka-orange/30 pt-6">
-                    <div class="flex justify-between items-end mb-2">
+                <div class="border-t-2 border-dashed border-gray-600 pt-5">
+                    <div class="flex justify-between items-end mb-3">
                         <p class="text-[10px] text-blue-300 font-bold uppercase tracking-widest">Booking ID</p>
-                        <p class="text-lg font-mono font-bold text-davka-orange" id="rec-id">#000000</p>
+                        <p class="text-lg font-mono font-bold text-white" id="rec-id">#000000</p>
                     </div>
-                    <div class="flex justify-between items-end">
-                        <p class="text-[10px] text-blue-300 font-bold uppercase tracking-widest">Total Amount</p>
-                        <p class="text-2xl font-black text-white" id="rec-price-total">Rp 0</p>
+                    
+                    <div class="bg-black/30 rounded-xl p-3 border border-white/10">
+                        <div class="flex justify-between items-end mb-2">
+                            <p class="text-[9px] text-gray-400 font-bold uppercase tracking-widest">Total Harga</p>
+                            <p class="text-sm font-bold text-white" id="rec-price-total">Rp 0</p>
+                        </div>
+                        <div class="flex justify-between items-end mb-2">
+                            <p class="text-[9px] text-gray-400 font-bold uppercase tracking-widest">Dibayar (DP)</p>
+                            <p class="text-sm font-bold text-davka-orange" id="rec-price-dp">Rp 0</p>
+                        </div>
+                        <div class="flex justify-between items-end pt-2 border-t border-white/10">
+                            <p class="text-[10px] text-blue-300 font-bold uppercase tracking-widest">Sisa Tagihan</p>
+                            <p class="text-xl font-black text-red-500" id="rec-price-remaining">Rp 0</p>
+                        </div>
                     </div>
                 </div>
             </div>

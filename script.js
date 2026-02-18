@@ -102,7 +102,7 @@ function initializeAppLogic() {
 }
 
 // --- NEW FEATURE: TAB SYSTEM LOGIC (PERGI / PULANG) ---
-// UPDATED: Menambahkan logika swap header Destinasi/Asal saat pindah tab
+// UPDATED: Menambahkan logika renderFinancials saat pindah tab
 window.switchTab = function(tabName) {
     const btnDepart = document.getElementById('tab-btn-depart');
     const btnReturn = document.getElementById('tab-btn-return');
@@ -129,8 +129,10 @@ window.switchTab = function(tabName) {
         if(currentDetailOrder) {
             document.getElementById('detail-origin').innerText = currentDetailOrder.origin || 'ORG';
             document.getElementById('detail-dest').innerText = currentDetailOrder.dest || 'DES';
-            // PERBAIKAN: Selalu gunakan chevron-right (warna orange default)
             document.getElementById('detail-route-icon').className = "fas fa-chevron-right text-davka-orange text-xl";
+            
+            // UPDATE: Render Finansial Khusus Pergi
+            renderDetailFinancials('depart');
         }
     } else {
         btnReturn.className = activeClass;
@@ -138,18 +140,101 @@ window.switchTab = function(tabName) {
 
         // UPDATE HEADER: Tampilkan rute PULANG (Swap Origin & Dest)
         if(currentDetailOrder && currentDetailOrder.tripType === 'round_trip') {
-            // Asal menjadi Tujuan Pulang (atau Asal Pulang), Tujuan menjadi Asal (atau Tujuan Pulang)
             const retOrg = currentDetailOrder.returnOrigin || currentDetailOrder.dest || 'ORG';
             const retDes = currentDetailOrder.returnDest || currentDetailOrder.origin || 'DES';
             
             document.getElementById('detail-origin').innerText = retOrg;
             document.getElementById('detail-dest').innerText = retDes;
             
-            // PERBAIKAN: Ubah paksa icon menjadi KANAN (fa-chevron-right) 
-            // Warna biru menandakan mode Pulang
             document.getElementById('detail-route-icon').className = "fas fa-chevron-right text-blue-500 text-xl"; 
+            
+            // UPDATE: Render Finansial Khusus Pulang
+            renderDetailFinancials('return');
         }
     }
+}
+
+// --- CORE UPDATE: FUNGSI RENDER FINANSIAL DINAMIS ---
+function renderDetailFinancials(mode) {
+    if(!currentDetailOrder) return;
+    const order = currentDetailOrder;
+
+    let price = 0;
+    let dp = 0;
+    let remaining = 0;
+    let method = '-';
+    let label = '';
+    let themeColor = '';
+    let themeBorder = '';
+
+    // Tentukan data berdasarkan mode (Pergi/Pulang)
+    if(mode === 'depart') {
+        price = order.price || 0;
+        // Fallback untuk data lama yang mungkin pakai field 'fee' tunggal
+        dp = (order.feeDepart !== undefined) ? order.feeDepart : (order.fee || 0);
+        method = order.paymentMethod || 'Tunai';
+        label = 'Pergi';
+        themeColor = 'text-davka-orange';
+        themeBorder = 'border-white/10';
+    } else {
+        price = order.returnPrice || 0;
+        dp = order.feeReturn || 0;
+        method = order.paymentMethodReturn || 'Tunai';
+        label = 'Pulang';
+        themeColor = 'text-blue-400';
+        themeBorder = 'border-blue-500/30';
+    }
+
+    remaining = price - dp;
+
+    // --- [UPDATE: FIX STATUS LUNAS] ---
+    // Jika status global 'success', kita anggap sisa tagihan 0 (LUNAS)
+    // Ini menangani kasus di mana user memilih "Tunai" di pelunasan tapi tidak mengubah nominal DP
+    if (order.status === 'success') {
+        remaining = 0;
+    }
+    // ----------------------------------
+
+    // Render HTML Kartu Pembayaran
+    const html = `
+    <div class="bg-davka-bg border ${themeBorder} rounded-xl p-3 mb-2 animate-scale-up">
+        <div class="flex items-center gap-2 mb-2 border-b ${themeBorder} pb-2">
+            <i class="fas ${mode === 'depart' ? 'fa-train' : 'fa-exchange-alt'} ${themeColor} text-xs"></i>
+            <span class="text-[10px] font-bold text-gray-300 uppercase">Rincian ${label}</span>
+        </div>
+        <div class="flex justify-between items-center mb-1">
+             <span class="text-[10px] text-gray-500">Harga Tiket</span>
+             <span class="text-xs font-bold text-white">${formatRupiah(price)}</span>
+        </div>
+        <div class="flex justify-between items-center mb-1">
+             <span class="text-[10px] text-gray-500">DP (Bayar Awal)</span>
+             <span class="text-xs font-bold ${themeColor}">- ${formatRupiah(dp)}</span>
+        </div>
+        <div class="flex justify-between items-center border-t border-dashed border-white/10 pt-1 mt-1">
+             <span class="text-[10px] text-gray-400 font-bold">Sisa Tagihan ${label}</span>
+             <span class="text-xs font-black ${remaining <= 0 ? 'text-green-500' : 'text-red-500'}">${formatRupiah(remaining)}</span>
+        </div>
+        <div class="flex justify-between items-end mt-2">
+            <p class="text-[9px] text-gray-600 italic">Via: ${method}</p>
+            <div class="px-2 py-0.5 rounded ${remaining <= 0 ? 'bg-green-500/20 text-green-400 border border-green-500/30' : 'bg-red-500/20 text-red-400 border border-red-500/30'}">
+                <p class="text-[8px] font-bold uppercase">${remaining <= 0 ? 'LUNAS' : 'BELUM LUNAS'}</p>
+            </div>
+        </div>
+    </div>
+    `;
+
+    // Inject ke DOM
+    const costContainer = document.getElementById('detail-cost-breakdown');
+    costContainer.innerHTML = html;
+    costContainer.classList.remove('hidden');
+
+    // Update Label Total Bawah (Hanya untuk tab yang aktif)
+    document.getElementById('detail-price').innerText = formatRupiah(price);
+    
+    // Update Sisa Tagihan Bawah (Hanya untuk tab yang aktif)
+    const remEl = document.getElementById('detail-remaining');
+    remEl.innerText = formatRupiah(remaining);
+    remEl.className = remaining <= 0 ? "text-sm font-black text-green-500" : "text-sm font-black text-red-500";
 }
 
 // --- NEW FEATURE: UPLOAD TAB SYSTEM (INPUT FORM) ---
@@ -174,7 +259,6 @@ window.switchUploadTab = function(tabName) {
         containerReturn.classList.remove('hidden');
     }
 }
-
 // --- UX ENGINE: SMOOTH SCROLL & ENTER KEY NAVIGATION ---
 function enableSmoothInputUX() {
     const formElements = document.querySelectorAll('input, select, textarea');
@@ -877,7 +961,6 @@ function setupHistoryUploader() {
         });
     });
 }
-
 window.toggleTripType = function() {
     const type = document.getElementById('inpTripType').value;
     const fields = document.getElementById('returnTripFields');
@@ -1129,12 +1212,12 @@ window.resetForm = function() {
     resetUploadZones();
     enableSmoothInputUX();
 }
-// --- REVISI TOTAL: DETAIL VIEW DENGAN SPLIT PAYMENT ---
+// --- REVISI TOTAL: DETAIL VIEW DENGAN TAB ISOLATED FINANCIALS ---
 window.openDetailView = function(orderId) {
     const order = orders.find(o => o.id === orderId);
     if (!order) return;
 
-    // UPDATE: Set global variable untuk logic header swap
+    // UPDATE: Set global variable untuk logic header & financial swap
     currentDetailOrder = order;
 
     document.getElementById('page-list').classList.add('hidden', 'fade-out');
@@ -1142,9 +1225,6 @@ window.openDetailView = function(orderId) {
     document.getElementById('page-detail').classList.add('fade-in');
     
     window.scrollTo({ top: 0, behavior: 'smooth' });
-
-    // Reset ke tab Pergi saat dibuka & Reset Header
-    switchTab('depart');
 
     const displayName = (order.contactName || order.name || 'No Name').toUpperCase();
     document.getElementById('detail-contact-name').innerText = displayName;
@@ -1162,14 +1242,6 @@ window.openDetailView = function(orderId) {
         badge.innerText = "PENDING";
         badge.classList.add('bg-orange-500/10', 'border-orange-500/30', 'text-orange-400');
     }
-
-    // Default Header (Pergi)
-    document.getElementById('detail-origin').innerText = order.origin || 'ORG';
-    document.getElementById('detail-dest').innerText = order.dest || 'DST';
-    
-    // PERBAIKAN: Memastikan ikon selalu Chevron Kanan (fa-chevron-right)
-    const iconEl = document.getElementById('detail-route-icon');
-    iconEl.className = "fas fa-chevron-right text-davka-orange text-xl";
 
     document.getElementById('detail-train').innerText = order.train || '-';
     document.getElementById('detail-date').innerText = order.date ? new Date(order.date).toLocaleDateString('id-ID', {day: 'numeric', month: 'short', year: 'numeric'}) : '-';
@@ -1231,79 +1303,14 @@ window.openDetailView = function(orderId) {
     });
     document.getElementById('detail-pax-list').innerHTML = paxListHtml;
 
-    // --- LOGIC PEMISAHAN HARGA DI DETAIL VIEW ---
-    const pDepart = order.price || 0;
-    const dpDepart = (order.feeDepart !== undefined) ? order.feeDepart : (order.fee || 0); // Fallback for old data
-    const remDepart = pDepart - dpDepart;
-
-    const pReturn = order.returnPrice || 0;
-    const dpReturn = order.feeReturn || 0;
-    const remReturn = pReturn - dpReturn;
-    // REVISI: Get Payment Return
-    const methodReturn = order.paymentMethodReturn || 'Tunai';
-
-    let costHTML = '';
-
-    // CARD 1: PERGI (DETAIL LENGKAP)
-    costHTML += `
-    <div class="bg-davka-bg border border-white/10 rounded-xl p-3 mb-2">
-        <div class="flex items-center gap-2 mb-2 border-b border-white/5 pb-2">
-            <i class="fas fa-train text-davka-orange text-xs"></i>
-            <span class="text-[10px] font-bold text-gray-300 uppercase">Rincian Pergi</span>
-        </div>
-        <div class="flex justify-between items-center mb-1">
-             <span class="text-[10px] text-gray-500">Harga Tiket</span>
-             <span class="text-xs font-bold text-white">${formatRupiah(pDepart)}</span>
-        </div>
-        <div class="flex justify-between items-center mb-1">
-             <span class="text-[10px] text-gray-500">DP (Bayar Awal)</span>
-             <span class="text-xs font-bold text-davka-orange">- ${formatRupiah(dpDepart)}</span>
-        </div>
-        <div class="flex justify-between items-center border-t border-dashed border-white/10 pt-1 mt-1">
-             <span class="text-[10px] text-gray-400 font-bold">Sisa Tagihan Pergi</span>
-             <span class="text-xs font-black ${remDepart <= 0 ? 'text-green-500' : 'text-red-500'}">${formatRupiah(remDepart)}</span>
-        </div>
-        <p class="text-[9px] text-gray-600 mt-1 italic text-right">Via: ${order.paymentMethod || 'Tunai'}</p>
-    </div>
-    `;
-
-    // CARD 2: PULANG (JIKA PP - DETAIL LENGKAP)
-    if(order.tripType === 'round_trip') {
-        costHTML += `
-        <div class="bg-davka-bg border border-blue-500/30 rounded-xl p-3 mb-2">
-            <div class="flex items-center gap-2 mb-2 border-b border-blue-500/20 pb-2">
-                <i class="fas fa-exchange-alt text-blue-400 text-xs"></i>
-                <span class="text-[10px] font-bold text-gray-300 uppercase">Rincian Pulang</span>
-            </div>
-            <div class="flex justify-between items-center mb-1">
-                 <span class="text-[10px] text-gray-500">Harga Tiket</span>
-                 <span class="text-xs font-bold text-white">${formatRupiah(pReturn)}</span>
-            </div>
-            <div class="flex justify-between items-center mb-1">
-                 <span class="text-[10px] text-gray-500">DP (Bayar Awal)</span>
-                 <span class="text-xs font-bold text-blue-400">- ${formatRupiah(dpReturn)}</span>
-            </div>
-            <div class="flex justify-between items-center border-t border-dashed border-blue-500/20 pt-1 mt-1">
-                 <span class="text-[10px] text-gray-400 font-bold">Sisa Tagihan Pulang</span>
-                 <span class="text-xs font-black ${remReturn <= 0 ? 'text-green-500' : 'text-red-500'}">${formatRupiah(remReturn)}</span>
-            </div>
-            <p class="text-[9px] text-blue-500/60 mt-1 italic text-right">Via: ${methodReturn}</p>
-        </div>
-        `;
-    }
+    // --- REVISI: HAPUS LOGIKA LAMA, GUNAKAN SWITCH TAB ---
+    // 1. Bersihkan kontainer finansial
+    document.getElementById('detail-cost-breakdown').innerHTML = '';
     
-    const costContainer = document.getElementById('detail-cost-breakdown');
-    costContainer.innerHTML = costHTML;
-    costContainer.classList.remove('hidden');
-
-    // Total Aggregation
-    const grandTotal = pDepart + pReturn;
-    const totalRemaining = remDepart + remReturn;
-
-    document.getElementById('detail-price').innerText = formatRupiah(grandTotal);
-    const remEl = document.getElementById('detail-remaining');
-    remEl.innerText = formatRupiah(totalRemaining);
-    remEl.className = totalRemaining <= 0 ? "text-sm font-black text-green-500" : "text-sm font-black text-red-500";
+    // 2. Default View: Tab Pergi
+    // Ini akan otomatis memanggil renderDetailFinancials('depart') yang kita buat di Part 1
+    // dan merender detail pembayaran HANYA untuk Pergi
+    switchTab('depart');
 
     const settlementOptions = ["-", "Tunai", "Transfer CIMB Niaga", "Transfer Seabank", "Dana", "Gopay", "Ovo", "ShopeePay"];
     const selectEl = document.getElementById('detail-settlement-select');

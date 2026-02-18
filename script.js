@@ -129,10 +129,8 @@ window.switchTab = function(tabName) {
         if(currentDetailOrder) {
             document.getElementById('detail-origin').innerText = currentDetailOrder.origin || 'ORG';
             document.getElementById('detail-dest').innerText = currentDetailOrder.dest || 'DES';
-            // Icon arrow kanan (normal) atau exchange jika PP
-            document.getElementById('detail-route-icon').className = currentDetailOrder.tripType === 'round_trip' 
-                ? "fas fa-exchange-alt text-blue-400 text-xl" 
-                : "fas fa-arrow-right text-davka-orange text-xl";
+            // PERBAIKAN: Selalu gunakan chevron-right (warna orange default)
+            document.getElementById('detail-route-icon').className = "fas fa-chevron-right text-davka-orange text-xl";
         }
     } else {
         btnReturn.className = activeClass;
@@ -147,8 +145,9 @@ window.switchTab = function(tabName) {
             document.getElementById('detail-origin').innerText = retOrg;
             document.getElementById('detail-dest').innerText = retDes;
             
-            // Ubah icon untuk indikasi arah balik
-            document.getElementById('detail-route-icon').className = "fas fa-arrow-left text-blue-500 text-xl"; 
+            // PERBAIKAN: Ubah paksa icon menjadi KANAN (fa-chevron-right) 
+            // Warna biru menandakan mode Pulang
+            document.getElementById('detail-route-icon').className = "fas fa-chevron-right text-blue-500 text-xl"; 
         }
     }
 }
@@ -1168,12 +1167,9 @@ window.openDetailView = function(orderId) {
     document.getElementById('detail-origin').innerText = order.origin || 'ORG';
     document.getElementById('detail-dest').innerText = order.dest || 'DST';
     
+    // PERBAIKAN: Memastikan ikon selalu Chevron Kanan (fa-chevron-right)
     const iconEl = document.getElementById('detail-route-icon');
-    if (order.tripType === 'round_trip') {
-        iconEl.className = "fas fa-exchange-alt text-blue-400 text-xl";
-    } else {
-        iconEl.className = "fas fa-arrow-right text-davka-orange text-xl";
-    }
+    iconEl.className = "fas fa-chevron-right text-davka-orange text-xl";
 
     document.getElementById('detail-train').innerText = order.train || '-';
     document.getElementById('detail-date').innerText = order.date ? new Date(order.date).toLocaleDateString('id-ID', {day: 'numeric', month: 'short', year: 'numeric'}) : '-';
@@ -1196,9 +1192,6 @@ window.openDetailView = function(orderId) {
         returnDataContainer.classList.remove('hidden');
         returnEmptyContainer.classList.add('hidden');
         containerProofReturn.classList.remove('hidden');
-
-        // NOTE: Detail Origin/Dest Return dihapus dari sini karena sekarang ikut Header Utama (via switchTab)
-        // Kita hanya populate data spesifik rute pulang (Kereta, Tanggal, War)
 
         document.getElementById('detail-return-train').innerText = order.returnTrain || '-';
         document.getElementById('detail-return-date').innerText = order.returnDate ? new Date(order.returnDate).toLocaleDateString('id-ID', {day: 'numeric', month: 'short', year: 'numeric'}) : '-';
@@ -1388,7 +1381,7 @@ window.renderOrderList = function(filterText = '') {
                 <p class="text-[10px] text-gray-300 font-bold flex items-center">
                     <i class="fas fa-train text-davka-orange mr-1.5 text-[10px]"></i> 
                     ${order.origin || '?'} 
-                    <i class="fas fa-arrow-right text-[8px] mx-1 opacity-50"></i> 
+                    <i class="fas fa-chevron-right text-[8px] mx-1 opacity-50"></i> 
                     ${order.dest || '?'}
                 </p>
                 <p class="text-[10px] text-gray-500 pl-4 font-mono">${dateStr}</p>
@@ -1404,6 +1397,7 @@ window.renderOrderList = function(filterText = '') {
             const retDest = order.returnDest || order.origin || '?';
 
             // UPDATE: Menambahkan Status Badge juga di baris Pulang
+            // FIX: Menggunakan chevron-right di list juga
             routeHtml += `
             <div class="mt-1 pt-1 border-t border-white/5 relative">
                 <div class="absolute left-1.5 top-2 w-0.5 h-full bg-blue-500/20"></div>
@@ -1412,7 +1406,7 @@ window.renderOrderList = function(filterText = '') {
                         <p class="text-[10px] text-gray-300 font-bold flex items-center">
                             <i class="fas fa-exchange-alt text-blue-400 mr-1.5 text-[10px]"></i> 
                             ${retOrg} 
-                            <i class="fas fa-arrow-right text-[8px] mx-1 opacity-50"></i> 
+                            <i class="fas fa-chevron-right text-[8px] mx-1 opacity-50"></i> 
                             ${retDest}
                         </p>
                         <p class="text-[10px] text-gray-500 pl-4 font-mono">${retDateStr}</p>

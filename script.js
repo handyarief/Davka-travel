@@ -611,8 +611,6 @@ orderForm.addEventListener('submit', async (e) => {
             ? await supabase.from('orders').update(newOrder).eq('id', orderId)
             : await supabase.from('orders').insert([newOrder]);
 
-        // Jika server gagal (error koneksi / db), throw ke catch block
-        // Form TIDAK AKAN direset, user tidak perlu mengetik ulang
         if(error) throw error;
 
         // JIKA SERVER SUKSES, BARU UPDATE UI DAN LOKAL RAM
@@ -1020,6 +1018,7 @@ window.printReceipt = function(orderId) {
     showToast("RENDER E-TIKET...");
     setTimeout(() => { captureAndShowModal('receipt-render-area'); }, 800);
 }
+
 // --- CORE: RENDER NOTA BERDASARKAN TAB AKTIF & DATA LENGKAP ---
 function renderReceiptToDOM(order) {
     const sectionDepart = document.getElementById('rec-ticket-depart');
@@ -1040,7 +1039,6 @@ function renderReceiptToDOM(order) {
     const adults = paxList.filter(p => !p.type || p.type === 'adult').length;
     const infants = paxList.filter(p => p.type === 'infant').length;
     
-    // UPDATE: Terjemahan bahasa Inggris -> Indonesia untuk teks penumpang
     let paxCountStr = `${adults} Dewasa`;
     if(infants > 0) paxCountStr += `, ${infants} Bayi`;
 
@@ -1049,7 +1047,6 @@ function renderReceiptToDOM(order) {
         const isInfant = p.type === 'infant';
         const paxTypeLabel = isInfant ? '<span class="text-[8px] bg-white/20 px-1 rounded ml-1 text-pink-300 inline-block align-middle">BAYI</span>' : '';
         
-        // UPDATE: Format tanggal lahir (DOB) untuk Nota jika tersedia
         let dobStr = '';
         if (p.dob) {
             const dObj = new Date(p.dob);
@@ -1057,17 +1054,18 @@ function renderReceiptToDOM(order) {
                 dobStr = dObj.toLocaleDateString('id-ID', { day: '2-digit', month: 'short', year: 'numeric' }).toUpperCase();
             }
         }
-        const dobDisplayReceipt = dobStr ? `<span class="block text-[8px] text-davka-orange mt-0.5 font-bold">LHR: ${dobStr}</span>` : '';
+        
+        // UX UPDATE 1 & 2: Ubah LHR jadi TGL LAHIR, perbesar text jadi [10px] font-black orange
+        const dobDisplayReceipt = dobStr ? `<span class="block text-[10px] text-davka-orange mt-1 font-black">TGL LAHIR: ${dobStr}</span>` : '';
 
-        // UPDATE UX PENUMPANG: 
-        // 1. Ubah flex items-center menjadi items-start agar sejajar rapi saat multiline
-        // 2. Hapus truncate, ganti break-words
-        // 3. Perbesar font size NIK dan Nama
-        // 4. Injeksi Tanggal Lahir (DOB) di bawah NIK
+        // UX UPDATE 3: Perbesar NIK di nota jadi [11px] text-white/blue-200 agar kontras
         paxHtml += `
             <div class="flex justify-between items-start bg-white/5 p-2 rounded mb-1 gap-2">
                 <p class="text-[11px] font-bold text-white uppercase break-words flex-1 leading-tight">${p.name} ${paxTypeLabel}</p>
-                <p class="text-[10px] text-gray-300 font-mono shrink-0 pt-0.5 whitespace-nowrap text-right">ID: ${p.nik || '-'}${dobDisplayReceipt}</p>
+                <div class="text-right shrink-0">
+                    <p class="text-[11px] text-blue-200 font-bold font-mono whitespace-nowrap">ID: ${p.nik || '-'}</p>
+                    ${dobDisplayReceipt}
+                </div>
             </div>
         `;
     });
@@ -1099,7 +1097,6 @@ function renderReceiptToDOM(order) {
         if (order.status === 'success') stampElReturn.classList.add('visible');
         else stampElReturn.classList.remove('visible');
 
-        // Finansial Khusus Pulang
         const returnTotal = order.returnPrice || 0;
         const returnDp = order.feeReturn || 0;
         let returnRemaining = returnTotal - returnDp;
@@ -1112,9 +1109,13 @@ function renderReceiptToDOM(order) {
 
         document.getElementById('rec-id').innerText = "#" + order.id.toString().slice(-6) + "-R";
 
-        // Injeksi Data Lengkap
         document.getElementById('rec-return-contact-name').innerText = (order.contactName || mainPaxName).toUpperCase();
-        document.getElementById('rec-return-contact-phone').innerText = order.contactPhone || '-';
+        
+        // UX UPDATE 3: Override Class HTML untuk memperjelas Nomor HP
+        const phoneElReturn = document.getElementById('rec-return-contact-phone');
+        phoneElReturn.innerText = order.contactPhone || '-';
+        phoneElReturn.className = "text-[13px] font-bold text-white tracking-wider font-mono mb-1"; 
+        
         document.getElementById('rec-return-address').innerText = address.toUpperCase();
         
         document.getElementById('rec-return-payment-method').innerText = (order.paymentMethodReturn || order.paymentMethod || 'TUNAI').toUpperCase();
@@ -1145,7 +1146,6 @@ function renderReceiptToDOM(order) {
         if (order.status === 'success') stampElDepart.classList.add('visible');
         else stampElDepart.classList.remove('visible');
 
-        // Finansial Khusus Pergi
         const departTotal = order.price || 0;
         const departDp = (order.feeDepart !== undefined) ? order.feeDepart : (order.fee || 0);
         let departRemaining = departTotal - departDp;
@@ -1158,9 +1158,13 @@ function renderReceiptToDOM(order) {
 
         document.getElementById('rec-id').innerText = "#" + order.id.toString().slice(-6);
 
-        // Injeksi Data Lengkap
         document.getElementById('rec-contact-name').innerText = (order.contactName || mainPaxName).toUpperCase();
-        document.getElementById('rec-contact-phone').innerText = order.contactPhone || '-';
+        
+        // UX UPDATE 3: Override Class HTML untuk memperjelas Nomor HP
+        const phoneElDepart = document.getElementById('rec-contact-phone');
+        phoneElDepart.innerText = order.contactPhone || '-';
+        phoneElDepart.className = "text-[13px] font-bold text-white tracking-wider font-mono mb-1";
+        
         document.getElementById('rec-address').innerText = address.toUpperCase();
         
         document.getElementById('rec-payment-method').innerText = (order.paymentMethod || 'TUNAI').toUpperCase();
@@ -1353,14 +1357,15 @@ window.openDetailView = function(orderId) {
         const icon = isInfant ? 'fa-baby' : 'fa-user';
         const label = isInfant ? '<span class="text-[8px] ml-2 px-1.5 py-0.5 rounded bg-pink-500/20 text-pink-400 border border-pink-500/30">BAYI</span>' : '';
         
-        // UPDATE UX: Tanggal Lahir menjadi Badge Keren di Detail View
+        // UX UPDATE 2: Tanggal Lahir menjadi Badge yang LEBIH BESAR [10px] & Tappable di Detail View
         let dobBadge = '';
         if (p.dob) {
             const d = new Date(p.dob);
             const dobFormat = !isNaN(d) ? d.toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' }).toUpperCase() : p.dob;
-            dobBadge = `<span class="ml-2 inline-flex items-center gap-1 bg-davka-orange/10 text-davka-orange border border-davka-orange/20 px-1.5 py-0.5 rounded-md text-[8px] font-bold tracking-wider uppercase"><i class="fas fa-calendar-alt"></i> ${dobFormat}</span>`;
+            dobBadge = `<span class="ml-2 inline-flex items-center gap-1 bg-davka-orange/20 text-davka-orange border border-davka-orange/30 px-2 py-1 rounded-md text-[10px] font-bold tracking-wider uppercase"><i class="fas fa-calendar-alt"></i> ${dobFormat}</span>`;
         }
 
+        // UX UPDATE 2: NIK diperjelas (font-bold text-gray-300 text-[11px]) di Detail View
         paxListHtml += `
             <div class="flex items-center gap-3 border-b border-white/5 pb-2 last:border-0 last:pb-0">
                 <div class="w-6 h-6 rounded-full ${iconColor} flex items-center justify-center text-[10px] font-bold shrink-0">
@@ -1368,7 +1373,7 @@ window.openDetailView = function(orderId) {
                 </div>
                 <div>
                     <p class="text-xs font-bold text-white uppercase flex items-center">${p.name} ${label}</p>
-                    <p class="text-[9px] text-gray-500 font-mono flex items-center mt-0.5">NIK: ${p.nik} ${dobBadge}</p>
+                    <p class="text-[11px] text-gray-300 font-bold font-mono flex items-center mt-1.5">NIK: ${p.nik} ${dobBadge}</p>
                 </div>
             </div>
         `;
@@ -1377,7 +1382,6 @@ window.openDetailView = function(orderId) {
 
     document.getElementById('detail-cost-breakdown').innerHTML = '';
     
-    // Default View: Tab Pergi (Ini akan merender Rincian Finansial khusus pergi)
     switchTab('depart');
 
     const settlementOptions = ["-", "Tunai", "Transfer CIMB Niaga", "Transfer Seabank", "Dana", "Gopay", "Ovo", "ShopeePay"];

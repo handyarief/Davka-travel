@@ -482,7 +482,6 @@ async function fetchOrdersBg() {
         }
     }
 }
-
 // --- LOGIC UPLOAD & STORAGE ---
 async function uploadToSupabaseStorage(base64Data, fileName) {
     if (!base64Data || base64Data.startsWith('http')) return base64Data; 
@@ -509,6 +508,7 @@ async function uploadToSupabaseStorage(base64Data, fileName) {
         return null; 
     }
 }
+
 // --- FORM HANDLING (SAVE & UPDATE) ---
 const orderForm = document.getElementById('orderForm');
 
@@ -839,6 +839,7 @@ window.updateSettlement = async function(id, newVal) {
         } catch(e) { console.error(e); } finally { toggleLoader(false); }
     } else toggleLoader(false);
 }
+
 // --- HELPER LAINNYA ---
 function toggleLoader(show) {
     const loader = document.getElementById('global-loader');
@@ -1009,7 +1010,6 @@ window.calcReturnH45 = function() {
         document.getElementById('inpReturnWarDate').value = d.toISOString().split('T')[0];
     }
 }
-
 window.printReceipt = function(orderId) {
     const order = orders.find(o => o.id === orderId);
     if (!order) return;
@@ -1049,14 +1049,25 @@ function renderReceiptToDOM(order) {
         const isInfant = p.type === 'infant';
         const paxTypeLabel = isInfant ? '<span class="text-[8px] bg-white/20 px-1 rounded ml-1 text-pink-300 inline-block align-middle">BAYI</span>' : '';
         
+        // UPDATE: Format tanggal lahir (DOB) untuk Nota jika tersedia
+        let dobStr = '';
+        if (p.dob) {
+            const dObj = new Date(p.dob);
+            if(!isNaN(dObj)) {
+                dobStr = dObj.toLocaleDateString('id-ID', { day: '2-digit', month: 'short', year: 'numeric' }).toUpperCase();
+            }
+        }
+        const dobDisplayReceipt = dobStr ? `<span class="block text-[8px] text-davka-orange mt-0.5 font-bold">LHR: ${dobStr}</span>` : '';
+
         // UPDATE UX PENUMPANG: 
         // 1. Ubah flex items-center menjadi items-start agar sejajar rapi saat multiline
         // 2. Hapus truncate, ganti break-words
         // 3. Perbesar font size NIK dan Nama
+        // 4. Injeksi Tanggal Lahir (DOB) di bawah NIK
         paxHtml += `
             <div class="flex justify-between items-start bg-white/5 p-2 rounded mb-1 gap-2">
                 <p class="text-[11px] font-bold text-white uppercase break-words flex-1 leading-tight">${p.name} ${paxTypeLabel}</p>
-                <p class="text-[10px] text-gray-300 font-mono shrink-0 pt-0.5 whitespace-nowrap">ID: ${p.nik || '-'}</p>
+                <p class="text-[10px] text-gray-300 font-mono shrink-0 pt-0.5 whitespace-nowrap text-right">ID: ${p.nik || '-'}${dobDisplayReceipt}</p>
             </div>
         `;
     });
@@ -1341,7 +1352,14 @@ window.openDetailView = function(orderId) {
         const iconColor = isInfant ? 'text-pink-400 bg-pink-500/10' : 'text-gray-300 bg-white/10';
         const icon = isInfant ? 'fa-baby' : 'fa-user';
         const label = isInfant ? '<span class="text-[8px] ml-2 px-1.5 py-0.5 rounded bg-pink-500/20 text-pink-400 border border-pink-500/30">BAYI</span>' : '';
-        const dobDisplay = p.dob ? `<span class="ml-2 text-davka-orange">| LHR: ${p.dob}</span>` : '';
+        
+        // UPDATE UX: Tanggal Lahir menjadi Badge Keren di Detail View
+        let dobBadge = '';
+        if (p.dob) {
+            const d = new Date(p.dob);
+            const dobFormat = !isNaN(d) ? d.toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' }).toUpperCase() : p.dob;
+            dobBadge = `<span class="ml-2 inline-flex items-center gap-1 bg-davka-orange/10 text-davka-orange border border-davka-orange/20 px-1.5 py-0.5 rounded-md text-[8px] font-bold tracking-wider uppercase"><i class="fas fa-calendar-alt"></i> ${dobFormat}</span>`;
+        }
 
         paxListHtml += `
             <div class="flex items-center gap-3 border-b border-white/5 pb-2 last:border-0 last:pb-0">
@@ -1350,7 +1368,7 @@ window.openDetailView = function(orderId) {
                 </div>
                 <div>
                     <p class="text-xs font-bold text-white uppercase flex items-center">${p.name} ${label}</p>
-                    <p class="text-[9px] text-gray-500 font-mono">NIK: ${p.nik} ${dobDisplay}</p>
+                    <p class="text-[9px] text-gray-500 font-mono flex items-center mt-0.5">NIK: ${p.nik} ${dobBadge}</p>
                 </div>
             </div>
         `;
@@ -1385,7 +1403,6 @@ window.closeDetailView = function() {
     currentDetailOrder = null;
     renderOrderList(document.getElementById('searchInput').value);
 }
-
 window.renderOrderList = function(filterText = '') {
     const container = document.getElementById('ordersContainer');
     container.innerHTML = '';

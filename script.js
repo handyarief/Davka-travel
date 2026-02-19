@@ -1053,16 +1053,16 @@ function renderReceiptToDOM(order) {
         }
         
         // UPDATE NOTA: 
-        // 1. TGL LAHIR ukurannya disamakan dengan ID (text-[10px]) dan posisinya diselaraskan ke kanan.
-        // 2. Teks NIK/ID berada di tengah kotaknya (text-center).
-        const dobDisplayReceipt = dobStr ? `<span class="block text-[10px] text-davka-orange font-bold mt-1.5 tracking-wider text-right">TGL LAHIR: ${dobStr}</span>` : '';
+        // 1. TGL LAHIR & NIK disamakan ukurannya dengan Nama Penumpang (text-[11px]).
+        // 2. Margin dan layout dirapikan agar tidak terlihat bulky.
+        const dobDisplayReceipt = dobStr ? `<span class="block text-[11px] text-davka-orange font-bold mt-1 tracking-wider text-right">TGL LAHIR: ${dobStr}</span>` : '';
 
         paxHtml += `
             <div class="flex justify-between items-start bg-white/5 p-2.5 rounded mb-1 gap-2">
                 <p class="text-[11px] font-bold text-white uppercase break-words flex-1 leading-tight mt-1">${p.name} ${paxTypeLabel}</p>
                 <div class="shrink-0 min-w-[130px] flex flex-col items-end">
                     <div class="w-full bg-white/10 px-2 py-1.5 rounded border border-white/5">
-                        <p class="text-[10px] text-white font-bold font-mono text-center tracking-widest">ID: ${p.nik || '-'}</p>
+                        <p class="text-[11px] text-white font-bold font-mono text-center tracking-widest">ID: ${p.nik || '-'}</p>
                     </div>
                     ${dobDisplayReceipt}
                 </div>
@@ -1280,7 +1280,6 @@ window.resetForm = function() {
     resetUploadZones();
     enableSmoothInputUX();
 }
-
 window.openDetailView = function(orderId) {
     const order = orders.find(o => o.id === orderId);
     if (!order) return;
@@ -1355,15 +1354,15 @@ window.openDetailView = function(orderId) {
         const icon = isInfant ? 'fa-baby' : 'fa-user';
         const label = isInfant ? '<span class="text-[8px] ml-2 px-1.5 py-0.5 rounded bg-pink-500/20 text-pink-400 border border-pink-500/30">BAYI</span>' : '';
         
-        // FIX DETAIL VIEW 1: Tanggal Lahir menjadi Badge dengan shrink-0 agar tidak merusak layout
+        // FIX DETAIL VIEW 1: Tanggal Lahir dilepas dari badge boxy dan diselaraskan jadi text-xs
         let dobBadge = '';
         if (p.dob) {
             const d = new Date(p.dob);
             const dobFormat = !isNaN(d) ? d.toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' }).toUpperCase() : p.dob;
-            dobBadge = `<span class="inline-flex items-center gap-1 bg-davka-orange/20 text-davka-orange border border-davka-orange/30 px-2 py-1 rounded-md text-[10px] font-bold tracking-wider uppercase shrink-0"><i class="fas fa-calendar-alt"></i> ${dobFormat}</span>`;
+            dobBadge = `<span class="flex items-center gap-1 text-davka-orange text-xs font-bold whitespace-nowrap shrink-0"><i class="fas fa-calendar-alt opacity-70"></i> ${dobFormat}</span>`;
         }
 
-        // FIX DETAIL VIEW 2: Layout flex-wrap agar NIK dan badge Tgl Lahir otomatis turun jika layar sempit tanpa memotong teks
+        // FIX DETAIL VIEW 2: Ukuran NIK diperbesar menjadi text-xs sejajar dengan nama penumpang
         paxListHtml += `
             <div class="flex items-start gap-3 border-b border-white/5 pb-3 pt-1 last:border-0 last:pb-0">
                 <div class="w-6 h-6 rounded-full ${iconColor} flex items-center justify-center text-[10px] font-bold shrink-0 mt-0.5">
@@ -1371,9 +1370,9 @@ window.openDetailView = function(orderId) {
                 </div>
                 <div class="flex-1 min-w-0">
                     <p class="text-xs font-bold text-white uppercase flex flex-wrap items-center gap-1">${p.name} ${label}</p>
-                    <div class="flex flex-wrap items-center gap-2 mt-1.5">
-                        <p class="text-[11px] text-gray-300 font-bold font-mono whitespace-nowrap">NIK: ${p.nik}</p>
-                        ${dobBadge}
+                    <div class="flex flex-wrap items-center gap-3 mt-1.5">
+                        <p class="text-xs text-gray-300 font-bold font-mono whitespace-nowrap">NIK: ${p.nik}</p>
+                        ${dobBadge ? `<span class="w-1 h-1 rounded-full bg-white/20 hidden sm:block"></span> ${dobBadge}` : ''}
                     </div>
                 </div>
             </div>

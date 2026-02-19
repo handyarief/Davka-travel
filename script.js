@@ -1050,17 +1050,16 @@ function renderReceiptToDOM(order) {
             }
         }
         
-        // FIX UPDATE NOTA: 
-        // 1. TGL LAHIR: Menghapus class 'tracking-wider' agar tidak terlihat kebesaran dan bulky
-        // 2. NIK: Menghapus class 'font-mono' & 'tracking-widest', tambah 'uppercase' agar rapi dan sama besar secara visual dengan nama
+        // PERBAIKAN UX NOTA PENUMPANG: 
         const dobDisplayReceipt = dobStr ? `<span class="block text-[11px] text-davka-orange font-bold mt-1 text-right">TGL LAHIR: ${dobStr}</span>` : '';
 
+        // FIX NIK SIMETRIS: Menggunakan fixed width w-[150px] shrink-0 agar sejajar lurus seperti tabel
         paxHtml += `
-            <div class="flex justify-between items-start bg-white/5 p-2.5 rounded mb-1 gap-2">
-                <p class="text-[11px] font-bold text-white uppercase break-words flex-1 leading-tight mt-1">${p.name} ${paxTypeLabel}</p>
-                <div class="shrink-0 min-w-[130px] flex flex-col items-end">
-                    <div class="w-full bg-white/10 px-2 py-1.5 rounded border border-white/5">
-                        <p class="text-[11px] text-white font-bold text-center uppercase">ID: ${p.nik || '-'}</p>
+            <div class="flex justify-between items-start bg-white/5 p-2.5 rounded mb-1.5 gap-2 border border-white/5">
+                <p class="text-[12px] font-bold text-white uppercase break-words flex-1 min-w-0 leading-tight mt-1 pr-2">${p.name} ${paxTypeLabel}</p>
+                <div class="w-[150px] shrink-0 flex flex-col items-end">
+                    <div class="w-full bg-white/10 px-2 py-1.5 rounded border border-white/10">
+                        <p class="text-[11px] text-white font-bold text-center uppercase tracking-wide">ID: ${p.nik || '-'}</p>
                     </div>
                     ${dobDisplayReceipt}
                 </div>
@@ -1111,7 +1110,7 @@ function renderReceiptToDOM(order) {
         
         const phoneElReturn = document.getElementById('rec-return-contact-phone');
         phoneElReturn.innerText = order.contactPhone || '-';
-        phoneElReturn.className = "text-[13px] font-bold text-white tracking-wider font-mono mb-1"; 
+        phoneElReturn.className = "text-[12px] font-bold text-white tracking-widest font-mono mt-0.5 mb-2"; 
         
         document.getElementById('rec-return-address').innerText = address.toUpperCase();
         
@@ -1159,7 +1158,7 @@ function renderReceiptToDOM(order) {
         
         const phoneElDepart = document.getElementById('rec-contact-phone');
         phoneElDepart.innerText = order.contactPhone || '-';
-        phoneElDepart.className = "text-[13px] font-bold text-white tracking-wider font-mono mb-1";
+        phoneElDepart.className = "text-[12px] font-bold text-white tracking-widest font-mono mt-0.5 mb-2";
         
         document.getElementById('rec-address').innerText = address.toUpperCase();
         

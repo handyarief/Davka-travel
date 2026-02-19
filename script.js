@@ -1050,17 +1050,17 @@ function renderReceiptToDOM(order) {
             }
         }
         
-        // UPDATE NOTA: 
-        // 1. TGL LAHIR & NIK disamakan ukurannya dengan Nama Penumpang (text-[11px]).
-        // 2. Margin dan layout dirapikan agar tidak terlihat bulky.
-        const dobDisplayReceipt = dobStr ? `<span class="block text-[11px] text-davka-orange font-bold mt-1 tracking-wider text-right">TGL LAHIR: ${dobStr}</span>` : '';
+        // FIX UPDATE NOTA: 
+        // 1. TGL LAHIR: Menghapus class 'tracking-wider' agar tidak terlihat kebesaran dan bulky
+        // 2. NIK: Menghapus class 'font-mono' & 'tracking-widest', tambah 'uppercase' agar rapi dan sama besar secara visual dengan nama
+        const dobDisplayReceipt = dobStr ? `<span class="block text-[11px] text-davka-orange font-bold mt-1 text-right">TGL LAHIR: ${dobStr}</span>` : '';
 
         paxHtml += `
             <div class="flex justify-between items-start bg-white/5 p-2.5 rounded mb-1 gap-2">
                 <p class="text-[11px] font-bold text-white uppercase break-words flex-1 leading-tight mt-1">${p.name} ${paxTypeLabel}</p>
                 <div class="shrink-0 min-w-[130px] flex flex-col items-end">
                     <div class="w-full bg-white/10 px-2 py-1.5 rounded border border-white/5">
-                        <p class="text-[11px] text-white font-bold font-mono text-center tracking-widest">ID: ${p.nik || '-'}</p>
+                        <p class="text-[11px] text-white font-bold text-center uppercase">ID: ${p.nik || '-'}</p>
                     </div>
                     ${dobDisplayReceipt}
                 </div>
@@ -1187,7 +1187,6 @@ function captureAndShowModal(elementId) {
         alert("Gagal render gambar."); 
     });
 }
-
 function renderUploadBtnHTML(id, type, file, label) {
     if(file) {
         return `<div class="relative w-full h-full rounded-lg overflow-hidden border border-white/10 group cursor-pointer bg-black/40">

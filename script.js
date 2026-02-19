@@ -410,7 +410,6 @@ window.calcTotalFromPax = function() {
 
     calcRemaining(); 
 }
-
 // --- CALCULATE REMAINING SEPARATED (PERGI & PULANG) ---
 window.calcRemaining = function() {
     const priceDepart = parseFloat(document.getElementById('inpPrice').value) || 0;
@@ -810,7 +809,6 @@ window.editOrder = function(id) {
     document.getElementById('btnSaveText').innerText = "UPDATE DATA";
     navTo('input');
 }
-
 window.updateSettlement = async function(id, newVal) {
     toggleLoader(true);
     const index = orders.findIndex(o => o.id === id);
@@ -1354,15 +1352,15 @@ window.openDetailView = function(orderId) {
         const icon = isInfant ? 'fa-baby' : 'fa-user';
         const label = isInfant ? '<span class="text-[8px] ml-2 px-1.5 py-0.5 rounded bg-pink-500/20 text-pink-400 border border-pink-500/30">BAYI</span>' : '';
         
-        // FIX DETAIL VIEW 1: Tanggal Lahir dilepas dari badge boxy dan diselaraskan jadi text-xs
+        // UX FIX 1: Warna Tanggal Lahir diselaraskan (gray-300) agar tidak terlihat terlalu besar/mencolok dibanding nama
         let dobBadge = '';
         if (p.dob) {
             const d = new Date(p.dob);
             const dobFormat = !isNaN(d) ? d.toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' }).toUpperCase() : p.dob;
-            dobBadge = `<span class="flex items-center gap-1 text-davka-orange text-xs font-bold whitespace-nowrap shrink-0"><i class="fas fa-calendar-alt opacity-70"></i> ${dobFormat}</span>`;
+            dobBadge = `<span class="flex items-center gap-1 text-gray-300 text-xs font-bold whitespace-nowrap shrink-0"><i class="fas fa-calendar-alt opacity-70"></i> ${dobFormat}</span>`;
         }
 
-        // FIX DETAIL VIEW 2: Ukuran NIK diperbesar menjadi text-xs sejajar dengan nama penumpang
+        // UX FIX 2: Hapus class 'font-mono' pada NIK agar ukuran fontnya sejajar persis dengan nama penumpang
         paxListHtml += `
             <div class="flex items-start gap-3 border-b border-white/5 pb-3 pt-1 last:border-0 last:pb-0">
                 <div class="w-6 h-6 rounded-full ${iconColor} flex items-center justify-center text-[10px] font-bold shrink-0 mt-0.5">
@@ -1371,7 +1369,7 @@ window.openDetailView = function(orderId) {
                 <div class="flex-1 min-w-0">
                     <p class="text-xs font-bold text-white uppercase flex flex-wrap items-center gap-1">${p.name} ${label}</p>
                     <div class="flex flex-wrap items-center gap-3 mt-1.5">
-                        <p class="text-xs text-gray-300 font-bold font-mono whitespace-nowrap">NIK: ${p.nik}</p>
+                        <p class="text-xs text-gray-300 font-bold whitespace-nowrap">NIK: ${p.nik}</p>
                         ${dobBadge ? `<span class="w-1 h-1 rounded-full bg-white/20 hidden sm:block"></span> ${dobBadge}` : ''}
                     </div>
                 </div>

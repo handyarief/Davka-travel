@@ -233,6 +233,7 @@ select:focus {
 .text-shadow-glow {
     text-shadow: 0 0 10px rgba(14, 165, 233, 0.5);
 }
+
 /* === PAGE ANIMATIONS === */
 .fade-in {
     animation: fadeInUp 0.6s cubic-bezier(0.165, 0.84, 0.44, 1) forwards;
@@ -262,7 +263,6 @@ select:focus {
     from { transform: scale(0.8); opacity: 0; }
     to { transform: scale(1); opacity: 1; }
 }
-
 /* === NAVIGATION STATES === */
 .active-nav {
     color: #fff;
@@ -294,6 +294,7 @@ select:focus {
     from { transform: translateX(-50%) scale(0); }
     to { transform: translateX(-50%) scale(1); }
 }
+
 /* === UTILITIES & PRINT === */
 input[type="date"]::-webkit-calendar-picker-indicator {
     filter: invert(1);
@@ -309,42 +310,83 @@ input[type="date"]::-webkit-calendar-picker-indicator:hover {
     font-family: 'Cinzel', serif;
 }
 
-/* === NEW: FUTURISTIC INVOICE STYLES === */
+/* === NEW: FUTURISTIC INVOICE STYLES (CYBERPUNK HUD) === */
 #receipt-render-area {
     position: fixed;
     top: 0;
     left: -9999px;
     z-index: -100;
-    background-color: #00040f !important; /* UPDATED: Darker Davka BG */
+    background-color: #00040f !important; /* Deep Davka BG */
     color: #ffffff !important;
     font-family: 'Plus Jakarta Sans', sans-serif;
     -webkit-print-color-adjust: exact !important;
     print-color-adjust: exact !important;
 }
 
-/* Update Stamp Style: Watermark Effect -> MODIFIED FOR LOGO DAVKA */
+/* 1. Cyber Grid Background */
+.cyber-grid-bg {
+    background-image: 
+        linear-gradient(rgba(255, 255, 255, 0.03) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(255, 255, 255, 0.03) 1px, transparent 1px);
+    background-size: 20px 20px;
+    background-position: center top;
+}
+
+/* 2. Text Glowing Utilities */
+.glow-text-orange {
+    text-shadow: 0 0 8px rgba(255, 84, 0, 0.8), 0 0 15px rgba(255, 84, 0, 0.4);
+}
+.glow-text-white {
+    text-shadow: 0 0 10px rgba(255, 255, 255, 0.6);
+}
+
+/* 3. Barcode Mockup (Pure CSS untuk html2canvas) */
+.barcode-mockup {
+    width: 250px;
+    height: 35px;
+    background: repeating-linear-gradient(
+        to right,
+        #ffffff,
+        #ffffff 2px,
+        transparent 2px,
+        transparent 5px,
+        #ffffff 5px,
+        #ffffff 8px,
+        transparent 8px,
+        transparent 10px,
+        #ffffff 10px,
+        #ffffff 11px,
+        transparent 11px,
+        transparent 15px,
+        #ffffff 15px,
+        #ffffff 19px,
+        transparent 19px,
+        transparent 22px
+    );
+}
+
+/* 4. Update Stamp Style: Hologram Effect */
 .stamp-lunas-modern {
     position: absolute;
     top: 50%; 
     left: 50%;
     transform: translate(-50%, -50%) scale(1);
     display: none; 
-    z-index: 5; /* Low z-index to stay behind text */
+    z-index: 5; 
     pointer-events: none;
     
-    /* UPDATE: Dimensi fix 1:1, border-radius 50% untuk bulat sempurna */
     width: 280px; 
     height: 280px; 
     object-fit: cover;
     border-radius: 50%;
     
-    /* Watermark Effect Key Properties */
-    opacity: 0.15; 
-    mix-blend-mode: screen; /* Screen blend lebih cocok untuk logo di background gelap */
+    /* Hologram Effect */
+    opacity: 0.18; 
+    mix-blend-mode: screen; 
     
-    /* UPDATE: Penambahan box-shadow dan peningkatan filter untuk glow bulat yang estetik */
-    box-shadow: 0 0 40px rgba(255, 84, 0, 0.4);
-    filter: drop-shadow(0 0 15px rgba(255, 84, 0, 0.5)); 
+    /* Glow */
+    box-shadow: 0 0 40px rgba(14, 165, 233, 0.3);
+    filter: drop-shadow(0 0 15px rgba(14, 165, 233, 0.5)) hue-rotate(180deg); /* Hue-rotate memanipulasi warna hijau menjadi biru/cyan futuristik */
     
     transition: all 0.5s ease;
 }
@@ -354,10 +396,9 @@ input[type="date"]::-webkit-calendar-picker-indicator:hover {
     animation: stampPop 0.6s cubic-bezier(0.175, 0.885, 0.32, 1.275);
 }
 
-/* MODIFIED ANIMATION: Pop lurus tanpa rotasi */
 @keyframes stampPop {
     0% { transform: translate(-50%, -50%) scale(0.5); opacity: 0; }
-    100% { transform: translate(-50%, -50%) scale(1); opacity: 0.15; }
+    100% { transform: translate(-50%, -50%) scale(1); opacity: 0.18; }
 }
 
 .truncate-text {

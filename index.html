@@ -732,191 +732,210 @@
     </div>
 
     <div id="receipt-render-area" style="width: 480px; position: fixed; left: -9999px;">
-        <div class="relative bg-[#0f172a] text-white font-sans overflow-hidden min-h-[800px] border-none flex flex-col">
+        <div class="relative bg-davka-bg text-white font-sans overflow-hidden min-h-[800px] border-none flex flex-col cyber-grid-bg">
             
-            <div class="absolute inset-0 z-0 opacity-40">
-                 <div class="absolute top-[-10%] right-[-10%] w-[70%] h-[40%] bg-davka-orange rounded-full blur-[100px]"></div>
-                 <div class="absolute bottom-[-10%] left-[-10%] w-[70%] h-[40%] bg-blue-600 rounded-full blur-[100px]"></div>
-                 <div class="absolute inset-0" style="background-image: radial-gradient(rgba(255, 255, 255, 0.05) 1px, transparent 1px); background-size: 30px 30px;"></div>
+            <div class="absolute inset-0 z-0 pointer-events-none">
+                 <div class="absolute top-[-5%] right-[-10%] w-[60%] h-[30%] bg-davka-orange/30 rounded-full blur-[100px]"></div>
+                 <div class="absolute bottom-[-5%] left-[-10%] w-[60%] h-[30%] bg-[#0ea5e9]/20 rounded-full blur-[100px]"></div>
             </div>
 
             <div class="pt-10 pb-6 px-8 text-center relative z-10">
                 <div class="inline-block relative">
-                    <div class="absolute inset-0 bg-davka-orange blur-xl opacity-30 rounded-full"></div>
-                    <img src="logo.jpg" crossorigin="anonymous" class="relative w-20 h-20 mx-auto rounded-full border-2 border-davka-orange shadow-2xl object-cover">
+                    <div class="absolute inset-0 bg-davka-orange blur-2xl opacity-40 rounded-full"></div>
+                    <img src="logo.jpg" crossorigin="anonymous" class="relative w-24 h-24 mx-auto rounded-full border-2 border-davka-orange shadow-[0_0_20px_rgba(255,84,0,0.6)] object-cover">
                 </div>
                 
-                <h1 class="text-2xl font-black tracking-[0.2em] text-white uppercase font-serif mt-4 drop-shadow-lg">DAVKA TRAVEL</h1>
+                <h1 class="text-3xl font-black tracking-[0.2em] text-white uppercase font-serif mt-5 drop-shadow-[0_0_10px_rgba(255,255,255,0.3)]">DAVKA TRAVEL</h1>
                 
-                <div class="flex justify-center items-center gap-2 mt-2">
-                    <div class="h-[1px] w-8 bg-gradient-to-r from-transparent to-davka-orange"></div>
-                    <p class="text-[10px] font-bold tracking-widest text-davka-orange uppercase">E-Tiket Resmi</p>
-                    <div class="h-[1px] w-8 bg-gradient-to-l from-transparent to-davka-orange"></div>
+                <div class="flex justify-center items-center gap-3 mt-3">
+                    <div class="h-[1px] w-12 bg-gradient-to-r from-transparent to-davka-orange/80"></div>
+                    <p class="text-[11px] font-bold tracking-[0.3em] text-davka-orange uppercase glow-text-orange">Digital Boarding Pass</p>
+                    <div class="h-[1px] w-12 bg-gradient-to-l from-transparent to-davka-orange/80"></div>
                 </div>
             </div>
 
-            <div id="rec-ticket-depart" class="px-8 relative z-10 flex-1 flex flex-col gap-4">
+            <div id="rec-ticket-depart" class="px-8 relative z-10 flex-1 flex flex-col gap-5">
                 <img id="rec-stamp-depart" src="stampel.jpg" crossorigin="anonymous" class="stamp-lunas-modern" alt="LUNAS">
                 
-                <div class="bg-[#0b1221]/80 border border-davka-orange/30 rounded-3xl p-0 backdrop-blur-md relative overflow-hidden shadow-2xl">
-                    <div class="absolute top-0 left-0 w-2 h-full bg-gradient-to-b from-davka-orange to-red-600"></div>
+                <div class="bg-[#0b1221]/80 rounded-2xl p-0 backdrop-blur-md relative overflow-hidden shadow-[0_0_25px_rgba(255,84,0,0.15)] border border-davka-orange/40">
+                    <div class="absolute top-0 left-0 w-2 h-full bg-davka-orange shadow-[0_0_15px_#ff5400]"></div>
                     
                     <div class="p-6">
-                        <div class="flex justify-between items-center mb-4 border-b border-white/10 pb-2">
-                            <span class="text-[10px] text-davka-orange font-bold uppercase tracking-wider"><i class="fas fa-train mr-1"></i> Keberangkatan</span>
-                            <span class="text-[10px] text-blue-200 font-mono" id="rec-date-depart">DD MMM YYYY</span>
+                        <div class="flex justify-between items-center mb-5 border-b border-dashed border-davka-orange/30 pb-3">
+                            <span class="text-[11px] text-davka-orange font-bold uppercase tracking-widest"><i class="fas fa-train mr-2"></i> Keberangkatan</span>
+                            <span class="text-[11px] text-white font-mono bg-davka-orange/20 px-2 py-1 rounded border border-davka-orange/30" id="rec-date-depart">DD MMM YYYY</span>
                         </div>
                         
-                        <div class="flex justify-between items-center mb-4 w-full">
+                        <div class="flex justify-between items-center mb-5 w-full">
                             <div class="text-left w-[40%] pr-1">
-                                <h2 class="text-xl font-black text-white leading-none tracking-tight break-words" id="rec-origin-code">ORG</h2>
-                                <p class="text-[9px] text-blue-300 uppercase mt-1.5">Asal</p>
+                                <h2 class="text-3xl font-black text-white leading-none tracking-tight break-words drop-shadow-md" id="rec-origin-code">ORG</h2>
+                                <p class="text-[10px] text-gray-400 uppercase tracking-widest mt-2">Stasiun Asal</p>
                             </div>
-                            <div class="w-[20%] flex flex-col items-center justify-center opacity-80">
-                                <i class="fas fa-long-arrow-alt-right text-davka-orange text-3xl"></i>
+                            <div class="w-[20%] flex flex-col items-center justify-center">
+                                <div class="w-full flex items-center justify-center relative">
+                                    <div class="h-[2px] w-full bg-davka-orange/30 absolute"></div>
+                                    <i class="fas fa-train text-davka-orange text-xl bg-[#0b1221] px-2 relative z-10 shadow-glow"></i>
+                                </div>
                             </div>
                             <div class="text-right w-[40%] pl-1">
-                                <h2 class="text-xl font-black text-white leading-none tracking-tight break-words" id="rec-dest-code">DES</h2>
-                                <p class="text-[9px] text-blue-300 uppercase mt-1.5">Tujuan</p>
+                                <h2 class="text-3xl font-black text-white leading-none tracking-tight break-words drop-shadow-md" id="rec-dest-code">DES</h2>
+                                <p class="text-[10px] text-gray-400 uppercase tracking-widest mt-2">Stasiun Tujuan</p>
                             </div>
                         </div>
                         
-                        <div class="bg-black/40 rounded-xl p-3 flex justify-between gap-2 border border-white/5">
+                        <div class="bg-black/60 rounded-xl p-3 flex justify-between items-center gap-2 border border-white/10">
                             <div>
-                                <p class="text-[9px] text-blue-300 uppercase font-bold">Nama Kereta</p>
-                                <p class="text-[11px] font-bold text-white uppercase tracking-wide break-words" id="rec-train-name">TRAIN</p>
+                                <p class="text-[9px] text-gray-400 uppercase font-bold tracking-wider">Nama Kereta</p>
+                                <p class="text-[13px] font-black text-white uppercase tracking-wide break-words mt-0.5" id="rec-train-name">TRAIN</p>
                             </div>
                             <div class="text-right">
-                                <p class="text-[9px] text-blue-300 uppercase font-bold">War Tiket</p>
-                                <p class="text-[11px] font-bold text-red-400 uppercase tracking-wide" id="rec-war-date">DD MMM YYYY</p>
+                                <p class="text-[9px] text-gray-400 uppercase font-bold tracking-wider">Tgl War Tiket</p>
+                                <p class="text-[13px] font-black text-[#0ea5e9] uppercase font-mono tracking-wide mt-0.5" id="rec-war-date">DD MMM YYYY</p>
                             </div>
                         </div>
                     </div>
                 </div>
 
-                <div class="bg-[#0b1221]/60 border border-white/10 rounded-2xl p-4 relative flex flex-col gap-3">
-                    <div class="flex justify-between border-b border-dashed border-white/20 pb-3 mb-1">
-                        <div class="w-[65%] pr-3">
-                            <p class="text-[9px] text-blue-300 uppercase font-bold mb-0.5">Kontak Pemesan</p>
-                            <p class="text-[12px] font-bold text-white uppercase break-words leading-tight" id="rec-contact-name">NAME</p>
-                            <p class="text-[11px] text-gray-400 font-mono mt-0.5 mb-2" id="rec-contact-phone">08XX</p>
-                            <p class="text-[9px] text-blue-300 uppercase font-bold mb-0.5">Alamat</p>
+                <div class="bg-[#0b1221]/90 border border-white/10 rounded-2xl p-5 relative flex flex-col gap-4 shadow-lg">
+                    <div class="flex justify-between border-b border-dashed border-white/20 pb-4">
+                        <div class="w-[60%] pr-3">
+                            <p class="text-[9px] text-gray-500 uppercase font-bold mb-1 tracking-wider">Data Pemesan</p>
+                            <p class="text-[13px] font-black text-white uppercase break-words leading-tight" id="rec-contact-name">NAME</p>
+                            <p class="text-[11px] text-davka-orange font-mono mt-1 mb-2 font-bold tracking-wider" id="rec-contact-phone">08XX</p>
+                            <p class="text-[9px] text-gray-500 uppercase font-bold mb-0.5 tracking-wider">Alamat</p>
                             <p class="text-[10px] text-gray-300 leading-snug break-words" id="rec-address">ALAMAT</p>
                         </div>
-                        <div class="text-right w-[35%] border-l border-white/10 pl-3 flex flex-col justify-start">
-                            <p class="text-[9px] text-blue-300 uppercase font-bold mb-0.5">Metode Bayar</p>
-                            <p class="text-[11px] font-bold text-davka-orange uppercase break-words" id="rec-payment-method">METHOD</p>
+                        <div class="text-right w-[40%] border-l border-white/10 pl-3 flex flex-col justify-start">
+                            <p class="text-[9px] text-gray-500 uppercase font-bold mb-1 tracking-wider">Pembayaran</p>
+                            <div class="inline-block bg-white/5 border border-white/10 px-2 py-1 rounded">
+                                <p class="text-[10px] font-black text-[#0ea5e9] uppercase break-words" id="rec-payment-method">METHOD</p>
+                            </div>
                         </div>
                     </div>
                     <div>
-                         <div class="flex justify-between items-center mb-2">
-                             <p class="text-[10px] text-blue-300 uppercase font-bold">Penumpang</p>
-                             <p class="text-[10px] font-bold text-white bg-white/10 px-2 py-1 rounded" id="rec-pax-count">1 Dewasa</p>
+                         <div class="flex justify-between items-center mb-3">
+                             <p class="text-[11px] text-gray-400 uppercase font-bold tracking-widest"><i class="fas fa-users mr-1"></i> Data Penumpang</p>
+                             <p class="text-[10px] font-bold text-davka-orange bg-davka-orange/10 px-2 py-1 rounded border border-davka-orange/30" id="rec-pax-count">1 Dewasa</p>
                          </div>
-                         <div id="rec-pax-list" class="space-y-1.5">
+                         <div id="rec-pax-list" class="space-y-2">
                              </div>
                     </div>
                 </div>
             </div>
 
-            <div id="rec-ticket-return" class="hidden px-8 relative z-10 flex-1 flex flex-col gap-4 mt-0">
+            <div id="rec-ticket-return" class="hidden px-8 relative z-10 flex-1 flex flex-col gap-5 mt-0">
                 <img id="rec-stamp-return" src="stampel.jpg" crossorigin="anonymous" class="stamp-lunas-modern" alt="LUNAS">
                 
-                <div class="bg-[#0b1221]/80 border border-blue-500/30 rounded-3xl p-0 backdrop-blur-md relative overflow-hidden shadow-2xl">
-                    <div class="absolute top-0 left-0 w-2 h-full bg-gradient-to-b from-blue-400 to-blue-700"></div>
+                <div class="bg-[#0b1221]/80 rounded-2xl p-0 backdrop-blur-md relative overflow-hidden shadow-[0_0_25px_rgba(14,165,233,0.15)] border border-[#0ea5e9]/40">
+                    <div class="absolute top-0 left-0 w-2 h-full bg-[#0ea5e9] shadow-[0_0_15px_#0ea5e9]"></div>
                     
                      <div class="p-6">
-                        <div class="flex justify-between items-center mb-4 border-b border-white/10 pb-2">
-                            <span class="text-[10px] text-blue-400 font-bold uppercase tracking-wider"><i class="fas fa-exchange-alt mr-1"></i> Kepulangan</span>
-                            <span class="text-[10px] text-blue-200 font-mono" id="rec-return-date-depart">DD MMM YYYY</span>
+                        <div class="flex justify-between items-center mb-5 border-b border-dashed border-[#0ea5e9]/30 pb-3">
+                            <span class="text-[11px] text-[#0ea5e9] font-bold uppercase tracking-widest"><i class="fas fa-exchange-alt mr-2"></i> Kepulangan (PP)</span>
+                            <span class="text-[11px] text-white font-mono bg-[#0ea5e9]/20 px-2 py-1 rounded border border-[#0ea5e9]/30" id="rec-return-date-depart">DD MMM YYYY</span>
                         </div>
                         
-                        <div class="flex justify-between items-center mb-4 w-full">
+                        <div class="flex justify-between items-center mb-5 w-full">
                             <div class="text-left w-[40%] pr-1">
-                                <h2 class="text-xl font-black text-white leading-none tracking-tight break-words" id="rec-return-origin-code">ORG</h2>
-                                <p class="text-[9px] text-blue-300 uppercase mt-1.5">Asal</p>
+                                <h2 class="text-3xl font-black text-white leading-none tracking-tight break-words drop-shadow-md" id="rec-return-origin-code">ORG</h2>
+                                <p class="text-[10px] text-gray-400 uppercase tracking-widest mt-2">Stasiun Asal</p>
                             </div>
-                            <div class="w-[20%] flex flex-col items-center justify-center opacity-80">
-                                <i class="fas fa-long-arrow-alt-right text-blue-400 text-3xl"></i>
+                            <div class="w-[20%] flex flex-col items-center justify-center">
+                                <div class="w-full flex items-center justify-center relative">
+                                    <div class="h-[2px] w-full bg-[#0ea5e9]/30 absolute"></div>
+                                    <i class="fas fa-exchange-alt text-[#0ea5e9] text-xl bg-[#0b1221] px-2 relative z-10 shadow-[0_0_10px_#0ea5e9]"></i>
+                                </div>
                             </div>
                             <div class="text-right w-[40%] pl-1">
-                                <h2 class="text-xl font-black text-white leading-none tracking-tight break-words" id="rec-return-dest-code">DES</h2>
-                                <p class="text-[9px] text-blue-300 uppercase mt-1.5">Tujuan</p>
+                                <h2 class="text-3xl font-black text-white leading-none tracking-tight break-words drop-shadow-md" id="rec-return-dest-code">DES</h2>
+                                <p class="text-[10px] text-gray-400 uppercase tracking-widest mt-2">Stasiun Tujuan</p>
                             </div>
                         </div>
                         
-                         <div class="bg-black/40 rounded-xl p-3 flex justify-between gap-2 border border-white/5">
+                         <div class="bg-black/60 rounded-xl p-3 flex justify-between gap-2 border border-white/10">
                             <div>
-                                <p class="text-[9px] text-blue-300 uppercase font-bold">Nama Kereta</p>
-                                <p class="text-[11px] font-bold text-white uppercase tracking-wide break-words" id="rec-return-train-name">TRAIN</p>
+                                <p class="text-[9px] text-gray-400 uppercase font-bold tracking-wider">Nama Kereta</p>
+                                <p class="text-[13px] font-black text-white uppercase tracking-wide break-words mt-0.5" id="rec-return-train-name">TRAIN</p>
                             </div>
                             <div class="text-right">
-                                <p class="text-[9px] text-blue-300 uppercase font-bold">War Tiket</p>
-                                <p class="text-[11px] font-bold text-red-400 uppercase tracking-wide" id="rec-return-war-date">DD MMM YYYY</p>
+                                <p class="text-[9px] text-gray-400 uppercase font-bold tracking-wider">Tgl War Tiket</p>
+                                <p class="text-[13px] font-black text-davka-orange uppercase font-mono tracking-wide mt-0.5" id="rec-return-war-date">DD MMM YYYY</p>
                             </div>
                         </div>
                     </div>
                 </div>
 
-                <div class="bg-[#0b1221]/60 border border-white/10 rounded-2xl p-4 relative flex flex-col gap-3">
-                     <div class="flex justify-between border-b border-dashed border-white/20 pb-3 mb-1">
-                        <div class="w-[65%] pr-3">
-                            <p class="text-[9px] text-blue-300 uppercase font-bold mb-0.5">Kontak Pemesan</p>
-                            <p class="text-[12px] font-bold text-white uppercase break-words leading-tight" id="rec-return-contact-name">NAME</p>
-                            <p class="text-[11px] text-gray-400 font-mono mt-0.5 mb-2" id="rec-return-contact-phone">08XX</p>
-                            <p class="text-[9px] text-blue-300 uppercase font-bold mb-0.5">Alamat</p>
+                <div class="bg-[#0b1221]/90 border border-white/10 rounded-2xl p-5 relative flex flex-col gap-4 shadow-lg">
+                     <div class="flex justify-between border-b border-dashed border-white/20 pb-4">
+                        <div class="w-[60%] pr-3">
+                            <p class="text-[9px] text-gray-500 uppercase font-bold mb-1 tracking-wider">Data Pemesan</p>
+                            <p class="text-[13px] font-black text-white uppercase break-words leading-tight" id="rec-return-contact-name">NAME</p>
+                            <p class="text-[11px] text-[#0ea5e9] font-mono mt-1 mb-2 font-bold tracking-wider" id="rec-return-contact-phone">08XX</p>
+                            <p class="text-[9px] text-gray-500 uppercase font-bold mb-0.5 tracking-wider">Alamat</p>
                             <p class="text-[10px] text-gray-300 leading-snug break-words" id="rec-return-address">ALAMAT</p>
                         </div>
-                        <div class="text-right w-[35%] border-l border-white/10 pl-3 flex flex-col justify-start">
-                            <p class="text-[9px] text-blue-300 uppercase font-bold mb-0.5">Metode Bayar</p>
-                            <p class="text-[11px] font-bold text-blue-400 uppercase break-words" id="rec-return-payment-method">METHOD</p>
+                        <div class="text-right w-[40%] border-l border-white/10 pl-3 flex flex-col justify-start">
+                            <p class="text-[9px] text-gray-500 uppercase font-bold mb-1 tracking-wider">Pembayaran</p>
+                            <div class="inline-block bg-white/5 border border-white/10 px-2 py-1 rounded">
+                                <p class="text-[10px] font-black text-davka-orange uppercase break-words" id="rec-return-payment-method">METHOD</p>
+                            </div>
                         </div>
                     </div>
                     <div>
-                         <div class="flex justify-between items-center mb-2">
-                             <p class="text-[10px] text-blue-300 uppercase font-bold">Penumpang</p>
-                             <p class="text-[10px] font-bold text-white bg-white/10 px-2 py-1 rounded" id="rec-return-pax-count">1 Dewasa</p>
+                         <div class="flex justify-between items-center mb-3">
+                             <p class="text-[11px] text-gray-400 uppercase font-bold tracking-widest"><i class="fas fa-users mr-1"></i> Data Penumpang</p>
+                             <p class="text-[10px] font-bold text-[#0ea5e9] bg-[#0ea5e9]/10 px-2 py-1 rounded border border-[#0ea5e9]/30" id="rec-return-pax-count">1 Dewasa</p>
                          </div>
-                         <div id="rec-return-pax-list" class="space-y-1.5">
+                         <div id="rec-return-pax-list" class="space-y-2">
                              </div>
                     </div>
                 </div>
             </div>
 
-            <div class="px-8 pb-8 relative z-10 mt-auto">
-                <div class="border-t-2 border-dashed border-gray-600 pt-5 mt-2">
-                    <div class="flex justify-between items-end mb-4">
-                        <p class="text-[10px] text-blue-300 font-bold uppercase tracking-widest">ID Pesanan</p>
-                        <p class="text-lg font-mono font-bold text-white" id="rec-id">#000000</p>
+            <div class="px-8 pb-8 relative z-10 mt-auto pt-6">
+                
+                <div class="bg-[#0b1221] rounded-2xl p-5 border border-white/10 shadow-[0_-5px_20px_rgba(0,0,0,0.5)] relative overflow-hidden">
+                    <div class="absolute right-0 bottom-0 w-32 h-32 bg-davka-orange/10 blur-[50px]"></div>
+                    
+                    <div class="flex justify-between items-end mb-4 border-b border-dashed border-white/20 pb-3">
+                        <div>
+                            <p class="text-[10px] text-gray-500 font-bold uppercase tracking-[0.2em] mb-1">ID Transaksi</p>
+                            <p class="text-xl font-mono font-black text-white tracking-widest glow-text-white" id="rec-id">#000000</p>
+                        </div>
+                        <div class="text-right">
+                            <i class="fas fa-check-circle text-green-500 text-2xl drop-shadow-[0_0_8px_rgba(34,197,94,0.6)]"></i>
+                        </div>
                     </div>
                     
-                    <div class="bg-black/30 rounded-xl p-4 border border-white/10">
-                        <div class="flex justify-between items-center mb-2">
-                            <p class="text-[10px] text-gray-400 font-bold uppercase tracking-widest">Total Harga</p>
-                            <p class="text-[15px] font-bold text-white" id="rec-price-total">Rp 0</p>
+                    <div class="space-y-2">
+                        <div class="flex justify-between items-center">
+                            <p class="text-[11px] text-gray-400 font-bold uppercase tracking-widest">Total Tagihan</p>
+                            <p class="text-[14px] font-bold text-white font-mono" id="rec-price-total">Rp 0</p>
                         </div>
-                        <div class="flex justify-between items-center mb-3">
-                            <p class="text-[10px] text-gray-400 font-bold uppercase tracking-widest">Dibayar (DP)</p>
-                            <p class="text-[15px] font-bold text-davka-orange" id="rec-price-dp">Rp 0</p>
+                        <div class="flex justify-between items-center">
+                            <p class="text-[11px] text-gray-400 font-bold uppercase tracking-widest">Telah Dibayar</p>
+                            <p class="text-[14px] font-bold text-green-400 font-mono" id="rec-price-dp">Rp 0</p>
                         </div>
-                        <div class="flex justify-between items-center pt-3 border-t border-dashed border-white/20">
-                            <p class="text-[11px] text-blue-300 font-bold uppercase tracking-widest">Sisa Tagihan</p>
-                            <p class="text-[22px] font-black text-red-500" id="rec-price-remaining">Rp 0</p>
+                        <div class="flex justify-between items-center pt-3 mt-2 border-t border-white/10">
+                            <p class="text-[12px] text-white font-bold uppercase tracking-widest">Sisa Tagihan</p>
+                            <p class="text-[20px] font-black text-davka-orange font-mono glow-text-orange" id="rec-price-remaining">Rp 0</p>
                         </div>
                     </div>
                 </div>
+
+                <div class="mt-6 flex flex-col items-center">
+                    <div class="barcode-mockup mb-2 opacity-80"></div>
+                    <p class="text-[9px] text-gray-500 font-mono tracking-[0.5em] uppercase">SCAN FOR AUTHENTICITY</p>
+                </div>
+
             </div>
 
-            <div class="bg-black p-4 relative z-10 border-t border-white/10">
-                <div class="flex justify-between items-center">
-                    <div>
-                        <p class="text-[8px] text-gray-500 font-bold uppercase tracking-[0.3em]">POWERED BY DAVKA SYSTEM</p>
-                    </div>
-                    <div class="flex gap-1">
-                        <div class="w-1.5 h-1.5 rounded-full bg-davka-orange"></div>
-                        <div class="w-1.5 h-1.5 rounded-full bg-white opacity-50"></div>
-                        <div class="w-1.5 h-1.5 rounded-full bg-white opacity-20"></div>
-                    </div>
+            <div class="bg-black/80 backdrop-blur-md p-3 relative z-10 border-t border-davka-orange/30 flex justify-between items-center">
+                <p class="text-[8px] text-davka-orange font-bold uppercase tracking-[0.4em] ml-2">POWERED BY DAVKA SYSTEM V2.0</p>
+                <div class="flex gap-1.5 mr-2">
+                    <div class="w-2 h-2 rounded bg-davka-orange shadow-[0_0_5px_#ff5400]"></div>
+                    <div class="w-2 h-2 rounded bg-[#0ea5e9] shadow-[0_0_5px_#0ea5e9]"></div>
+                    <div class="w-2 h-2 rounded bg-white shadow-[0_0_5px_#ffffff]"></div>
                 </div>
             </div>
 

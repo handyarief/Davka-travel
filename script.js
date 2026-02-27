@@ -257,6 +257,7 @@ window.switchUploadTab = function(tabName) {
         containerReturn.classList.remove('hidden');
     }
 }
+
 // --- UX ENGINE: SMOOTH SCROLL & ENTER KEY NAVIGATION ---
 function enableSmoothInputUX() {
     const formElements = document.querySelectorAll('input, select, textarea');
@@ -301,6 +302,7 @@ function handleInputEnter(e, currentIndex, allElements) {
         }
     }
 }
+
 // --- LOGIC PENUMPANG (DEWASA & BAYI) ---
 window.updatePassengerForms = function() {
     const adultCount = parseInt(document.getElementById('inpPaxCount').value) || 1;
@@ -373,6 +375,7 @@ window.updatePassengerForms = function() {
     calcTotalFromPax();
     setTimeout(enableSmoothInputUX, 100);
 }
+
 window.getPassengersFromForm = function() {
     const items = document.querySelectorAll('.passenger-item');
     let paxList = [];
@@ -480,6 +483,7 @@ async function fetchOrdersBg() {
         }
     }
 }
+
 // --- LOGIC UPLOAD & STORAGE ---
 async function uploadToSupabaseStorage(base64Data, fileName) {
     if (!base64Data || base64Data.startsWith('http')) return base64Data; 
@@ -809,6 +813,7 @@ window.editOrder = function(id) {
     document.getElementById('btnSaveText').innerText = "UPDATE DATA";
     navTo('input');
 }
+
 window.updateSettlement = async function(id, newVal) {
     toggleLoader(true);
     const index = orders.findIndex(o => o.id === id);
@@ -1013,7 +1018,6 @@ window.printReceipt = function(orderId) {
     showToast("RENDER E-TIKET...");
     setTimeout(() => { captureAndShowModal('receipt-render-area'); }, 800);
 }
-
 // --- CORE: RENDER NOTA BERDASARKAN TAB AKTIF & DATA LENGKAP ---
 function renderReceiptToDOM(order) {
     const sectionDepart = document.getElementById('rec-ticket-depart');
@@ -1040,7 +1044,7 @@ function renderReceiptToDOM(order) {
     let paxHtml = '';
     paxList.forEach(p => {
         const isInfant = p.type === 'infant';
-        const paxTypeLabel = isInfant ? '<span class="text-[8px] bg-white/20 px-1 rounded ml-1 text-pink-300 inline-block align-middle">BAYI</span>' : '';
+        const paxTypeLabel = isInfant ? '<span class="text-[8px] bg-pink-500/20 border border-pink-500/30 px-1.5 py-0.5 rounded ml-2 text-pink-400 align-middle tracking-widest">BAYI</span>' : '';
         
         let dobStr = '';
         if (p.dob) {
@@ -1050,19 +1054,17 @@ function renderReceiptToDOM(order) {
             }
         }
         
-        // PERBAIKAN UX NOTA PENUMPANG: 
-        const dobDisplayReceipt = dobStr ? `<span class="block text-[11px] text-davka-orange font-bold mt-1 text-right">TGL LAHIR: ${dobStr}</span>` : '';
+        // Tampilan TGL LAHIR HUD
+        const dobDisplayReceipt = dobStr ? `<div class="shrink-0 flex flex-col items-end"><p class="text-[8px] text-gray-500 uppercase tracking-widest mb-0.5">TGL LAHIR</p><p class="text-[10px] text-gray-300 font-bold font-mono bg-white/5 px-2 py-0.5 rounded border border-white/10">${dobStr}</p></div>` : '';
 
-        // FIX NIK SIMETRIS: Menggunakan fixed width w-[150px] shrink-0 agar sejajar lurus seperti tabel
+        // Tampilan List Penumpang HUD Futuristik
         paxHtml += `
-            <div class="flex justify-between items-start bg-white/5 p-2.5 rounded mb-1.5 gap-2 border border-white/5">
-                <p class="text-[12px] font-bold text-white uppercase break-words flex-1 min-w-0 leading-tight mt-1 pr-2">${p.name} ${paxTypeLabel}</p>
-                <div class="w-[150px] shrink-0 flex flex-col items-end">
-                    <div class="w-full bg-white/10 px-2 py-1.5 rounded border border-white/10">
-                        <p class="text-[11px] text-white font-bold text-center uppercase tracking-wide">ID: ${p.nik || '-'}</p>
-                    </div>
-                    ${dobDisplayReceipt}
+            <div class="flex justify-between items-center bg-black/40 p-3 rounded-xl mb-2 gap-2 border border-white/10 shadow-inner">
+                <div class="flex-1 min-w-0">
+                    <p class="text-[12px] font-black text-white uppercase break-words leading-tight tracking-widest flex items-center">${p.name} ${paxTypeLabel}</p>
+                    <p class="text-[10px] text-gray-400 font-mono mt-1 tracking-widest"><i class="fas fa-id-card text-gray-600 mr-1 text-[9px]"></i> ID: ${p.nik || '-'}</p>
                 </div>
+                ${dobDisplayReceipt}
             </div>
         `;
     });
@@ -1102,7 +1104,8 @@ function renderReceiptToDOM(order) {
         priceTotalEl.innerText = formatRupiah(returnTotal);
         priceDpEl.innerText = formatRupiah(returnDp);
         priceRemainingEl.innerText = formatRupiah(returnRemaining);
-        priceRemainingEl.className = returnRemaining <= 0 ? "text-[22px] font-black text-green-500" : "text-[22px] font-black text-red-500";
+        // Glow effect based on status
+        priceRemainingEl.className = returnRemaining <= 0 ? "text-[20px] font-black text-green-400 font-mono glow-text-white drop-shadow-[0_0_10px_rgba(74,222,128,0.5)]" : "text-[20px] font-black text-[#0ea5e9] font-mono glow-text-white drop-shadow-[0_0_10px_rgba(14,165,233,0.5)]";
 
         document.getElementById('rec-id').innerText = "#" + order.id.toString().slice(-6) + "-R";
 
@@ -1110,7 +1113,6 @@ function renderReceiptToDOM(order) {
         
         const phoneElReturn = document.getElementById('rec-return-contact-phone');
         phoneElReturn.innerText = order.contactPhone || '-';
-        phoneElReturn.className = "text-[12px] font-bold text-white tracking-widest font-mono mt-0.5 mb-2"; 
         
         document.getElementById('rec-return-address').innerText = address.toUpperCase();
         
@@ -1150,7 +1152,8 @@ function renderReceiptToDOM(order) {
         priceTotalEl.innerText = formatRupiah(departTotal);
         priceDpEl.innerText = formatRupiah(departDp);
         priceRemainingEl.innerText = formatRupiah(departRemaining);
-        priceRemainingEl.className = departRemaining <= 0 ? "text-[22px] font-black text-green-500" : "text-[22px] font-black text-red-500";
+        // Glow effect based on status
+        priceRemainingEl.className = departRemaining <= 0 ? "text-[20px] font-black text-green-400 font-mono glow-text-white drop-shadow-[0_0_10px_rgba(74,222,128,0.5)]" : "text-[20px] font-black text-davka-orange font-mono glow-text-orange";
 
         document.getElementById('rec-id').innerText = "#" + order.id.toString().slice(-6);
 
@@ -1158,7 +1161,6 @@ function renderReceiptToDOM(order) {
         
         const phoneElDepart = document.getElementById('rec-contact-phone');
         phoneElDepart.innerText = order.contactPhone || '-';
-        phoneElDepart.className = "text-[12px] font-bold text-white tracking-widest font-mono mt-0.5 mb-2";
         
         document.getElementById('rec-address').innerText = address.toUpperCase();
         
@@ -1167,6 +1169,7 @@ function renderReceiptToDOM(order) {
         document.getElementById('rec-pax-list').innerHTML = paxHtml;
     }
 }
+
 function captureAndShowModal(elementId) {
     const el = document.getElementById(elementId);
     html2canvas(el, { 
@@ -1276,6 +1279,7 @@ window.resetForm = function() {
     resetUploadZones();
     enableSmoothInputUX();
 }
+
 window.openDetailView = function(orderId) {
     const order = orders.find(o => o.id === orderId);
     if (!order) return;
@@ -1350,7 +1354,6 @@ window.openDetailView = function(orderId) {
         const icon = isInfant ? 'fa-baby' : 'fa-user';
         const label = isInfant ? '<span class="text-[8px] ml-2 px-1.5 py-0.5 rounded bg-pink-500/20 text-pink-400 border border-pink-500/30">BAYI</span>' : '';
         
-        // UX FIX 1: Warna Tanggal Lahir diselaraskan (gray-300)
         let dobBadge = '';
         if (p.dob) {
             const d = new Date(p.dob);
@@ -1358,7 +1361,6 @@ window.openDetailView = function(orderId) {
             dobBadge = `<span class="flex items-center gap-1 text-gray-300 text-xs font-bold whitespace-nowrap"><i class="fas fa-calendar-alt opacity-70"></i> ${dobFormat}</span>`;
         }
 
-        // UX FIX 2 & 3: Hapus class 'font-mono' pada NIK & ubah container NIK + Tgl Lahir jadi flex-col (bertumpuk)
         paxListHtml += `
             <div class="flex items-start gap-3 border-b border-white/5 pb-3 pt-1 last:border-0 last:pb-0">
                 <div class="w-6 h-6 rounded-full ${iconColor} flex items-center justify-center text-[10px] font-bold shrink-0 mt-0.5">

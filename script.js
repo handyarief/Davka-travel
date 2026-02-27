@@ -302,7 +302,6 @@ function handleInputEnter(e, currentIndex, allElements) {
         }
     }
 }
-
 // --- LOGIC PENUMPANG (DEWASA & BAYI) ---
 window.updatePassengerForms = function() {
     const adultCount = parseInt(document.getElementById('inpPaxCount').value) || 1;
@@ -510,7 +509,6 @@ async function uploadToSupabaseStorage(base64Data, fileName) {
         return null; 
     }
 }
-
 // --- FORM HANDLING (SAVE & UPDATE) ---
 const orderForm = document.getElementById('orderForm');
 
@@ -834,7 +832,6 @@ window.updateSettlement = async function(id, newVal) {
         } catch(e) { console.error(e); } finally { toggleLoader(false); }
     } else toggleLoader(false);
 }
-
 // --- HELPER LAINNYA ---
 function toggleLoader(show) {
     const loader = document.getElementById('global-loader');
@@ -1018,6 +1015,7 @@ window.printReceipt = function(orderId) {
     showToast("RENDER E-TIKET...");
     setTimeout(() => { captureAndShowModal('receipt-render-area'); }, 800);
 }
+
 // --- CORE: RENDER NOTA BERDASARKAN TAB AKTIF & DATA LENGKAP ---
 function renderReceiptToDOM(order) {
     const sectionDepart = document.getElementById('rec-ticket-depart');
@@ -1057,12 +1055,12 @@ function renderReceiptToDOM(order) {
         // Tampilan TGL LAHIR HUD
         const dobDisplayReceipt = dobStr ? `<div class="shrink-0 flex flex-col items-end"><p class="text-[8px] text-gray-500 uppercase tracking-widest mb-0.5">TGL LAHIR</p><p class="text-[10px] text-gray-300 font-bold font-mono bg-white/5 px-2 py-0.5 rounded border border-white/10">${dobStr}</p></div>` : '';
 
-        // Tampilan List Penumpang HUD Futuristik
+        // PERBAIKAN: NIK Penumpang diperbesar menjadi text-[14px], warna text-gray-200, dan font-bold
         paxHtml += `
             <div class="flex justify-between items-center bg-black/40 p-3 rounded-xl mb-2 gap-2 border border-white/10 shadow-inner">
                 <div class="flex-1 min-w-0">
                     <p class="text-[12px] font-black text-white uppercase break-words leading-tight tracking-widest flex items-center">${p.name} ${paxTypeLabel}</p>
-                    <p class="text-[10px] text-gray-400 font-mono mt-1 tracking-widest"><i class="fas fa-id-card text-gray-600 mr-1 text-[9px]"></i> ID: ${p.nik || '-'}</p>
+                    <p class="text-[14px] text-gray-200 font-bold font-mono mt-1 tracking-widest"><i class="fas fa-id-card text-gray-500 mr-1 text-[10px]"></i> ID: ${p.nik || '-'}</p>
                 </div>
                 ${dobDisplayReceipt}
             </div>
@@ -1169,7 +1167,6 @@ function renderReceiptToDOM(order) {
         document.getElementById('rec-pax-list').innerHTML = paxHtml;
     }
 }
-
 function captureAndShowModal(elementId) {
     const el = document.getElementById(elementId);
     html2canvas(el, { 

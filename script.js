@@ -252,6 +252,7 @@ function renderDetailFinancials(mode) {
     remEl.innerText = formatRupiah(remaining);
     remEl.className = remaining <= 0 ? "text-sm font-black text-green-500" : "text-sm font-black text-red-500";
 }
+
 window.switchUploadTab = function(tabName) {
     const btnDepart = document.getElementById('btn-upload-depart');
     const btnReturn = document.getElementById('btn-upload-return');
@@ -645,6 +646,7 @@ orderForm.addEventListener('submit', async (e) => {
         toggleLoader(false); 
     }
 });
+
 window.deleteOrder = async function(id) {
     if(confirm("Hapus pesanan ini Permanen?")) {
         toggleLoader(true);
@@ -1066,16 +1068,23 @@ function renderReceiptToDOM(order) {
             }
         }
         
-        // Tampilan TGL LAHIR HUD
-        const dobDisplayReceipt = dobStr ? `<div class="shrink-0 flex flex-col items-end"><p class="text-[8px] text-gray-500 uppercase tracking-widest mb-0.5">TGL LAHIR</p><p class="text-[10px] text-gray-300 font-bold font-mono bg-white/5 px-2 py-0.5 rounded border border-white/10">${dobStr}</p></div>` : '';
-
-        // PERBAIKAN: NIK Penumpang diperbesar menjadi text-[14px], warna text-gray-200, dan font-bold
-        paxHtml += `
-            <div class="flex justify-between items-center bg-black/40 p-3 rounded-xl mb-2 gap-2 border border-white/10 shadow-inner">
-                <div class="flex-1 min-w-0">
-                    <p class="text-[12px] font-black text-white uppercase break-words leading-tight tracking-widest flex items-center">${p.name} ${paxTypeLabel}</p>
-                    <p class="text-[14px] text-gray-200 font-bold font-mono mt-1 tracking-widest"><i class="fas fa-id-card text-gray-500 mr-1 text-[10px]"></i> ID: ${p.nik || '-'}</p>
+        // UPDATE: Layout Tanggal Lahir pindah ke bawah, menggunakan stack rapi
+        let dobDisplayReceipt = '';
+        if (dobStr) {
+            dobDisplayReceipt = `
+                <div class="mt-2 pt-2 border-t border-dashed border-white/10 flex items-center gap-2">
+                    <i class="fas fa-calendar-alt text-davka-orange text-[10px] opacity-80"></i>
+                    <span class="text-[9px] text-gray-400 uppercase tracking-widest">Lahir:</span>
+                    <span class="text-[11px] text-white font-bold font-mono tracking-widest">${dobStr}</span>
                 </div>
+            `;
+        }
+
+        // UPDATE: NIK & Nama disusun menurun (flex-col) 100% rapi
+        paxHtml += `
+            <div class="flex flex-col bg-black/40 p-3 rounded-xl mb-2 border border-white/10 shadow-inner w-full">
+                <p class="text-[12px] font-black text-white uppercase break-words leading-tight tracking-widest flex items-center">${p.name} ${paxTypeLabel}</p>
+                <p class="text-[14px] text-gray-200 font-bold font-mono mt-1.5 tracking-widest"><i class="fas fa-id-card text-gray-500 mr-1.5 text-[10px]"></i>ID: ${p.nik || '-'}</p>
                 ${dobDisplayReceipt}
             </div>
         `;
@@ -1181,6 +1190,7 @@ function renderReceiptToDOM(order) {
         document.getElementById('rec-pax-list').innerHTML = paxHtml;
     }
 }
+
 function captureAndShowModal(elementId) {
     const el = document.getElementById(elementId);
     html2canvas(el, { 

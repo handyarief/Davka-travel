@@ -568,15 +568,12 @@
                 <div class="glass p-5 rounded-3xl mb-4 relative overflow-hidden">
                     <div class="absolute top-0 left-0 w-1 h-full bg-davka-orange" id="detail-card-accent"></div>
                     
-                    <!-- PERBAIKAN UX/UI: ROUTE INDICATOR -->
-                    <!-- Mengubah items-center menjadi items-start agar sejajar dengan H3 -->
                     <div class="flex justify-between items-start text-center mb-6 relative">
                         <div class="flex-1 min-w-0"> 
                             <h3 class="text-xl font-black text-white break-words leading-tight" id="detail-origin">ORG</h3> 
                             <p class="text-[10px] text-gray-400 uppercase tracking-wider mt-1">Asal</p>
                         </div>
                         
-                        <!-- Wrapper Premium dengan Glassmorphism & Glow -->
                         <div class="px-2 shrink-0 relative z-10 flex flex-col items-center justify-start pt-0.5"> 
                             <div id="detail-route-wrapper" class="w-9 h-9 rounded-full bg-davka-bg/80 border border-white/10 flex items-center justify-center shadow-neon backdrop-blur-sm">
                                 <i id="detail-route-icon" class="fas fa-train text-davka-orange text-sm drop-shadow-md"></i>
@@ -588,7 +585,6 @@
                             <p class="text-[10px] text-gray-400 uppercase tracking-wider mt-1">Tujuan</p>
                         </div>
                     </div>
-                    <!-- AKHIR PERBAIKAN -->
 
                     <div class="flex bg-white/5 p-1 rounded-xl mb-4 relative" id="tab-container">
                         <button onclick="switchTab('depart')" id="tab-btn-depart" class="flex-1 py-2 text-[10px] font-bold uppercase rounded-lg transition-all bg-davka-orange text-white shadow-lg">
@@ -744,6 +740,7 @@
             <p class="mt-4 text-gray-500 text-[10px]">Ketuk area gelap untuk menutup</p>
         </div>
     </div>
+    
     <div id="receipt-render-area" style="width: 480px; position: fixed; left: -9999px;">
         <div class="relative bg-davka-bg text-white font-sans overflow-hidden min-h-[800px] border-none flex flex-col cyber-grid-bg">
             
@@ -753,14 +750,14 @@
             </div>
 
             <div class="pt-6 pb-4 px-8 text-center relative z-10">
-                <div class="inline-block relative">
-                    <div class="absolute inset-0 bg-davka-orange blur-2xl opacity-40 rounded-full"></div>
-                    <img src="logo.jpg" crossorigin="anonymous" class="relative w-16 h-16 mx-auto rounded-full border-2 border-davka-orange shadow-[0_0_20px_rgba(255,84,0,0.6)] object-cover">
+                <div class="inline-block relative mt-2">
+                    <div class="absolute inset-0 bg-davka-orange blur-3xl opacity-50 rounded-full scale-150"></div>
+                    <img src="logo.jpg" crossorigin="anonymous" class="relative w-24 h-24 mx-auto rounded-full border-4 border-davka-orange shadow-[0_0_30px_rgba(255,84,0,0.8)] object-cover">
                 </div>
                 
-                <h1 class="text-2xl font-black tracking-[0.2em] text-white uppercase font-serif mt-3 drop-shadow-[0_0_10px_rgba(255,255,255,0.3)]">DAVKA TRAVEL</h1>
+                <h1 class="text-2xl font-black tracking-[0.2em] text-white uppercase font-serif mt-5 drop-shadow-[0_0_10px_rgba(255,255,255,0.3)]">DAVKA TRAVEL</h1>
                 
-                <div class="flex justify-center items-center gap-3 mt-3">
+                <div class="flex justify-center items-center gap-3 mt-3 mb-2">
                     <div class="h-[1px] w-12 bg-gradient-to-r from-transparent to-davka-orange/80"></div>
                     <p class="text-[11px] font-bold tracking-[0.3em] text-davka-orange uppercase glow-text-orange">Digital Boarding Pass</p>
                     <div class="h-[1px] w-12 bg-gradient-to-l from-transparent to-davka-orange/80"></div>
@@ -774,9 +771,9 @@
                     <div class="absolute top-0 left-0 w-2 h-full bg-davka-orange shadow-[0_0_15px_#ff5400]"></div>
                     
                     <div class="p-6">
-                        <div class="flex justify-between items-center mb-5 border-b border-dashed border-davka-orange/30 pb-3">
-                            <span class="text-[11px] text-davka-orange font-bold uppercase tracking-widest"><i class="fas fa-train mr-2"></i> Keberangkatan</span>
-                            <span class="text-[11px] text-white font-mono bg-davka-orange/20 px-2 py-1 rounded border border-davka-orange/30" id="rec-date-depart">DD MMM YYYY</span>
+                        <div class="flex justify-between items-center mb-5 border-b border-dashed border-davka-orange/40 pb-4">
+                            <span class="text-[12px] text-davka-orange font-bold uppercase tracking-widest flex items-center mt-1"><i class="fas fa-train mr-2 text-sm"></i> Keberangkatan</span>
+                            <span class="text-[12px] text-white font-mono bg-davka-orange/20 px-3 py-1.5 rounded-lg border border-davka-orange/50 shadow-inner flex items-center justify-center" id="rec-date-depart">DD MMM YYYY</span>
                         </div>
                         
                         <div class="flex justify-between items-center mb-5 w-full">
@@ -843,9 +840,9 @@
                     <div class="absolute top-0 left-0 w-2 h-full bg-[#0ea5e9] shadow-[0_0_15px_#0ea5e9]"></div>
                     
                      <div class="p-6">
-                        <div class="flex justify-between items-center mb-5 border-b border-dashed border-[#0ea5e9]/30 pb-3">
-                            <span class="text-[11px] text-[#0ea5e9] font-bold uppercase tracking-widest"><i class="fas fa-exchange-alt mr-2"></i> Kepulangan (PP)</span>
-                            <span class="text-[11px] text-white font-mono bg-[#0ea5e9]/20 px-2 py-1 rounded border border-[#0ea5e9]/30" id="rec-return-date-depart">DD MMM YYYY</span>
+                        <div class="flex justify-between items-center mb-5 border-b border-dashed border-[#0ea5e9]/40 pb-4">
+                            <span class="text-[12px] text-[#0ea5e9] font-bold uppercase tracking-widest flex items-center mt-1"><i class="fas fa-exchange-alt mr-2 text-sm"></i> Kepulangan (PP)</span>
+                            <span class="text-[12px] text-white font-mono bg-[#0ea5e9]/20 px-3 py-1.5 rounded-lg border border-[#0ea5e9]/50 shadow-inner flex items-center justify-center" id="rec-return-date-depart">DD MMM YYYY</span>
                         </div>
                         
                         <div class="flex justify-between items-center mb-5 w-full">

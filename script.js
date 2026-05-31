@@ -412,6 +412,7 @@ window.calcTotalFromPax = function() {
 
     calcRemaining(); 
 }
+
 // --- CALCULATE REMAINING SEPARATED (PERGI & PULANG) ---
 window.calcRemaining = function() {
     const priceDepart = parseFloat(document.getElementById('inpPrice').value) || 0;
@@ -434,7 +435,6 @@ window.calcRemaining = function() {
         ? "bg-transparent text-right text-green-500 font-black text-lg outline-none w-40 cursor-default" 
         : "bg-transparent text-right text-red-500 font-black text-lg outline-none w-40 cursor-default";
 }
-
 // --- FETCH & REALTIME ---
 async function fetchOrders() {
     const { data, error } = await supabase
@@ -509,6 +509,7 @@ async function uploadToSupabaseStorage(base64Data, fileName) {
         return null; 
     }
 }
+
 // --- FORM HANDLING (SAVE & UPDATE) ---
 const orderForm = document.getElementById('orderForm');
 
@@ -698,7 +699,6 @@ window.navTo = function(pageId) {
         window.scrollTo({ top: 0, behavior: 'smooth' });
     }, 400); 
 }
-
 window.editOrder = function(id) {
     const index = orders.findIndex(o => o.id === id);
     if (index === -1) return;
@@ -940,7 +940,6 @@ function setupHistoryUploader() {
         });
     });
 }
-
 window.toggleTripType = function() {
     const type = document.getElementById('inpTripType').value;
     const fields = document.getElementById('returnTripFields');
@@ -1186,6 +1185,7 @@ function captureAndShowModal(elementId) {
         alert("Gagal render gambar."); 
     });
 }
+
 function renderUploadBtnHTML(id, type, file, label) {
     if(file) {
         return `<div class="relative w-full h-full rounded-lg overflow-hidden border border-white/10 group cursor-pointer bg-black/40">
@@ -1524,43 +1524,45 @@ window.renderOrderList = function(filterText = '') {
     });
 }
 
+// --- FUNGSI UPDATE PERHITUNGAN STATISTIK ---
 function renderStats() {
-    const now = new Date();
-    const currentMonth = now.getMonth();
-    const currentYear = now.getFullYear();
+    let totalOmset = 0;
+    let totalTiketTerjual = 0;
+    let paxPending = 0;
+    let paxSukses = 0;
+    let paxBatal = 0;
 
-    let ticketCountMonth = 0; 
-    let revenueMonth = 0;     
-    let p=0, s=0, c=0; 
-    
-    if(orders) {
+    if (orders) {
         orders.forEach(o => {
-            if(o.status==='pending') p++; 
-            else if(o.status==='success') s++; 
-            else c++;
+            // 1. Hitung jumlah penumpang dalam pesanan ini secara dinamis
+            let paxCount = 1;
+            if (Array.isArray(o.passengers)) {
+                // Gunakan semua penumpang yang terdaftar sebagai 1 tiket/kursi
+                paxCount = o.passengers.length; 
+            } else if (o.name) {
+                paxCount = 1;
+            }
 
-            let createdDate = o.created_at ? new Date(o.created_at) : new Date(o.id);
-            const isCurrentMonth = createdDate.getMonth() === currentMonth && createdDate.getFullYear() === currentYear;
-
-            if(o.status === 'success' && isCurrentMonth) {
-                let paxCount = 1; 
-                if(Array.isArray(o.passengers)) {
-                    const adultsOnly = o.passengers.filter(pass => !pass.type || pass.type === 'adult');
-                    paxCount = adultsOnly.length;
-                } else if(o.name) {
-                    paxCount = 1; 
-                }
-                ticketCountMonth += paxCount;
+            // 2. Tambahkan ke perhitungan status berdasarkan jumlah PENUMPANG
+            if (o.status === 'pending') {
+                paxPending += paxCount;
+            } else if (o.status === 'success') {
+                paxSukses += paxCount;
+                totalTiketTerjual += paxCount;
                 
+                // 3. Akumulasikan Omset Total Keseluruhan (Pergi + Pulang jika ada) tanpa batasan bulan
                 const totalOrderPrice = (parseFloat(o.price) || 0) + (parseFloat(o.returnPrice) || 0);
-                revenueMonth += totalOrderPrice;
+                totalOmset += totalOrderPrice;
+            } else if (o.status === 'cancel') {
+                paxBatal += paxCount;
             }
         });
     }
 
-    document.getElementById('stat-today').innerText = ticketCountMonth;
-    document.getElementById('stat-revenue').innerText = formatRupiah(revenueMonth);
-    document.getElementById('stat-pending').innerText = p;
-    document.getElementById('stat-success').innerText = s;
-    document.getElementById('stat-cancel').innerText = c;
+    // 4. Update UI Dashboard
+    document.getElementById('stat-today').innerText = totalTiketTerjual;
+    document.getElementById('stat-revenue').innerText = formatRupiah(totalOmset);
+    document.getElementById('stat-pending').innerText = paxPending;
+    document.getElementById('stat-success').innerText = paxSukses;
+    document.getElementById('stat-cancel').innerText = paxBatal;
 }

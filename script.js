@@ -264,11 +264,11 @@ function enableSmoothInputUX() {
     
     formElements.forEach((el, index) => {
         el.removeEventListener('focus', handleInputFocus);
-        el.removeEventListener('click', handleInputFocus); 
+        // Hapus listener click yang redundan
         el.removeEventListener('keydown', handleInputEnter);
 
         el.addEventListener('focus', handleInputFocus);
-        el.addEventListener('click', handleInputFocus); 
+        // Hapus penambahan listener click yang redundan
         el.addEventListener('keydown', (e) => handleInputEnter(e, index, formElements));
     });
 }
@@ -277,7 +277,7 @@ function handleInputFocus(e) {
     setTimeout(() => {
         e.target.scrollIntoView({ 
             behavior: 'smooth', 
-            block: 'start', 
+            block: 'center', // Diubah dari 'start' ke 'center' agar tidak tertutup keyboard
             inline: 'nearest' 
         });
     }, 300);
@@ -509,7 +509,6 @@ async function uploadToSupabaseStorage(base64Data, fileName) {
         return null; 
     }
 }
-
 // --- FORM HANDLING (SAVE & UPDATE) ---
 const orderForm = document.getElementById('orderForm');
 
@@ -1185,7 +1184,6 @@ function captureAndShowModal(elementId) {
         alert("Gagal render gambar."); 
     });
 }
-
 function renderUploadBtnHTML(id, type, file, label) {
     if(file) {
         return `<div class="relative w-full h-full rounded-lg overflow-hidden border border-white/10 group cursor-pointer bg-black/40">

@@ -132,7 +132,16 @@ window.switchTab = function(tabName) {
         if(currentDetailOrder) {
             document.getElementById('detail-origin').innerText = currentDetailOrder.origin || 'ORG';
             document.getElementById('detail-dest').innerText = currentDetailOrder.dest || 'DES';
-            document.getElementById('detail-route-icon').className = "fas fa-chevron-right text-davka-orange text-xl";
+            
+            // PERBAIKAN: Ubah style icon ke mode Pergi (Orange, Train)
+            const accent = document.getElementById('detail-card-accent');
+            if(accent) accent.className = "absolute top-0 left-0 w-1 h-full bg-davka-orange transition-colors";
+            
+            const routeWrapper = document.getElementById('detail-route-wrapper');
+            if(routeWrapper) routeWrapper.className = "w-9 h-9 rounded-full bg-davka-bg/80 border border-white/10 flex items-center justify-center shadow-neon backdrop-blur-sm transition-all";
+            
+            const routeIcon = document.getElementById('detail-route-icon');
+            if(routeIcon) routeIcon.className = "fas fa-train text-davka-orange text-sm drop-shadow-md transition-all";
             
             // Render Finansial Khusus Pergi
             renderDetailFinancials('depart');
@@ -149,7 +158,15 @@ window.switchTab = function(tabName) {
             document.getElementById('detail-origin').innerText = retOrg;
             document.getElementById('detail-dest').innerText = retDes;
             
-            document.getElementById('detail-route-icon').className = "fas fa-chevron-right text-blue-500 text-xl"; 
+            // PERBAIKAN: Ubah style icon ke mode Pulang (Blue, Exchange)
+            const accent = document.getElementById('detail-card-accent');
+            if(accent) accent.className = "absolute top-0 left-0 w-1 h-full bg-blue-500 transition-colors";
+            
+            const routeWrapper = document.getElementById('detail-route-wrapper');
+            if(routeWrapper) routeWrapper.className = "w-9 h-9 rounded-full bg-blue-900/30 border border-blue-500/30 flex items-center justify-center shadow-[0_0_15px_rgba(59,130,246,0.3)] backdrop-blur-sm transition-all";
+            
+            const routeIcon = document.getElementById('detail-route-icon');
+            if(routeIcon) routeIcon.className = "fas fa-exchange-alt text-blue-400 text-sm drop-shadow-md transition-all"; 
             
             // Render Finansial Khusus Pulang
             renderDetailFinancials('return');
@@ -235,7 +252,6 @@ function renderDetailFinancials(mode) {
     remEl.innerText = formatRupiah(remaining);
     remEl.className = remaining <= 0 ? "text-sm font-black text-green-500" : "text-sm font-black text-red-500";
 }
-
 window.switchUploadTab = function(tabName) {
     const btnDepart = document.getElementById('btn-upload-depart');
     const btnReturn = document.getElementById('btn-upload-return');
@@ -629,7 +645,6 @@ orderForm.addEventListener('submit', async (e) => {
         toggleLoader(false); 
     }
 });
-
 window.deleteOrder = async function(id) {
     if(confirm("Hapus pesanan ini Permanen?")) {
         toggleLoader(true);
@@ -698,6 +713,7 @@ window.navTo = function(pageId) {
         window.scrollTo({ top: 0, behavior: 'smooth' });
     }, 400); 
 }
+
 window.editOrder = function(id) {
     const index = orders.findIndex(o => o.id === id);
     if (index === -1) return;

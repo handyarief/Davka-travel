@@ -289,7 +289,6 @@ function enableSmoothInputUX() {
         el.addEventListener('keydown', (e) => handleInputEnter(e, index, formElements));
     });
 }
-
 function handleInputFocus(e) {
     setTimeout(() => {
         e.target.scrollIntoView({ 
@@ -670,7 +669,6 @@ window.deleteOrder = async function(id) {
         }
     }
 }
-
 window.toggleStatus = async function(id) {
     const index = orders.findIndex(o => o.id === id);
     if(index === -1) return;
@@ -1031,7 +1029,6 @@ window.printReceipt = function(orderId) {
     showToast("RENDER E-TIKET...");
     setTimeout(() => { captureAndShowModal('receipt-render-area'); }, 800);
 }
-
 // --- CORE: RENDER NOTA BERDASARKAN TAB AKTIF & DATA LENGKAP ---
 function renderReceiptToDOM(order) {
     const sectionDepart = document.getElementById('rec-ticket-depart');
@@ -1058,7 +1055,7 @@ function renderReceiptToDOM(order) {
     let paxHtml = '';
     paxList.forEach(p => {
         const isInfant = p.type === 'infant';
-        const paxTypeLabel = isInfant ? '<span class="text-[8px] bg-pink-500/20 border border-pink-500/30 px-1.5 py-0.5 rounded ml-2 text-pink-400 align-middle tracking-widest">BAYI</span>' : '';
+        const paxTypeLabel = isInfant ? '<span class="text-[10px] bg-pink-500/20 border border-pink-500/30 px-2 py-0.5 rounded ml-2 text-pink-400 align-middle tracking-widest">BAYI</span>' : '';
         
         let dobStr = '';
         if (p.dob) {
@@ -1068,23 +1065,23 @@ function renderReceiptToDOM(order) {
             }
         }
         
-        // UPDATE: Layout Tanggal Lahir pindah ke bawah, menggunakan stack rapi
+        // UPDATE: Layout Tanggal Lahir pindah ke bawah, menggunakan stack rapi (Diperbesar)
         let dobDisplayReceipt = '';
         if (dobStr) {
             dobDisplayReceipt = `
                 <div class="mt-2 pt-2 border-t border-dashed border-white/10 flex items-center gap-2">
-                    <i class="fas fa-calendar-alt text-davka-orange text-[10px] opacity-80"></i>
-                    <span class="text-[9px] text-gray-400 uppercase tracking-widest">Lahir:</span>
-                    <span class="text-[11px] text-white font-bold font-mono tracking-widest">${dobStr}</span>
+                    <i class="fas fa-calendar-alt text-davka-orange text-[12px] opacity-80"></i>
+                    <span class="text-[12px] text-gray-400 uppercase tracking-widest">Lahir:</span>
+                    <span class="text-[14px] text-white font-bold font-mono tracking-widest">${dobStr}</span>
                 </div>
             `;
         }
 
-        // UPDATE: NIK & Nama disusun menurun (flex-col) 100% rapi
+        // UPDATE: NIK & Nama disusun menurun (flex-col) 100% rapi (Ukuran Font Diperbesar Signifikan)
         paxHtml += `
-            <div class="flex flex-col bg-black/40 p-3 rounded-xl mb-2 border border-white/10 shadow-inner w-full">
-                <p class="text-[12px] font-black text-white uppercase break-words leading-tight tracking-widest flex items-center">${p.name} ${paxTypeLabel}</p>
-                <p class="text-[14px] text-gray-200 font-bold font-mono mt-1.5 tracking-widest"><i class="fas fa-id-card text-gray-500 mr-1.5 text-[10px]"></i>ID: ${p.nik || '-'}</p>
+            <div class="flex flex-col bg-black/40 p-4 rounded-xl mb-3 border border-white/10 shadow-inner w-full">
+                <p class="text-[18px] font-black text-white uppercase break-words leading-tight tracking-widest flex items-center">${p.name} ${paxTypeLabel}</p>
+                <p class="text-[18px] text-gray-200 font-bold font-mono mt-2 tracking-widest"><i class="fas fa-id-card text-gray-500 mr-2 text-[14px]"></i>ID: ${p.nik || '-'}</p>
                 ${dobDisplayReceipt}
             </div>
         `;
@@ -1125,8 +1122,8 @@ function renderReceiptToDOM(order) {
         priceTotalEl.innerText = formatRupiah(returnTotal);
         priceDpEl.innerText = formatRupiah(returnDp);
         priceRemainingEl.innerText = formatRupiah(returnRemaining);
-        // Glow effect based on status
-        priceRemainingEl.className = returnRemaining <= 0 ? "text-[20px] font-black text-green-400 font-mono glow-text-white drop-shadow-[0_0_10px_rgba(74,222,128,0.5)]" : "text-[20px] font-black text-[#0ea5e9] font-mono glow-text-white drop-shadow-[0_0_10px_rgba(14,165,233,0.5)]";
+        // Glow effect based on status (Size diperbesar di HTML, ini hanya logic class-nya)
+        priceRemainingEl.className = returnRemaining <= 0 ? "text-[32px] font-black text-green-400 font-mono glow-text-white drop-shadow-[0_0_10px_rgba(74,222,128,0.5)]" : "text-[32px] font-black text-[#0ea5e9] font-mono glow-text-white drop-shadow-[0_0_10px_rgba(14,165,233,0.5)]";
 
         document.getElementById('rec-id').innerText = "#" + order.id.toString().slice(-6) + "-R";
 
@@ -1173,8 +1170,8 @@ function renderReceiptToDOM(order) {
         priceTotalEl.innerText = formatRupiah(departTotal);
         priceDpEl.innerText = formatRupiah(departDp);
         priceRemainingEl.innerText = formatRupiah(departRemaining);
-        // Glow effect based on status
-        priceRemainingEl.className = departRemaining <= 0 ? "text-[20px] font-black text-green-400 font-mono glow-text-white drop-shadow-[0_0_10px_rgba(74,222,128,0.5)]" : "text-[20px] font-black text-davka-orange font-mono glow-text-orange";
+        // Glow effect based on status (Size diperbesar di HTML, ini hanya logic class-nya)
+        priceRemainingEl.className = departRemaining <= 0 ? "text-[32px] font-black text-green-400 font-mono glow-text-white drop-shadow-[0_0_10px_rgba(74,222,128,0.5)]" : "text-[32px] font-black text-davka-orange font-mono glow-text-orange";
 
         document.getElementById('rec-id').innerText = "#" + order.id.toString().slice(-6);
 

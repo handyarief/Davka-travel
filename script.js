@@ -1,1589 +1,1528 @@
-// --- KONFIGURASI SUPABASE (WAJIB DIISI ULANG) ---
-const SUPABASE_URL = 'https://wdhfthzuihakjlygttcw.supabase.co'; 
-const SUPABASE_KEY = 'sb_publishable_8U8NeSn4aOZiRzLRS3KmxA_oz84fUAL';
+// --- DATABASE LAYANAN (LOCAL) ---
+const services = [
+    { id: 0, name: "Cuci Komplit", price: 7000, unit: "kg" },
+    { id: 1, name: "Setrika Saja", price: 4000, unit: "kg" },
+    { id: 2, name: "Bed Cover", price: 0, unit: "pcs", isParent: true }, 
+    // REVISI PREMIUM: Nama varian diperbarui secara utuh untuk menghindari singkatan
+    { id: 21, name: "Bed Cover Kecil", price: 15000, unit: "pcs" },              
+    { id: 22, name: "Bed Cover Sedang", price: 20000, unit: "pcs" },             
+    { id: 23, name: "Bed Cover Besar", price: 25000, unit: "pcs" },              
+    { id: 3, name: "Custom 1", price: 0, unit: "pcs", isCustom: true }, 
+    { id: 4, name: "Custom 2", price: 0, unit: "pcs", isCustom: true }, 
+    { id: 5, name: "Sprei Kasur", price: 10000, unit: "pcs" },
+    { id: 6, name: "Custom 3", price: 0, unit: "pcs", isCustom: true }  
+];
 
-// Inisialisasi Client Supabase
-const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+// --- KONFIGURASI SUPABASE ---
+const SUPABASE_URL = 'https://qgezrmiuwkmwfglblqet.supabase.co';
+const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InFnZXpybWl1d2ttd2ZnbGJscWV0Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzE2MDk5NzAsImV4cCI6MjA4NzE4NTk3MH0.qxd3eTWFfQC6QEl56xzvJFHcmAO7gqsx17cEaCTkkRg';
+const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
-// Variable Global
-let orders = []; 
-let currentUploadOrderId = null; 
-let currentUploadType = null;   
-let loaderTimeout = null; 
-let activeUploadZone = null;
-let currentDetailOrder = null; // Menyimpan order yang sedang dibuka detailnya
-let currentDetailTab = 'depart'; // Melacak tab aktif (depart/return) untuk logika Nota
+// --- KONSTANTA LOKAL STORAGE ---
+const LS_ORDERS_KEY = 'ziedan_local_orders';
+const LS_PENDING_KEY = 'ziedan_pending_orders';
+const LS_CUSTOM_KEY = 'ziedan_custom_services'; 
 
-// --- INIT SYSTEM ---
-document.addEventListener('DOMContentLoaded', async () => {
-    // Logic Video Intro & Loading Bar
-    const splash = document.getElementById('splash-screen');
-    const video = document.getElementById('intro-video');
-    const skipBtn = document.getElementById('btn-skip-intro');
-    
-    // Langsung jalankan init logic di background
-    initializeAppLogic();
+// --- STATE MANAGEMENT ---
+let state = {
+    selectedServiceIds: [], 
+    quantities: {}, 
+    total: 0,
+    isBedCoverOpen: false 
+};
+let allOrders = [];
+let currentOrderId = null;
+let currentDetailKreditName = null; 
 
-    const enterApp = () => {
-        if(splash) {
-            splash.classList.add('splash-hidden'); 
-            setTimeout(() => { splash.remove(); }, 1000); 
+// --- HELPER FUNGSI TANGGAL ---
+function formatTanggalLokal(isoString) {
+    try {
+        const d = new Date(isoString);
+        if (isNaN(d.getTime())) return isoString; 
+        
+        const options = { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric', hour: '2-digit', minute: '2-digit' };
+        return d.toLocaleDateString('id-ID', options);
+    } catch (e) {
+        return isoString;
+    }
+}
+
+function formatTanggalSingkat(isoString) {
+    try {
+        const d = new Date(isoString);
+        if (isNaN(d.getTime())) return '-';
+        return d.toLocaleDateString('id-ID', { day: '2-digit', month: 'short' });
+    } catch (e) {
+        return '-';
+    }
+}
+
+// --- FUNGSI FORMAT RUPIAH ---
+function formatRupiah(angka) {
+    return "Rp " + angka.toLocaleString('id-ID');
+}
+
+// --- FUNGSI CUSTOM SERVICE (BARU & DINAMIS) ---
+function loadCustomService() {
+    try {
+        const raw = localStorage.getItem(LS_CUSTOM_KEY);
+        if (raw) {
+            const data = JSON.parse(raw);
+            services.forEach(srv => {
+                if (data[srv.id]) {
+                    // REVISI PREMIUM: Interceptor untuk memaksa Cache Lama "BC" diubah jadi "Bed Cover"
+                    if (srv.id === 21) srv.name = "Bed Cover Kecil";
+                    else if (srv.id === 22) srv.name = "Bed Cover Sedang";
+                    else if (srv.id === 23) srv.name = "Bed Cover Besar";
+                    else srv.name = data[srv.id].name;
+                    
+                    srv.price = data[srv.id].price;
+                    srv.unit = data[srv.id].unit;
+                }
+            });
         }
-    };
+        
+        services.forEach(srv => updateCustomServiceUI(srv.id));
+    } catch (e) {
+        console.warn("Gagal meload custom service:", e);
+    }
+}
 
-    // LOGIC: Jalankan loading bar 4 detik setelah video selesai
-    const startLoaderSequence = () => {
-        const loaderWrapper = document.getElementById('post-video-loader');
-        const loaderFill = document.getElementById('post-video-fill');
-        const videoOverlay = document.getElementById('video-overlay');
+function updateCustomServiceUI(id) {
+    const customSrv = services.find(s => s.id === id);
+    if (!customSrv) return;
 
-        if (loaderWrapper && loaderFill) {
-            loaderWrapper.style.opacity = '1';
-            if(videoOverlay) videoOverlay.style.opacity = '1';
+    const nameEl = document.getElementById(`label-srv-${id}-name`);
+    const priceEl = document.getElementById(`label-srv-${id}-price`);
+    const unitEl = document.getElementById(`label-srv-${id}-unit`);
+    const unitInputEl = document.getElementById(`label-srv-${id}-unit-input`);
 
-            setTimeout(() => {
-                loaderFill.style.width = '100%';
-            }, 100);
+    if (nameEl) nameEl.innerText = customSrv.name;
+    if (priceEl) priceEl.innerText = formatRupiah(customSrv.price);
+    if (unitEl) unitEl.innerText = '/' + customSrv.unit.toLowerCase();
+    if (unitInputEl) unitInputEl.innerText = customSrv.unit.toUpperCase();
+}
 
-            setTimeout(() => {
-                enterApp();
-            }, 4100); 
+function openCustomServiceModal(event, id) {
+    if (event) event.stopPropagation(); 
+    
+    const customSrv = services.find(s => s.id === id);
+    if (!customSrv) return;
+
+    document.getElementById('current-custom-id').value = id;
+    
+    const standardInputs = document.getElementById('modal-standard-inputs');
+    const bedcoverInputs = document.getElementById('modal-bedcover-inputs');
+    
+    if (id === 2) {
+        if(standardInputs) standardInputs.classList.add('hidden');
+        if(bedcoverInputs) bedcoverInputs.classList.remove('hidden');
+        
+        const srv21 = services.find(s => s.id === 21);
+        const srv22 = services.find(s => s.id === 22);
+        const srv23 = services.find(s => s.id === 23);
+        
+        if (srv21) document.getElementById('input-bc-kecil').value = srv21.price;
+        if (srv22) document.getElementById('input-bc-sedang').value = srv22.price;
+        if (srv23) document.getElementById('input-bc-besar').value = srv23.price;
+    } else {
+        if(standardInputs) standardInputs.classList.remove('hidden');
+        if(bedcoverInputs) bedcoverInputs.classList.add('hidden');
+        
+        const isDefaultName = (customSrv.name.startsWith('Custom '));
+        document.getElementById('input-custom-name').value = !isDefaultName ? customSrv.name : '';
+        document.getElementById('input-custom-price').value = customSrv.price > 0 ? customSrv.price : '';
+        
+        if (customSrv.unit.toLowerCase() === 'kg') {
+            document.getElementById('unit-kg').checked = true;
         } else {
-            enterApp();
+            document.getElementById('unit-pcs').checked = true;
         }
-    };
-
-    if (video) {
-        setTimeout(() => { if(skipBtn) skipBtn.classList.remove('hidden'); }, 1000);
-        
-        video.addEventListener('ended', startLoaderSequence);
-        
-        setTimeout(() => {
-            if(document.getElementById('splash-screen')) enterApp();
-        }, 15000); 
-    } else {
-        enterApp();
-    }
-    
-    if(skipBtn) {
-        skipBtn.addEventListener('click', (e) => {
-            e.preventDefault();
-            if(video) video.pause(); 
-            startLoaderSequence();
-        });
+        refreshRadioUI();
     }
 
-    document.addEventListener('click', (e) => {
-        if (!e.target.closest('.upload-zone-base')) {
-            resetUploadZones();
-        }
-    });
-});
-
-function initializeAppLogic() {
-    updateDate();
-    updateGreeting(); 
-    fetchOrders(); 
-    setupRealtime(); 
-    
-    updatePassengerForms(); 
-    
-    // Setup Uploader Asli (Pergi)
-    setupImageUploader('inpFileTransfer', 'inpTransferData', 'imgTransfer', 'previewTransfer');
-    setupImageUploader('inpFileChat', 'inpChatData', 'imgChat', 'previewChat');
-    
-    // Setup Uploader Baru (Pulang)
-    setupImageUploader('inpFileTransferReturn', 'inpTransferDataReturn', 'imgTransferReturn', 'previewTransferReturn');
-    setupImageUploader('inpFileChatReturn', 'inpChatDataReturn', 'imgChatReturn', 'previewChatReturn');
-
-    setupHistoryUploader();
-    
-    // UX ENHANCEMENT: Inisialisasi Smooth Scroll & Enter Key
-    enableSmoothInputUX();
-}
-
-// --- FEATURE: TAB SYSTEM LOGIC (PERGI / PULANG) ---
-window.switchTab = function(tabName) {
-    const btnDepart = document.getElementById('tab-btn-depart');
-    const btnReturn = document.getElementById('tab-btn-return');
-    const contentDepart = document.getElementById('tab-content-depart');
-    const contentReturn = document.getElementById('tab-content-return');
-
-    // Update Global Tracker
-    currentDetailTab = tabName;
-
-    // Reset Styles (Inactive State)
-    const inactiveClass = "flex-1 py-2 text-[10px] font-bold uppercase rounded-lg transition-all text-gray-400 hover:text-white relative";
-    const activeClass = "flex-1 py-2 text-[10px] font-bold uppercase rounded-lg transition-all bg-davka-orange text-white shadow-lg relative";
-
-    btnDepart.className = inactiveClass;
-    btnReturn.className = inactiveClass;
-    
-    // Hide Content
-    contentDepart.classList.add('hidden');
-    contentReturn.classList.add('hidden');
-
-    // Activate Requested Tab
-    if (tabName === 'depart') {
-        btnDepart.className = activeClass;
-        contentDepart.classList.remove('hidden');
-        
-        // RESET HEADER: Tampilkan rute PERGI
-        if(currentDetailOrder) {
-            document.getElementById('detail-origin').innerText = currentDetailOrder.origin || 'ORG';
-            document.getElementById('detail-dest').innerText = currentDetailOrder.dest || 'DES';
-            
-            // PERBAIKAN: Ubah style icon ke mode Pergi (Orange, Train)
-            const accent = document.getElementById('detail-card-accent');
-            if(accent) accent.className = "absolute top-0 left-0 w-1 h-full bg-davka-orange transition-colors";
-            
-            const routeWrapper = document.getElementById('detail-route-wrapper');
-            if(routeWrapper) routeWrapper.className = "w-9 h-9 rounded-full bg-davka-bg/80 border border-white/10 flex items-center justify-center shadow-neon backdrop-blur-sm transition-all";
-            
-            const routeIcon = document.getElementById('detail-route-icon');
-            if(routeIcon) routeIcon.className = "fas fa-train text-davka-orange text-sm drop-shadow-md transition-all";
-            
-            // Render Finansial Khusus Pergi
-            renderDetailFinancials('depart');
-        }
-    } else {
-        btnReturn.className = activeClass;
-        contentReturn.classList.remove('hidden');
-
-        // UPDATE HEADER: Tampilkan rute PULANG (Swap Origin & Dest)
-        if(currentDetailOrder && currentDetailOrder.tripType === 'round_trip') {
-            const retOrg = currentDetailOrder.returnOrigin || currentDetailOrder.dest || 'ORG';
-            const retDes = currentDetailOrder.returnDest || currentDetailOrder.origin || 'DES';
-            
-            document.getElementById('detail-origin').innerText = retOrg;
-            document.getElementById('detail-dest').innerText = retDes;
-            
-            // PERBAIKAN: Ubah style icon ke mode Pulang (Blue, Exchange)
-            const accent = document.getElementById('detail-card-accent');
-            if(accent) accent.className = "absolute top-0 left-0 w-1 h-full bg-blue-500 transition-colors";
-            
-            const routeWrapper = document.getElementById('detail-route-wrapper');
-            if(routeWrapper) routeWrapper.className = "w-9 h-9 rounded-full bg-blue-900/30 border border-blue-500/30 flex items-center justify-center shadow-[0_0_15px_rgba(59,130,246,0.3)] backdrop-blur-sm transition-all";
-            
-            const routeIcon = document.getElementById('detail-route-icon');
-            if(routeIcon) routeIcon.className = "fas fa-exchange-alt text-blue-400 text-sm drop-shadow-md transition-all"; 
-            
-            // Render Finansial Khusus Pulang
-            renderDetailFinancials('return');
-        }
-    }
-}
-
-// --- CORE: FUNGSI RENDER FINANSIAL DINAMIS ---
-function renderDetailFinancials(mode) {
-    if(!currentDetailOrder) return;
-    const order = currentDetailOrder;
-
-    let price = 0;
-    let dp = 0;
-    let remaining = 0;
-    let method = '-';
-    let label = '';
-    let themeColor = '';
-    let themeBorder = '';
-
-    // Tentukan data berdasarkan mode (Pergi/Pulang)
-    if(mode === 'depart') {
-        price = order.price || 0;
-        dp = (order.feeDepart !== undefined) ? order.feeDepart : (order.fee || 0);
-        method = order.paymentMethod || 'Tunai';
-        label = 'Pergi';
-        themeColor = 'text-davka-orange';
-        themeBorder = 'border-white/10';
-    } else {
-        price = order.returnPrice || 0;
-        dp = order.feeReturn || 0;
-        method = order.paymentMethodReturn || 'Tunai';
-        label = 'Pulang';
-        themeColor = 'text-blue-400';
-        themeBorder = 'border-blue-500/30';
-    }
-
-    remaining = price - dp;
-
-    // Jika status global 'success', sisa tagihan 0 (LUNAS)
-    if (order.status === 'success') {
-        remaining = 0;
-    }
-
-    // Render HTML Kartu Pembayaran
-    const html = `
-    <div class="bg-davka-bg border ${themeBorder} rounded-xl p-3 mb-2 animate-scale-up">
-        <div class="flex items-center gap-2 mb-2 border-b ${themeBorder} pb-2">
-            <i class="fas ${mode === 'depart' ? 'fa-train' : 'fa-exchange-alt'} ${themeColor} text-xs"></i>
-            <span class="text-[10px] font-bold text-gray-300 uppercase">Rincian ${label}</span>
-        </div>
-        <div class="flex justify-between items-center mb-1">
-             <span class="text-[10px] text-gray-500">Harga Tiket</span>
-             <span class="text-xs font-bold text-white">${formatRupiah(price)}</span>
-        </div>
-        <div class="flex justify-between items-center mb-1">
-             <span class="text-[10px] text-gray-500">DP (Bayar Awal)</span>
-             <span class="text-xs font-bold ${themeColor}">- ${formatRupiah(dp)}</span>
-        </div>
-        <div class="flex justify-between items-center border-t border-dashed border-white/10 pt-1 mt-1">
-             <span class="text-[10px] text-gray-400 font-bold">Sisa Tagihan ${label}</span>
-             <span class="text-xs font-black ${remaining <= 0 ? 'text-green-500' : 'text-red-500'}">${formatRupiah(remaining)}</span>
-        </div>
-        <div class="flex justify-between items-end mt-2">
-            <p class="text-[9px] text-gray-600 italic">Via: ${method}</p>
-            <div class="px-2 py-0.5 rounded ${remaining <= 0 ? 'bg-green-500/20 text-green-400 border border-green-500/30' : 'bg-red-500/20 text-red-400 border border-red-500/30'}">
-                <p class="text-[8px] font-bold uppercase">${remaining <= 0 ? 'LUNAS' : 'BELUM LUNAS'}</p>
-            </div>
-        </div>
-    </div>
-    `;
-
-    // Inject ke DOM
-    const costContainer = document.getElementById('detail-cost-breakdown');
-    costContainer.innerHTML = html;
-    costContainer.classList.remove('hidden');
-
-    // Update Label Total Bawah (Hanya untuk tab yang aktif)
-    document.getElementById('detail-price').innerText = formatRupiah(price);
-    
-    // Update Sisa Tagihan Bawah (Hanya untuk tab yang aktif)
-    const remEl = document.getElementById('detail-remaining');
-    remEl.innerText = formatRupiah(remaining);
-    remEl.className = remaining <= 0 ? "text-sm font-black text-green-500" : "text-sm font-black text-red-500";
-}
-
-window.switchUploadTab = function(tabName) {
-    const btnDepart = document.getElementById('btn-upload-depart');
-    const btnReturn = document.getElementById('btn-upload-return');
-    const containerDepart = document.getElementById('uploadContainerDepart');
-    const containerReturn = document.getElementById('uploadContainerReturn');
-
-    const inactiveClass = "flex-1 py-2 text-[10px] font-bold uppercase rounded-lg transition-all text-gray-400 hover:text-white";
-    const activeClass = "flex-1 py-2 text-[10px] font-bold uppercase rounded-lg transition-all bg-davka-orange text-white shadow-lg";
-
-    if (tabName === 'depart') {
-        btnDepart.className = activeClass;
-        btnReturn.className = inactiveClass;
-        containerDepart.classList.remove('hidden');
-        containerReturn.classList.add('hidden');
-    } else {
-        btnDepart.className = inactiveClass;
-        btnReturn.className = activeClass;
-        containerDepart.classList.add('hidden');
-        containerReturn.classList.remove('hidden');
-    }
-}
-
-// --- UX ENGINE: SMOOTH SCROLL & ENTER KEY NAVIGATION ---
-function enableSmoothInputUX() {
-    const formElements = document.querySelectorAll('input, select, textarea');
-    
-    formElements.forEach((el, index) => {
-        el.removeEventListener('focus', handleInputFocus);
-        // Hapus listener click yang redundan
-        el.removeEventListener('keydown', handleInputEnter);
-
-        el.addEventListener('focus', handleInputFocus);
-        // Hapus penambahan listener click yang redundan
-        el.addEventListener('keydown', (e) => handleInputEnter(e, index, formElements));
-    });
-}
-function handleInputFocus(e) {
+    const modal = document.getElementById('custom-service-modal');
+    const modalContent = document.getElementById('custom-service-modal-content');
+    modal.classList.remove('hidden');
+    modal.classList.add('flex');
     setTimeout(() => {
-        e.target.scrollIntoView({ 
-            behavior: 'smooth', 
-            block: 'center', // Diubah dari 'start' ke 'center' agar tidak tertutup keyboard
-            inline: 'nearest' 
-        });
+        modal.classList.remove('opacity-0');
+        modalContent.classList.remove('scale-95');
+        modalContent.classList.add('scale-100');
+    }, 10);
+}
+
+function closeCustomServiceModal() {
+    const modal = document.getElementById('custom-service-modal');
+    const modalContent = document.getElementById('custom-service-modal-content');
+    modal.classList.add('opacity-0');
+    modalContent.classList.remove('scale-100');
+    modalContent.classList.add('scale-95');
+    setTimeout(() => {
+        modal.classList.add('hidden');
+        modal.classList.remove('flex');
     }, 300);
 }
 
-function handleInputEnter(e, currentIndex, allElements) {
-    if (e.key === 'Enter') {
-        e.preventDefault(); 
-        
-        let nextIndex = currentIndex + 1;
-        while (nextIndex < allElements.length) {
-            const nextEl = allElements[nextIndex];
-            if (nextEl.offsetParent !== null && !nextEl.disabled && !nextEl.readOnly) {
-                nextEl.focus(); 
-                return;
-            }
-            nextIndex++;
-        }
-        
-        if (nextIndex >= allElements.length) {
-            e.target.blur();
-        }
+function refreshRadioUI() {
+    const isKg = document.getElementById('unit-kg').checked;
+    const labelKg = document.getElementById('label-unit-kg');
+    const labelPcs = document.getElementById('label-unit-pcs');
+
+    const activeClass = ['border-brand-500', 'bg-brand-50', 'text-brand-600', 'shadow-sm', 'ring-1', 'ring-brand-500'];
+    const inactiveClass = ['border-gray-200', 'bg-gray-50', 'text-gray-700'];
+
+    if (isKg) {
+        labelKg.classList.add(...activeClass);
+        labelKg.classList.remove(...inactiveClass);
+        labelPcs.classList.add(...inactiveClass);
+        labelPcs.classList.remove(...activeClass);
+    } else {
+        labelPcs.classList.add(...activeClass);
+        labelPcs.classList.remove(...inactiveClass);
+        labelKg.classList.add(...inactiveClass);
+        labelKg.classList.remove(...activeClass);
     }
 }
-// --- LOGIC PENUMPANG (DEWASA & BAYI) ---
-window.updatePassengerForms = function() {
-    const adultCount = parseInt(document.getElementById('inpPaxCount').value) || 1;
-    const infantCount = parseInt(document.getElementById('inpInfantCount').value) || 0;
-    const container = document.getElementById('passengerForms'); 
+
+function saveCustomServiceConfig() {
+    const id = parseInt(document.getElementById('current-custom-id').value);
     
-    const existingItems = document.querySelectorAll('.passenger-item');
-    let storedAdults = [];
-    let storedInfants = [];
+    let storedData = {};
+    try {
+        const raw = localStorage.getItem(LS_CUSTOM_KEY);
+        if (raw) storedData = JSON.parse(raw);
+    } catch (e) {}
 
-    existingItems.forEach(el => {
-        const type = el.getAttribute('data-type');
-        const name = el.querySelector('.pax-name').value;
-        const nik = el.querySelector('.pax-nik').value;
-        const dobInput = el.querySelector('.pax-dob');
-        const dob = dobInput ? dobInput.value : '';
+    // REVISI PREMIUM: Logic simpan Multi-Varian Harga Bed Cover memastikan namanya penuh
+    if (id === 2) {
+        const price21 = parseInt(document.getElementById('input-bc-kecil').value) || 0;
+        const price22 = parseInt(document.getElementById('input-bc-sedang').value) || 0;
+        const price23 = parseInt(document.getElementById('input-bc-besar').value) || 0;
+        
+        const srv21 = services.find(s => s.id === 21);
+        const srv22 = services.find(s => s.id === 22);
+        const srv23 = services.find(s => s.id === 23);
+        
+        if (srv21) { srv21.price = price21; storedData[21] = { name: "Bed Cover Kecil", price: price21, unit: 'pcs' }; }
+        if (srv22) { srv22.price = price22; storedData[22] = { name: "Bed Cover Sedang", price: price22, unit: 'pcs' }; }
+        if (srv23) { srv23.price = price23; storedData[23] = { name: "Bed Cover Besar", price: price23, unit: 'pcs' }; }
+        
+        localStorage.setItem(LS_CUSTOM_KEY, JSON.stringify(storedData));
+        
+        updateCustomServiceUI(21);
+        updateCustomServiceUI(22);
+        updateCustomServiceUI(23);
+        hitungTotal(); 
+        
+    } else {
+        const nameVal = document.getElementById('input-custom-name').value.trim();
+        const priceVal = parseInt(document.getElementById('input-custom-price').value);
+        const isKg = document.getElementById('unit-kg').checked;
 
-        if(type === 'infant') {
-            storedInfants.push({name, nik, dob});
+        if (!nameVal) {
+            alert("Nama layanan tidak boleh kosong!");
+            return;
+        }
+        if (isNaN(priceVal) || priceVal < 0) {
+            alert("Harga layanan tidak valid!");
+            return;
+        }
+
+        const customSrv = services.find(s => s.id === id);
+        if (customSrv) {
+            customSrv.name = nameVal;
+            customSrv.price = priceVal;
+            customSrv.unit = isKg ? 'kg' : 'pcs';
+
+            storedData[id] = {
+                name: customSrv.name,
+                price: customSrv.price,
+                unit: customSrv.unit
+            };
+
+            localStorage.setItem(LS_CUSTOM_KEY, JSON.stringify(storedData));
+            
+            updateCustomServiceUI(id);
+            hitungTotal(); 
+        }
+    }
+
+    closeCustomServiceModal();
+}
+// --- HELPER BACA & TULIS LOKAL STORAGE ---
+function getLocalOrders() {
+    try {
+        const raw = localStorage.getItem(LS_ORDERS_KEY);
+        return raw ? JSON.parse(raw) : [];
+    } catch (e) {
+        return [];
+    }
+}
+
+function saveLocalOrders(orders) {
+    try {
+        localStorage.setItem(LS_ORDERS_KEY, JSON.stringify(orders));
+    } catch (e) {
+        console.warn("Gagal menyimpan ke localStorage:", e);
+    }
+}
+
+function getPendingOrders() {
+    try {
+        const raw = localStorage.getItem(LS_PENDING_KEY);
+        return raw ? JSON.parse(raw) : [];
+    } catch (e) {
+        return [];
+    }
+}
+
+function savePendingOrders(orders) {
+    try {
+        localStorage.setItem(LS_PENDING_KEY, JSON.stringify(orders));
+    } catch (e) {
+        console.warn("Gagal menyimpan pending orders:", e);
+    }
+}
+
+// --- SINKRONISASI PENDING ORDERS KE SUPABASE ---
+async function syncPendingOrders() {
+    const pending = getPendingOrders();
+    if (pending.length === 0) return;
+
+    console.log(`Mencoba sync ${pending.length} pesanan pending ke server...`);
+    const stillPending = [];
+
+    for (const order of pending) {
+        try {
+            const orderToUpload = {
+                ...order,
+                items: typeof order.items === 'string' ? order.items : JSON.stringify(order.items)
+            };
+            delete orderToUpload._localId;
+            delete orderToUpload._isPending;
+
+            const { error } = await supabaseClient.from('orders').insert([orderToUpload]).select();
+            if (error) {
+                console.warn("Gagal sync pending order:", error.message);
+                stillPending.push(order);
+            } else {
+                console.log("Pending order berhasil di-sync:", order.customer);
+            }
+        } catch (e) {
+            stillPending.push(order);
+        }
+    }
+
+    savePendingOrders(stillPending);
+
+    if (stillPending.length < pending.length) {
+        fetchOrders();
+    }
+}
+
+// --- FUNGSI FETCH DATA DARI SUPABASE ---
+async function fetchOrders() {
+    try {
+        const { data, error } = await supabaseClient
+            .from('orders')
+            .select('*')
+            .order('id', { ascending: false });
+        
+        if (error) {
+            console.error("Error fetching orders:", error);
+            const localOrders = getLocalOrders();
+            const pendingOrders = getPendingOrders();
+            const merged = [...pendingOrders.map(o => ({...o, _isPending: true})), ...localOrders];
+            allOrders = merged;
+            
+            if (!document.getElementById('view-orders').classList.contains('hidden')) renderOrderList();
+            if (document.getElementById('view-kredit') && !document.getElementById('view-kredit').classList.contains('hidden')) renderKreditList();
+            return;
+        }
+
+        allOrders = data || [];
+        saveLocalOrders(allOrders);
+        
+        if (!document.getElementById('view-orders').classList.contains('hidden')) renderOrderList();
+        if (document.getElementById('view-kredit') && !document.getElementById('view-kredit').classList.contains('hidden')) renderKreditList();
+    } catch (err) {
+        console.error("Network error saat mengambil data:", err);
+        const localOrders = getLocalOrders();
+        const pendingOrders = getPendingOrders();
+        allOrders = [...pendingOrders.map(o => ({...o, _isPending: true})), ...localOrders];
+        
+        if (!document.getElementById('view-orders').classList.contains('hidden')) renderOrderList();
+        if (document.getElementById('view-kredit') && !document.getElementById('view-kredit').classList.contains('hidden')) renderKreditList();
+    }
+}
+
+// --- FUNGSI NAVIGASI HEADER ---
+function toggleMenu() {
+    const menu = document.getElementById('menu-overlay');
+    const btn = document.getElementById('menu-btn');
+    if (menu && btn) {
+        menu.classList.toggle('hidden');
+        if (!menu.classList.contains('hidden')) {
+            menu.style.display = 'flex';
         } else {
-            storedAdults.push({name, nik, dob});
+            setTimeout(() => { menu.style.display = ''; }, 300); 
+        }
+        btn.classList.toggle('active');
+    }
+}
+
+function navTo(page) {
+    if (page === 'home') { backToHome(); } 
+    else if (page === 'orders') { switchToOrders(); renderOrderList(); } 
+    else if (page === 'kredit') { switchToKredit(); }
+    toggleMenu(); 
+}
+
+// --- FUNGSI UTAMA & INISIALISASI ---
+function initApp() {
+    loadCustomService(); 
+
+    services.forEach(srv => {
+        const input = document.getElementById(`input-${srv.id}`);
+        const initialQty = (srv.id === 21 || srv.id === 22 || srv.id === 23) ? 0 : 1;
+        if(input) input.value = initialQty;
+        state.quantities[srv.id] = initialQty;
+    });
+    hitungTotal();
+    fetchOrders(); 
+    setTimeout(() => syncPendingOrders(), 2000);
+}
+
+// REVISI PREMIUM: Fungsi Logika untuk Card Bed Cover Accordion
+function toggleBedCoverAccordion() {
+    state.isBedCoverOpen = !state.isBedCoverOpen;
+    const inputArea = document.getElementById('input-area-2');
+    
+    if (state.isBedCoverOpen) {
+        if (inputArea) inputArea.classList.remove('hidden');
+    } else {
+        if (inputArea) inputArea.classList.add('hidden');
+    }
+}
+
+// REVISI PREMIUM: Fungsi Stepper Varian
+function stepSubQty(id, change) {
+    if (event) event.stopPropagation(); 
+    const currentVal = state.quantities[id] || 0;
+    let newVal = currentVal + change;
+    if (newVal < 0) newVal = 0;
+    
+    directSubQtyInput(id, newVal);
+}
+
+function directSubQtyInput(id, value) {
+    if (event) event.stopPropagation();
+    let val = parseInt(value);
+    if (isNaN(val) || val < 0) val = 0;
+    
+    state.quantities[id] = val;
+    const inputField = document.getElementById(`input-${id}`);
+    if (inputField) inputField.value = val;
+    
+    const serviceIndex = state.selectedServiceIds.indexOf(id);
+    if (val > 0 && serviceIndex === -1) {
+        state.selectedServiceIds.push(id);
+    } else if (val === 0 && serviceIndex > -1) {
+        state.selectedServiceIds.splice(serviceIndex, 1);
+    }
+    
+    updateServiceUI();
+    hitungTotal();
+}
+
+function toggleService(index) {
+    if(index === 2) return; 
+
+    const serviceIndex = state.selectedServiceIds.indexOf(index);
+    const inputArea = document.getElementById(`input-area-${index}`);
+    const inputField = document.getElementById(`input-${index}`);
+
+    if (serviceIndex > -1) {
+        state.selectedServiceIds.splice(serviceIndex, 1);
+        if (inputArea) inputArea.classList.add('hidden');
+    } else {
+        state.selectedServiceIds.push(index);
+        if (inputArea) inputArea.classList.remove('hidden');
+        if (!state.quantities[index] || state.quantities[index] === 0) {
+            state.quantities[index] = 1;
+            if (inputField) inputField.value = 1;
+        }
+    }
+    updateServiceUI();
+    hitungTotal();
+}
+
+function updateServiceUI() {
+    services.forEach((srv) => {
+        const idx = srv.id;
+        if(idx === 21 || idx === 22 || idx === 23) return; 
+
+        const card = document.getElementById(`srv-${idx}`);
+        const checkIcon = card?.querySelector('.check-icon');
+        if (!card) return;
+        
+        let isActive = false;
+        
+        if (idx === 2) {
+            // REVISI PREMIUM: Dynamic Feedback untuk Teks Bed Cover Terpilih
+            const totalBedCover = (state.quantities[21] || 0) + (state.quantities[22] || 0) + (state.quantities[23] || 0);
+            isActive = totalBedCover > 0;
+            
+            const summaryLabel = document.getElementById('label-srv-2-summary');
+            if (summaryLabel) {
+                if (isActive) {
+                    summaryLabel.innerHTML = `<span class="text-brand-500 font-extrabold text-[11px]">${totalBedCover} pcs Terpilih</span>`;
+                } else {
+                    summaryLabel.innerText = "Pilih Varian";
+                }
+            }
+        } else {
+            isActive = state.selectedServiceIds.includes(idx);
+        }
+
+        if (isActive) {
+            card.classList.remove('border-white', 'shadow-sm', 'border-dashed', 'border-brand-300');
+            card.classList.add('border-brand-500', 'bg-brand-100', 'shadow-md', 'ring-1', 'ring-brand-500');
+            if(checkIcon) {
+                checkIcon.classList.remove('opacity-0', 'scale-50');
+                checkIcon.classList.add('opacity-100', 'scale-100');
+            }
+        } else {
+            card.classList.remove('border-brand-500', 'bg-brand-100', 'shadow-md', 'ring-1', 'ring-brand-500');
+            card.classList.add('border-dashed', 'border-brand-300');
+            card.classList.remove('border-white');
+            
+            if(checkIcon) {
+                checkIcon.classList.add('opacity-0', 'scale-50');
+                checkIcon.classList.remove('opacity-100', 'scale-100');
+            }
         }
     });
-
-    let html = '';
-
-    for(let i = 1; i <= adultCount; i++) {
-        const valName = storedAdults[i-1] ? storedAdults[i-1].name : '';
-        const valNik = storedAdults[i-1] ? storedAdults[i-1].nik : '';
-        const valDob = storedAdults[i-1] ? storedAdults[i-1].dob : ''; 
-        
-        html += `
-        <div class="passenger-item border border-white/10 rounded-xl p-3 bg-white/5 relative group hover:border-davka-orange/50 transition-colors" data-type="adult">
-            <div class="absolute -left-1 top-3 w-1 h-6 bg-davka-orange rounded-r"></div>
-            <p class="text-[10px] font-bold text-davka-orange mb-2 uppercase tracking-wider pl-2">
-                <i class="fas fa-user mr-1"></i> Dewasa ${i}
-            </p>
-            <div class="space-y-2 pl-2">
-                <input type="text" value="${valName}" class="pax-name w-full bg-davka-bg border border-davka-border rounded-lg p-2 text-sm text-white focus:border-davka-orange focus:outline-none placeholder-gray-600" placeholder="Nama Lengkap (Sesuai KTP)" autocapitalize="characters">
-                <div class="grid grid-cols-2 gap-2">
-                    <input type="number" value="${valNik}" class="pax-nik w-full bg-davka-bg border border-davka-border rounded-lg p-2 text-sm text-white focus:border-davka-orange focus:outline-none placeholder-gray-600" placeholder="NIK / Paspor">
-                    <input type="text" onfocus="(this.type='date')" onblur="(this.type='text')" value="${valDob}" class="pax-dob w-full bg-davka-bg border border-davka-border rounded-lg p-2 text-sm text-white focus:border-davka-orange focus:outline-none placeholder-gray-600" placeholder="Tanggal Lahir">
-                </div>
-            </div>
-        </div>`;
-    }
-
-    for(let i = 1; i <= infantCount; i++) {
-        const valName = storedInfants[i-1] ? storedInfants[i-1].name : '';
-        const valNik = storedInfants[i-1] ? storedInfants[i-1].nik : '';
-        const valDob = storedInfants[i-1] ? storedInfants[i-1].dob : ''; 
-        
-        html += `
-        <div class="passenger-item border border-pink-500/30 rounded-xl p-3 bg-pink-500/5 relative group hover:border-pink-500 transition-colors" data-type="infant">
-            <div class="absolute -left-1 top-3 w-1 h-6 bg-pink-500 rounded-r"></div>
-            <p class="text-[10px] font-bold text-pink-400 mb-2 uppercase tracking-wider pl-2">
-                <i class="fas fa-baby mr-1"></i> Bayi ${i}
-            </p>
-            <div class="space-y-2 pl-2">
-                <input type="text" value="${valName}" class="pax-name w-full bg-davka-bg border border-davka-border rounded-lg p-2 text-sm text-white focus:border-pink-500 focus:outline-none placeholder-gray-600" placeholder="Nama Bayi" autocapitalize="characters">
-                <div class="grid grid-cols-2 gap-2">
-                    <input type="number" value="${valNik}" class="pax-nik w-full bg-davka-bg border border-davka-border rounded-lg p-2 text-sm text-white focus:border-pink-500 focus:outline-none placeholder-gray-600" placeholder="NIK / KIA">
-                    <input type="text" onfocus="(this.type='date')" onblur="(this.type='text')" value="${valDob}" class="pax-dob w-full bg-davka-bg border border-davka-border rounded-lg p-2 text-sm text-white focus:border-pink-500 focus:outline-none placeholder-gray-600" placeholder="Tanggal Lahir">
-                </div>
-            </div>
-        </div>`;
-    }
-
-    container.innerHTML = html;
-    calcTotalFromPax();
-    setTimeout(enableSmoothInputUX, 100);
 }
 
-window.getPassengersFromForm = function() {
-    const items = document.querySelectorAll('.passenger-item');
-    let paxList = [];
+function updateQty(id, value) {
+    let val = parseFloat(value);
+    if (isNaN(val) || val < 0) val = 0;
+    state.quantities[id] = val;
+    hitungTotal();
+}
+
+function hitungTotal() {
+    state.total = 0;
+    state.selectedServiceIds.forEach(id => {
+        const service = services.find(s => s.id === id);
+        if (service && !service.isParent) { 
+            const qty = state.quantities[id] || 0;
+            state.total += (qty * service.price);
+        }
+    });
+    state.total = Math.ceil(state.total);
+    const totalEl = document.getElementById('txtTotal');
+    if(totalEl) totalEl.innerText = formatRupiah(state.total);
+}
+
+// --- SIMPAN KE SUPABASE + FALLBACK LOKAL ---
+async function prosesPesanan() {
+    const nama = document.getElementById('custName').value.trim();
+    const alamat = document.getElementById('custAddress').value.trim(); 
     
-    items.forEach(el => {
-        const nameInput = el.querySelector('.pax-name');
-        const nikInput = el.querySelector('.pax-nik');
-        const dobInput = el.querySelector('.pax-dob'); 
-        const type = el.getAttribute('data-type'); 
+    if (!nama) {
+        shakeElement('custName');
+        alert("Nama Pelanggan wajib diisi!");
+        return;
+    }
+    if (state.selectedServiceIds.length === 0) {
+        alert("Pilih minimal satu layanan!");
+        return;
+    }
+    
+    let hasInvalidCustom = false;
+    state.selectedServiceIds.forEach(id => {
+        const srv = services.find(s => s.id === id);
+        if (srv && srv.isCustom) {
+            if (srv.price <= 0 || srv.name === 'Custom ' + (id === 3 ? '1' : id === 4 ? '2' : '3')) {
+                alert(`Harap atur Nama dan Harga Layanan ${srv.name} terlebih dahulu (Klik icon Gerigi)!`);
+                shakeElement(`srv-${id}`);
+                hasInvalidCustom = true;
+            }
+        }
+    });
+    if (hasInvalidCustom) return;
+    
+    const btnSimpan = document.querySelector('#footer-total button');
+    const originalText = btnSimpan.innerHTML;
+    btnSimpan.innerHTML = '<i class="fas fa-spinner fa-spin text-xs"></i><span>MENYIMPAN...</span>';
+    btnSimpan.disabled = true;
+
+    const itemsArray = state.selectedServiceIds.map(id => {
+        const srv = services.find(s => s.id === id);
+        return { name: srv.name, qty: state.quantities[id], unit: srv.unit, price: srv.price };
+    });
+
+    const newOrder = {
+        customer: nama,
+        whatsapp: alamat || null, 
+        date: new Date().toISOString(),
+        payment: 'cash',
+        status: 'baru', 
+        items: itemsArray,
+        total: state.total,
+        kredit_paid: 0 
+    };
+
+    try {
+        const { data, error } = await supabaseClient
+            .from('orders')
+            .insert([newOrder])
+            .select();
+
+        if (error) {
+            let errorMsg = error.message || error.details || JSON.stringify(error);
+            console.error("Insert error detail:", error);
+
+            const localId = 'local_' + Date.now();
+            const localOrder = { ...newOrder, id: localId, _localId: localId, _isPending: true, items: itemsArray };
+
+            const pending = getPendingOrders();
+            pending.unshift(localOrder);
+            savePendingOrders(pending);
+
+            allOrders.unshift(localOrder);
+            saveLocalOrders(allOrders);
+
+            switchToOrders();
+            resetForm();
+
+            alert("⚠️ GAGAL MENYIMPAN KE SERVER!\nPesanan disimpan sementara di perangkat ini.");
+        } else {
+            if (data && data.length > 0) {
+                allOrders.unshift(data[0]);
+                saveLocalOrders(allOrders);
+            }
+            switchToOrders(); 
+            resetForm();
+            fetchOrders(); 
+        }
+    } catch (err) {
+        console.error("Network/System error saat insert:", err);
+
+        const localId = 'local_' + Date.now();
+        const localOrder = { ...newOrder, id: localId, _localId: localId, _isPending: true, items: itemsArray };
+
+        const pending = getPendingOrders();
+        pending.unshift(localOrder);
+        savePendingOrders(pending);
+
+        allOrders.unshift(localOrder);
+        saveLocalOrders(allOrders);
+
+        switchToOrders();
+        resetForm();
+
+        alert("📶 TIDAK DAPAT TERHUBUNG KE SERVER!\nPesanan disimpan sementara di perangkat ini.");
+    } finally {
+        btnSimpan.innerHTML = originalText;
+        btnSimpan.disabled = false;
+    }
+}
+
+function switchToOrders() {
+    document.getElementById('view-home').classList.add('hidden');
+    document.getElementById('view-orders').classList.remove('hidden');
+    document.getElementById('view-order-detail').classList.add('hidden'); 
+    document.getElementById('view-kredit')?.classList.add('hidden'); 
+    document.getElementById('view-kredit-detail')?.classList.add('hidden');
+    const footer = document.getElementById('footer-total');
+    if(footer) footer.classList.add('translate-y-full', 'opacity-0');
+    
+    renderOrderList(); 
+}
+
+function backToHome() {
+    document.getElementById('view-orders').classList.add('hidden');
+    document.getElementById('view-order-detail').classList.add('hidden');
+    document.getElementById('view-kredit')?.classList.add('hidden'); 
+    document.getElementById('view-kredit-detail')?.classList.add('hidden');
+    document.getElementById('view-home').classList.remove('hidden');
+    const footer = document.getElementById('footer-total');
+    if(footer) footer.classList.remove('translate-y-full', 'opacity-0');
+}
+
+function switchToKredit() {
+    document.getElementById('view-home').classList.add('hidden');
+    document.getElementById('view-orders').classList.add('hidden');
+    document.getElementById('view-order-detail').classList.add('hidden');
+    document.getElementById('view-kredit-detail')?.classList.add('hidden');
+    document.getElementById('view-kredit').classList.remove('hidden');
+    const footer = document.getElementById('footer-total');
+    if(footer) footer.classList.add('translate-y-full', 'opacity-0');
+    
+    renderKreditList(); 
+}
+// --- FUNGSI HAPUS PESANAN ---
+async function hapusPesanan(id, event) {
+    if (event) event.stopPropagation();
+
+    const konfirmasi = confirm("Apakah Anda yakin ingin menghapus pesanan ini? Data yang dihapus tidak bisa dikembalikan.");
+    if (!konfirmasi) return;
+
+    const orderIndex = allOrders.findIndex(o => o.id == id);
+    if (orderIndex === -1) return;
+
+    const targetOrder = allOrders[orderIndex];
+    const targetCustomerName = targetOrder.customer;
+    const isKredit = targetOrder.payment === 'kredit';
+
+    allOrders.splice(orderIndex, 1);
+    saveLocalOrders(allOrders);
+
+    renderOrderList();
+    
+    const viewKreditDetail = document.getElementById('view-kredit-detail');
+    const viewKredit = document.getElementById('view-kredit');
+
+    if (viewKredit && !viewKredit.classList.contains('hidden')) {
+        renderKreditList();
+    }
+
+    if (viewKreditDetail && !viewKreditDetail.classList.contains('hidden') && isKredit) {
+        const sisaKredit = allOrders.filter(o => o.customer.trim().toUpperCase() === targetCustomerName.trim().toUpperCase() && o.payment === 'kredit');
+        if (sisaKredit.length > 0) {
+            openKreditDetail(targetCustomerName); 
+        } else {
+            closeKreditDetail(); 
+        }
+    }
+
+    if (targetOrder._isPending) {
+        let pending = getPendingOrders();
+        pending = pending.filter(o => o.id != id);
+        savePendingOrders(pending);
+    } else {
+        try {
+            const { error } = await supabaseClient.from('orders').delete().eq('id', targetOrder.id);
+            if (error) {
+                console.error("Gagal menghapus pesanan dari server:", error);
+                alert("Terjadi kesalahan saat menghapus data di server.");
+                fetchOrders();
+            }
+        } catch (err) {
+            console.error("Error jaringan saat menghapus:", err);
+            alert("Gagal terhubung ke server untuk menghapus data.");
+            fetchOrders(); 
+        }
+    }
+}
+
+async function hapusSemuaKreditPelanggan(customerName, event) {
+    if (event) event.stopPropagation();
+
+    const konfirmasi = confirm(`Apakah Anda yakin ingin menghapus SEMUA data kredit untuk pelanggan: ${customerName}? Data yang dihapus tidak bisa dikembalikan.`);
+    if (!konfirmasi) return;
+
+    const targetName = customerName.trim().toUpperCase();
+    
+    const ordersToDelete = allOrders.filter(o => o.customer.trim().toUpperCase() === targetName && o.payment === 'kredit');
+    if (ordersToDelete.length === 0) return;
+
+    const idsToDelete = ordersToDelete.map(o => o.id);
+    
+    allOrders = allOrders.filter(o => !idsToDelete.includes(o.id));
+    saveLocalOrders(allOrders);
+
+    let pending = getPendingOrders();
+    pending = pending.filter(o => !idsToDelete.includes(o.id));
+    savePendingOrders(pending);
+
+    renderOrderList();
+    renderKreditList();
+    
+    const serverIds = ordersToDelete.filter(o => !o._isPending).map(o => o.id);
+    
+    if (serverIds.length > 0) {
+        try {
+            const { error } = await supabaseClient.from('orders').delete().in('id', serverIds);
+            if (error) {
+                console.error("Gagal menghapus beberapa data dari server:", error);
+                alert("Beberapa data mungkin gagal terhapus sepenuhnya di server.");
+                fetchOrders();
+            }
+        } catch (err) {
+            console.error("Error jaringan saat menghapus massal:", err);
+            alert("Gagal terhubung ke server untuk menghapus semua data.");
+            fetchOrders();
+        }
+    }
+}
+
+// --- RENDER ORDER LIST ---
+function renderOrderList() {
+    const container = document.getElementById('order-list');
+    if (allOrders.length === 0) {
+        container.innerHTML = `
+            <div class="flex flex-col items-center justify-center py-10 opacity-40">
+                <i class="fas fa-inbox text-4xl mb-3 text-brand-500"></i>
+                <p class="text-xs font-bold text-brand-900">Belum ada data pesanan</p>
+            </div>
+        `;
+        return;
+    }
+    container.innerHTML = allOrders.map((order, index) => {
+        const itemsArray = typeof order.items === 'string' ? JSON.parse(order.items || '[]') : (order.items || []);
         
-        paxList.push({
-            name: nameInput.value.toUpperCase() || (type === 'infant' ? 'BAYI' : 'PENUMPANG'),
-            nik: nikInput.value || '-',
-            dob: dobInput ? dobInput.value : '', 
-            type: type 
+        // REVISI PREMIUM: Interceptor untuk memastikan cache db yang lama menampilkan nama utuh
+        itemsArray.forEach(item => {
+            if(item.name === "BC Kecil") item.name = "Bed Cover Kecil";
+            if(item.name === "BC Sedang") item.name = "Bed Cover Sedang";
+            if(item.name === "BC Besar") item.name = "Bed Cover Besar";
+        });
+
+        let summaryService = itemsArray.length > 0 ? itemsArray[0].name : 'Layanan';
+        if (itemsArray.length > 1) {
+            summaryService += ` (+${itemsArray.length - 1})`;
+        }
+
+        let pendingBadge = order._isPending
+            ? '<span class="w-2.5 h-2.5 rounded-full bg-orange-400 absolute top-2 right-2 shadow-sm" title="Menunggu upload ke server"></span>'
+            : (order.payment === 'kredit' ? '<span class="w-2.5 h-2.5 rounded-full bg-red-400 absolute top-2 right-2 shadow-sm"></span>' : '');
+
+        let statusColor = "bg-yellow-50 text-yellow-600 border-yellow-100";
+        let statusText = "PROSES";
+        
+        if (order.status === 'selesai') {
+            if (order.payment === 'cash') {
+                statusColor = "bg-green-50 text-green-600 border-green-100";
+                statusText = "SELESAI (CASH)";
+            } else {
+                statusColor = "bg-red-50 text-red-600 border-red-100";
+                statusText = "SELESAI (KREDIT)";
+            }
+        } else if (order.status === 'baru') {
+            statusColor = "bg-blue-50 text-blue-500 border-blue-100";
+            statusText = order._isPending ? "PENDING UPLOAD" : "BARU";
+        }
+
+        const idAttr = typeof order.id === 'string' ? `'${order.id}'` : order.id;
+
+        return `
+        <div class="bg-white rounded-xl p-4 shadow-sm border ${order._isPending ? 'border-orange-200' : 'border-brand-100'} mb-3 hover:bg-brand-50 transition-colors cursor-pointer relative" onclick="openOrderDetail(${idAttr})">
+            ${pendingBadge}
+            <div class="grid grid-cols-[32px_1fr_auto_32px] gap-3 items-center">
+                <div class="w-8 h-8 rounded-full bg-brand-50 text-brand-600 flex items-center justify-center text-xs font-black shadow-sm">
+                    ${index + 1}
+                </div>
+                
+                <div class="flex flex-col min-w-0">
+                    <span class="text-[13px] font-extrabold text-brand-900 leading-tight truncate mb-0.5">${order.customer}</span>
+                    <span class="text-[10px] text-gray-500 font-semibold truncate"><i class="fas fa-tag text-gray-400 mr-1"></i>${summaryService}</span>
+                </div>
+                
+                <div class="flex flex-col items-end justify-center text-right">
+                    <span class="text-[13px] font-extrabold text-brand-600 mb-1">${formatRupiah(order.total)}</span>
+                    <span class="text-[8px] font-bold border px-1.5 py-0.5 rounded shadow-sm ${statusColor}">${statusText}</span>
+                </div>
+                
+                <button onclick="hapusPesanan(${idAttr}, event)" class="w-8 h-8 flex items-center justify-center rounded-lg text-red-400 hover:text-red-600 hover:bg-red-50 transition-all ml-auto focus:outline-none" title="Hapus Pesanan">
+                    <i class="fas fa-trash-alt text-sm pointer-events-none"></i>
+                </button>
+            </div>
+        </div>
+        `;
+    }).join('');
+}
+// --- RINCIAN PESANAN & NOTA BAYAR ---
+function openOrderDetail(id) {
+    const order = allOrders.find(o => o.id == id);
+    if (!order) return;
+    currentOrderId = order.id;
+
+    const itemsArray = typeof order.items === 'string' ? JSON.parse(order.items || '[]') : (order.items || []);
+
+    const detailName = document.getElementById('detail-name');
+    const detailAddress = document.getElementById('detail-address'); 
+    const detailDate = document.getElementById('detail-date');
+    const detailTotal = document.getElementById('detail-total');
+    const detailItems = document.getElementById('detail-items');
+
+    if(detailName) detailName.innerText = order.customer;
+    if(detailAddress) detailAddress.innerText = order.whatsapp ? order.whatsapp : '-'; 
+    if(detailDate) detailDate.innerText = formatTanggalLokal(order.date);
+    if(detailTotal) detailTotal.innerText = formatRupiah(order.total);
+
+    if(detailItems) {
+        detailItems.innerHTML = itemsArray.map(item => {
+            // REVISI PREMIUM: Interceptor untuk Detail Order
+            let itemName = item.name;
+            if(itemName === "BC Kecil") itemName = "Bed Cover Kecil";
+            if(itemName === "BC Sedang") itemName = "Bed Cover Sedang";
+            if(itemName === "BC Besar") itemName = "Bed Cover Besar";
+
+            return `
+            <div class="flex justify-between items-center text-sm text-gray-700 border-b border-gray-100 last:border-0 py-3">
+                <div class="flex flex-col">
+                    <span class="font-bold text-brand-900">${itemName}</span>
+                    <span class="text-xs text-gray-500">@ ${formatRupiah(item.price || 0)}</span>
+                </div>
+                <span class="font-extrabold bg-brand-50 text-brand-900 px-3 py-1.5 rounded-lg border border-brand-100">${item.qty} ${item.unit}</span>
+            </div>
+            `;
+        }).join('');
+    }
+
+    const ticketName = document.getElementById('ticket-name');
+    const ticketAddress = document.getElementById('ticket-address'); 
+    const ticketDate = document.getElementById('ticket-date');
+    const ticketTotal = document.getElementById('ticket-total');
+    const ticketItems = document.getElementById('ticket-items');
+
+    if(ticketName) ticketName.innerText = order.customer;
+    if(ticketAddress) ticketAddress.innerText = order.whatsapp ? order.whatsapp : '-'; 
+    if(ticketDate) ticketDate.innerText = formatTanggalLokal(order.date);
+    if(ticketTotal) ticketTotal.innerText = formatRupiah(order.total);
+
+    if(ticketItems) {
+        ticketItems.innerHTML = itemsArray.map(item => {
+            // REVISI PREMIUM: Interceptor untuk Ticket E-Receipt
+            let itemName = item.name;
+            if(itemName === "BC Kecil") itemName = "Bed Cover Kecil";
+            if(itemName === "BC Sedang") itemName = "Bed Cover Sedang";
+            if(itemName === "BC Besar") itemName = "Bed Cover Besar";
+
+            return `
+            <div class="flex justify-between items-center text-xs text-slate-300 border-b border-dashed border-slate-700/50 last:border-0 py-3">
+                <div class="flex flex-col">
+                    <span class="font-bold text-cyan-50 tracking-wide text-sm">${itemName}</span>
+                    <span class="text-[11px] text-cyan-500/80 font-mono mt-1">@ ${formatRupiah(item.price || 0)}</span>
+                </div>
+                <span class="font-black bg-cyan-950/40 text-cyan-300 px-3 py-1.5 rounded-lg border border-cyan-800/50 shadow-[0_0_10px_rgba(6,182,212,0.1)] font-mono tracking-widest text-xs">${item.qty} ${item.unit.toUpperCase()}</span>
+            </div>
+            `;
+        }).join('');
+    }
+
+    refreshPaymentUI(order.payment);
+    refreshStatusUI(order.status || 'proses'); 
+
+    document.getElementById('view-orders').classList.add('hidden');
+    document.getElementById('view-kredit')?.classList.add('hidden'); 
+    document.getElementById('view-kredit-detail')?.classList.add('hidden');
+    document.getElementById('view-order-detail').classList.remove('hidden');
+}
+
+async function updatePayment(method) {
+    if (!currentOrderId) return;
+    const orderIndex = allOrders.findIndex(o => o.id == currentOrderId);
+    if (orderIndex > -1) {
+        if (allOrders[orderIndex].status === 'proses') {
+            alert("Selesaikan pesanan terlebih dahulu untuk mengubah status pembayaran.");
+            return;
+        }
+        
+        allOrders[orderIndex].payment = method;
+        refreshPaymentUI(method);
+        renderOrderList();
+
+        if (allOrders[orderIndex]._isPending) {
+            saveLocalOrders(allOrders);
+            const pending = getPendingOrders();
+            const pi = pending.findIndex(o => o.id == currentOrderId);
+            if (pi > -1) { pending[pi].payment = method; savePendingOrders(pending); }
+            return;
+        }
+        
+        const { error } = await supabaseClient.from('orders').update({ payment: method }).eq('id', currentOrderId);
+        if (error) console.error("Error updating payment:", error);
+    }
+}
+
+function refreshPaymentUI(paymentStatus) {
+    const badgeDetail = document.getElementById('payment-badge');
+    const badgeTicket = document.getElementById('ticket-payment-badge');
+    const btnCash = document.getElementById('btn-pay-cash');
+    const btnKredit = document.getElementById('btn-pay-kredit');
+
+    if (!btnCash || !btnKredit) return;
+    const currentOrder = allOrders.find(o => o.id == currentOrderId);
+    const isProses = currentOrder ? currentOrder.status === 'proses' : false;
+    
+    let baseBtnClassActive = "flex items-center justify-center gap-2 py-3 px-4 rounded-xl font-bold text-xs transition-all shadow-md ";
+    let baseBtnClassInactive = "flex items-center justify-center gap-2 py-3 px-4 rounded-xl border border-gray-200 bg-gray-50 text-gray-400 font-bold text-xs transition-all ";
+    let disabledStateClass = isProses ? "opacity-50 cursor-not-allowed pointer-events-none " : "active:scale-95 ";
+
+    if (paymentStatus === 'cash') {
+        const classLunas = "text-[10px] bg-green-50 text-green-600 px-2.5 py-1 rounded-lg border border-green-100 font-bold uppercase tracking-wider shadow-sm inline-block";
+        if (badgeDetail) { badgeDetail.innerText = "CASH"; badgeDetail.className = classLunas; }
+        if (badgeTicket) { badgeTicket.innerText = "CASH"; badgeTicket.className = "text-[10px] bg-emerald-950/50 text-emerald-400 px-3 py-1.5 rounded border border-emerald-500/30 font-black uppercase tracking-widest text-center min-w-[75px] shadow-[0_0_10px_rgba(16,185,129,0.1)] backdrop-blur-sm"; }
+        btnCash.className = baseBtnClassActive + disabledStateClass + "border-green-500 bg-green-500 text-white";
+        btnKredit.className = baseBtnClassInactive + disabledStateClass;
+    } else {
+        const classKredit = "text-[10px] bg-red-50 text-red-600 px-2.5 py-1 rounded-lg border border-red-100 font-bold uppercase tracking-wider shadow-sm inline-block";
+        if (badgeDetail) { badgeDetail.innerText = "KREDIT"; badgeDetail.className = classKredit; }
+        if (badgeTicket) { badgeTicket.innerText = "KREDIT"; badgeTicket.className = "text-[10px] bg-rose-950/50 text-rose-400 px-3 py-1.5 rounded border border-rose-500/30 font-black uppercase tracking-widest text-center min-w-[75px] shadow-[0_0_10px_rgba(244,63,94,0.1)] backdrop-blur-sm"; }
+        btnCash.className = baseBtnClassInactive + disabledStateClass;
+        btnKredit.className = baseBtnClassActive + disabledStateClass + "border-red-500 bg-red-500 text-white";
+    }
+}
+
+async function updateOrderStatus(status) {
+    if (!currentOrderId) return;
+    const orderIndex = allOrders.findIndex(o => o.id == currentOrderId);
+    if (orderIndex > -1) {
+        allOrders[orderIndex].status = status;
+        refreshStatusUI(status);
+        refreshPaymentUI(allOrders[orderIndex].payment);
+        renderOrderList();
+
+        if (allOrders[orderIndex]._isPending) {
+            saveLocalOrders(allOrders);
+            const pending = getPendingOrders();
+            const pi = pending.findIndex(o => o.id == currentOrderId);
+            if (pi > -1) { pending[pi].status = status; savePendingOrders(pending); }
+            return;
+        }
+        
+        const { error } = await supabaseClient.from('orders').update({ status: status }).eq('id', currentOrderId);
+        if (error) console.error("Error updating status:", error);
+    }
+}
+
+function refreshStatusUI(status) {
+    const btnProses = document.getElementById('btn-status-proses');
+    const btnSelesai = document.getElementById('btn-status-selesai');
+    const ticketBadge = document.getElementById('ticket-status-badge');
+    if (!btnProses || !btnSelesai) return;
+
+    const classInactive = "flex items-center justify-center gap-2 py-3 px-4 rounded-xl border border-gray-200 bg-gray-50 text-gray-400 font-bold text-xs transition-all active:scale-95";
+
+    if (status === 'proses') {
+        btnProses.className = "flex items-center justify-center gap-2 py-3 px-4 rounded-xl border-yellow-500 bg-yellow-500 text-white font-bold text-xs transition-all active:scale-95 shadow-md";
+        btnSelesai.className = classInactive;
+        if(ticketBadge) {
+            ticketBadge.innerText = "PROSES";
+            ticketBadge.className = "text-[10px] bg-blue-950/50 text-blue-400 px-3 py-1.5 rounded border border-blue-500/30 font-black uppercase tracking-widest text-center min-w-[75px] shadow-[0_0_10px_rgba(59,130,246,0.1)] backdrop-blur-sm";
+        }
+    } else if (status === 'selesai') {
+        btnProses.className = classInactive;
+        btnSelesai.className = "flex items-center justify-center gap-2 py-3 px-4 rounded-xl border-green-500 bg-green-500 text-white font-bold text-xs transition-all active:scale-95 shadow-md";
+        if(ticketBadge) {
+            ticketBadge.innerText = "SELESAI";
+            ticketBadge.className = "text-[10px] bg-cyan-950/50 text-cyan-400 px-3 py-1.5 rounded border border-cyan-500/30 font-black uppercase tracking-widest text-center min-w-[75px] shadow-[0_0_10px_rgba(34,211,238,0.1)] backdrop-blur-sm";
+        }
+    } else {
+        btnProses.className = classInactive;
+        btnSelesai.className = classInactive;
+        if(ticketBadge) {
+            ticketBadge.innerText = "BARU";
+            ticketBadge.className = "text-[10px] bg-slate-800/80 text-slate-300 px-3 py-1.5 rounded border border-slate-600/50 font-black uppercase tracking-widest text-center min-w-[75px] shadow-[0_0_10px_rgba(148,163,184,0.1)] backdrop-blur-sm";
+        }
+    }
+}
+
+function openTicketModal() {
+    const modal = document.getElementById('ticket-modal');
+    const modalContent = document.getElementById('ticket-modal-content');
+    modal.classList.remove('hidden');
+    modal.classList.add('flex');
+    setTimeout(() => {
+        modal.classList.remove('opacity-0');
+        modalContent.classList.remove('scale-95');
+        modalContent.classList.add('scale-100');
+    }, 10);
+}
+
+function closeTicketModal() {
+    const modal = document.getElementById('ticket-modal');
+    const modalContent = document.getElementById('ticket-modal-content');
+    modal.classList.add('opacity-0');
+    modalContent.classList.remove('scale-100');
+    modalContent.classList.add('scale-95');
+    setTimeout(() => {
+        modal.classList.add('hidden');
+        modal.classList.remove('flex');
+    }, 300);
+}
+
+function downloadETicket() {
+    const originalTicketElement = document.getElementById('ticket-area');
+    const btnDownload = document.getElementById('btn-download');
+    const originalContent = btnDownload.innerHTML;
+    
+    btnDownload.innerHTML = '<i class="fas fa-circle-notch fa-spin"></i><span>Memproses Nota Bayar...</span>';
+    btnDownload.disabled = true;
+    btnDownload.classList.add('opacity-70');
+
+    const offScreenContainer = document.createElement('div');
+    offScreenContainer.style.position = 'absolute';
+    offScreenContainer.style.left = '-9999px';
+    offScreenContainer.style.top = '0';
+    offScreenContainer.style.width = '420px'; 
+    offScreenContainer.style.backgroundColor = '#0b1120'; 
+    
+    const clone = originalTicketElement.cloneNode(true);
+    clone.style.height = 'auto';
+    clone.style.maxHeight = 'none';
+    clone.style.overflow = 'visible';
+    clone.classList.remove('overflow-y-auto');
+    clone.style.padding = '24px'; 
+
+    const blurElements = clone.querySelectorAll('.blur-xl');
+    blurElements.forEach(el => {
+        el.classList.remove('blur-xl', 'bg-cyan-500', 'opacity-20');
+        el.style.boxShadow = '0 0 50px 20px rgba(6, 182, 212, 0.3)';
+        el.style.backgroundColor = 'transparent';
+    });
+
+    const mixBlendElements = clone.querySelectorAll('.mix-blend-screen');
+    mixBlendElements.forEach(el => {
+        el.classList.remove('mix-blend-screen');
+        el.style.opacity = '0.04';
+    });
+
+    offScreenContainer.appendChild(clone);
+    document.body.appendChild(offScreenContainer);
+
+    document.fonts.ready.then(() => {
+        html2canvas(clone, { 
+            scale: 4, 
+            backgroundColor: "#0b1120", 
+            useCORS: true,
+            allowTaint: true,
+            windowWidth: 420 
+        })
+        .then(canvas => {
+            document.body.removeChild(offScreenContainer);
+            btnDownload.innerHTML = originalContent;
+            btnDownload.disabled = false;
+            btnDownload.classList.remove('opacity-70');
+            
+            const image = canvas.toDataURL("image/jpeg", 1.0);
+            const link = document.createElement('a');
+            const ticketNameEl = document.getElementById('ticket-name');
+            const custName = ticketNameEl ? ticketNameEl.innerText.replace(/[^a-z0-9]/gi, '_').toUpperCase() : 'CUST';
+            
+            link.download = `NOTA-BAYAR-ZIEDAN-${custName}.jpg`;
+            link.href = image;
+            link.click();
+        }).catch(error => {
+            if(document.body.contains(offScreenContainer)) {
+                document.body.removeChild(offScreenContainer);
+            }
+            btnDownload.innerHTML = originalContent;
+            btnDownload.disabled = false;
+            btnDownload.classList.remove('opacity-70');
+            console.error("Gagal memproses Nota Bayar: ", error);
+            alert("Terjadi kesalahan saat memproses Nota Bayar.");
         });
     });
-    
-    return paxList;
 }
 
-// --- CALCULATE TOTAL FROM PAX ---
-window.calcTotalFromPax = function() {
-    const adultCount = parseInt(document.getElementById('inpPaxCount').value) || 1;
-
-    const pricePerPax = parseFloat(document.getElementById('inpPricePerPax').value) || 0;
-    if (pricePerPax > 0) {
-        document.getElementById('inpPrice').value = pricePerPax * adultCount;
-    }
-
-    const returnPricePerPax = parseFloat(document.getElementById('inpReturnPricePerPax').value) || 0;
-    if (returnPricePerPax > 0) {
-        document.getElementById('inpReturnPrice').value = returnPricePerPax * adultCount;
-    }
-
-    calcRemaining(); 
+function closeOrderDetail() {
+    currentOrderId = null; 
+    document.getElementById('view-order-detail').classList.add('hidden');
+    document.getElementById('view-orders').classList.remove('hidden');
 }
 
-// --- CALCULATE REMAINING SEPARATED (PERGI & PULANG) ---
-window.calcRemaining = function() {
-    const priceDepart = parseFloat(document.getElementById('inpPrice').value) || 0;
-    const dpDepart = parseFloat(document.getElementById('inpFeeDepart').value) || 0;
-    const remainingDepart = priceDepart - dpDepart;
+// --- RENDER & REKAP KREDIT ---
+function renderKreditList() {
+    const container = document.getElementById('kredit-list');
+    const kreditOrders = allOrders.filter(o => o.payment === 'kredit');
 
-    const fieldDepart = document.getElementById('inpRemainingDepart');
-    fieldDepart.value = formatRupiah(remainingDepart);
-    fieldDepart.className = remainingDepart <= 0 
-        ? "bg-transparent text-right text-green-500 font-black text-lg outline-none w-40 cursor-default" 
-        : "bg-transparent text-right text-red-500 font-black text-lg outline-none w-40 cursor-default";
-
-    const priceReturn = parseFloat(document.getElementById('inpReturnPrice').value) || 0;
-    const dpReturn = parseFloat(document.getElementById('inpFeeReturn').value) || 0;
-    const remainingReturn = priceReturn - dpReturn;
-
-    const fieldReturn = document.getElementById('inpRemainingReturn');
-    fieldReturn.value = formatRupiah(remainingReturn);
-    fieldReturn.className = remainingReturn <= 0 
-        ? "bg-transparent text-right text-green-500 font-black text-lg outline-none w-40 cursor-default" 
-        : "bg-transparent text-right text-red-500 font-black text-lg outline-none w-40 cursor-default";
-}
-// --- FETCH & REALTIME ---
-async function fetchOrders() {
-    const { data, error } = await supabase
-        .from('orders')
-        .select('*')
-        .order('created_at', { ascending: true }) 
-        .limit(50); 
-
-    if (error) {
-        console.error("Error fetching:", error);
+    if (kreditOrders.length === 0) {
+        container.innerHTML = `
+            <div class="flex flex-col items-center justify-center py-10 opacity-40">
+                <i class="fas fa-hand-holding-dollar text-4xl mb-3 text-red-400"></i>
+                <p class="text-xs font-bold text-red-900">Belum ada data kredit</p>
+            </div>
+        `;
         return;
     }
 
-    orders = data || [];
-    renderStats();
-    
-    if (!document.getElementById('page-list').classList.contains('hidden')) {
-         renderOrderList(document.getElementById('searchInput').value);
-    }
-}
-
-function setupRealtime() {
-    supabase.channel('public:orders')
-        .on('postgres_changes', { event: '*', schema: 'public', table: 'orders' }, (payload) => {
-            fetchOrdersBg(); 
-        })
-        .subscribe();
-}
-
-async function fetchOrdersBg() {
-    const { data } = await supabase.from('orders')
-        .select('*')
-        .order('created_at', { ascending: true }) 
-        .limit(50);
-        
-    if(data) {
-        orders = data;
-        renderStats();
-        if (document.getElementById('searchInput').value === '') {
-             renderOrderList('');
+    const groupedKredit = {};
+    kreditOrders.forEach(order => {
+        const keyName = order.customer.trim().toUpperCase(); 
+        if (!groupedKredit[keyName]) {
+            groupedKredit[keyName] = { displayName: order.customer, totalAmount: 0, paidAmount: 0, transactionCount: 0 };
         }
-        if(currentDetailOrder && !document.getElementById('page-detail').classList.contains('hidden')) {
-            const updatedOrder = orders.find(o => o.id === currentDetailOrder.id);
-            if(updatedOrder) openDetailView(updatedOrder.id);
-        }
-    }
-}
-
-// --- LOGIC UPLOAD & STORAGE ---
-async function uploadToSupabaseStorage(base64Data, fileName) {
-    if (!base64Data || base64Data.startsWith('http')) return base64Data; 
-
-    try {
-        const res = await fetch(base64Data);
-        const blob = await res.blob();
-        const cleanFileName = fileName.replace(/[^a-zA-Z0-9]/g, '_'); 
-        const filePath = `uploads/${cleanFileName}.jpg`;
-
-        const { data, error } = await supabase.storage
-            .from('davka-files')
-            .upload(filePath, blob, { contentType: 'image/jpeg', upsert: true });
-
-        if (error) throw error;
-
-        const { data: publicData } = supabase.storage
-            .from('davka-files')
-            .getPublicUrl(filePath);
-
-        return publicData.publicUrl;
-    } catch (err) {
-        console.error("Upload Error:", err);
-        return null; 
-    }
-}
-// --- FORM HANDLING (SAVE & UPDATE) ---
-const orderForm = document.getElementById('orderForm');
-
-orderForm.addEventListener('submit', async (e) => {
-    e.preventDefault();
-    toggleLoader(true); 
-    
-    const editIndex = parseInt(document.getElementById('editIndex').value);
-    const existingOrder = editIndex !== -1 ? orders[editIndex] : null;
-    
-    const orderId = existingOrder ? existingOrder.id : Date.now();
-    const created_at = existingOrder ? existingOrder.created_at : new Date().toISOString();
-
-    let transferBase64 = document.getElementById('inpTransferData').value;
-    let chatBase64 = document.getElementById('inpChatData').value;
-    let transferReturnBase64 = document.getElementById('inpTransferDataReturn').value;
-    let chatReturnBase64 = document.getElementById('inpChatDataReturn').value;
-
-    try {
-        let transferUrl = existingOrder ? existingOrder.transferScreenshot : null;
-        let chatUrl = existingOrder ? existingOrder.chatScreenshot : null;
-        let transferReturnUrl = existingOrder ? existingOrder.transferScreenshotReturn : null;
-        let chatReturnUrl = existingOrder ? existingOrder.chatScreenshotReturn : null;
-
-        if (transferBase64 && !transferBase64.startsWith('http')) {
-            showToast("Upload Transfer Pergi...");
-            transferUrl = await uploadToSupabaseStorage(transferBase64, `${orderId}_tf_depart`);
-        }
-        if (chatBase64 && !chatBase64.startsWith('http')) {
-            showToast("Upload Chat Pergi...");
-            chatUrl = await uploadToSupabaseStorage(chatBase64, `${orderId}_chat_depart`);
-        }
-        if (transferReturnBase64 && !transferReturnBase64.startsWith('http')) {
-            showToast("Upload Transfer Pulang...");
-            transferReturnUrl = await uploadToSupabaseStorage(transferReturnBase64, `${orderId}_tf_return`);
-        }
-        if (chatReturnBase64 && !chatReturnBase64.startsWith('http')) {
-            showToast("Upload Chat Pulang...");
-            chatReturnUrl = await uploadToSupabaseStorage(chatReturnBase64, `${orderId}_chat_return`);
-        }
-
-        const passengerData = getPassengersFromForm();
-        const tripType = document.getElementById('inpTripType').value;
-
-        // SANITASI TANGGAL
-        const getValidDate = (val) => val ? val : null;
-
-        const newOrder = {
-            id: orderId, 
-            created_at: created_at,
-            contactName: document.getElementById('inpContactName').value.toUpperCase(),
-            contactPhone: document.getElementById('inpContactPhone').value,
-            address: document.getElementById('inpAddress').value.toUpperCase(),
-            passengers: passengerData, 
-            origin: document.getElementById('inpOrigin').value.toUpperCase(),
-            dest: document.getElementById('inpDest').value.toUpperCase(),
-            
-            date: getValidDate(document.getElementById('inpDate').value),
-            warDate: getValidDate(document.getElementById('inpWarDate').value),
-            
-            train: document.getElementById('inpTrain').value.toUpperCase(),
-            tripType: tripType,
-            
-            returnOrigin: document.getElementById('inpReturnOrigin').value.toUpperCase(),
-            returnDest: document.getElementById('inpReturnDest').value.toUpperCase(),
-            
-            returnDate: getValidDate(document.getElementById('inpReturnDate').value),
-            returnWarDate: getValidDate(document.getElementById('inpReturnWarDate').value),
-            
-            returnTrain: document.getElementById('inpReturnTrain').value.toUpperCase(),
-            
-            paymentMethod: document.getElementById('inpPaymentMethod').value,
-            paymentMethodReturn: document.getElementById('inpPaymentMethodReturn').value, 
-            
-            price: parseFloat(document.getElementById('inpPrice').value) || 0,
-            feeDepart: parseFloat(document.getElementById('inpFeeDepart').value) || 0,
-            
-            returnPrice: parseFloat(document.getElementById('inpReturnPrice').value) || 0,
-            feeReturn: parseFloat(document.getElementById('inpFeeReturn').value) || 0,
-
-            fee: (parseFloat(document.getElementById('inpFeeDepart').value) || 0) + (parseFloat(document.getElementById('inpFeeReturn').value) || 0),
-            
-            settlementMethod: existingOrder ? (existingOrder.settlementMethod || '-') : '-',
-            
-            transferScreenshot: transferUrl, 
-            chatScreenshot: chatUrl,
-            transferScreenshotReturn: transferReturnUrl,
-            chatScreenshotReturn: chatReturnUrl,
-
-            settlementProof: existingOrder ? existingOrder.settlementProof : null,
-            kaiTicketFile: existingOrder ? existingOrder.kaiTicketFile : null,
-            status: existingOrder ? existingOrder.status : 'pending'
-        };
-
-        const { error } = existingOrder 
-            ? await supabase.from('orders').update(newOrder).eq('id', orderId)
-            : await supabase.from('orders').insert([newOrder]);
-
-        if(error) throw error;
-
-        if (existingOrder) {
-            orders[editIndex] = newOrder;
-        } else {
-            orders.push(newOrder); 
-        }
-        
-        renderStats();
-        document.getElementById('searchInput').value = ''; 
-        renderOrderList(''); 
-        
-        showToast("Data Tersimpan!");
-        resetForm();
-
-    } catch (err) {
-        console.error("Save Failed:", err);
-        alert(`Gagal simpan ke server: ${err.message || "Cek koneksi internet Anda"}. Data belum dihapus dari form.`);
-    } finally {
-        toggleLoader(false); 
-    }
-});
-
-window.deleteOrder = async function(id) {
-    if(confirm("Hapus pesanan ini Permanen?")) {
-        toggleLoader(true);
-        orders = orders.filter(o => o.id !== id);
-        
-        const isDetailOpen = !document.getElementById('page-detail').classList.contains('hidden');
-        if(isDetailOpen) closeDetailView();
-        
-        renderOrderList(document.getElementById('searchInput').value);
-        renderStats();
-        showToast("Dihapus dari layar...");
-
-        try {
-            await supabase.from('orders').delete().eq('id', id);
-            showToast("Terhapus dari server.");
-        } catch (err) {
-            console.error(err);
-            alert("Gagal hapus server.");
-        } finally {
-            toggleLoader(false);
-        }
-    }
-}
-window.toggleStatus = async function(id) {
-    const index = orders.findIndex(o => o.id === id);
-    if(index === -1) return;
-
-    const current = orders[index].status;
-    const next = current === 'pending' ? 'success' : (current === 'success' ? 'cancel' : 'pending');
-    
-    orders[index].status = next;
-    
-    renderOrderList(document.getElementById('searchInput').value);
-    
-    const isDetailOpen = !document.getElementById('page-detail').classList.contains('hidden');
-    if(isDetailOpen) openDetailView(id);
-
-    renderStats();
-
-    try {
-        await supabase.from('orders').update({ status: next }).eq('id', id);
-    } catch(e) {
-        console.error(e);
-    }
-}
-
-window.navTo = function(pageId) {
-    const currentPages = document.querySelectorAll('main > section:not(.hidden)');
-    currentPages.forEach(page => { page.classList.add('fade-out'); page.classList.remove('fade-in'); });
-
-    setTimeout(() => {
-        document.querySelectorAll('main > section').forEach(el => {
-            el.classList.add('hidden'); el.classList.remove('fade-out');
-        });
-        const target = document.getElementById(`page-${pageId}`);
-        target.classList.remove('hidden'); target.classList.add('fade-in');
-
-        document.querySelectorAll('nav button').forEach(el => el.classList.remove('active-nav'));
-        if(pageId === 'dashboard') document.getElementById('nav-dashboard').classList.add('active-nav');
-        if(pageId === 'list') {
-            document.getElementById('nav-list').classList.add('active-nav');
-            renderOrderList(document.getElementById('searchInput').value); 
-        }
-        if(pageId === 'input' && document.getElementById('editIndex').value === "-1") resetForm();
-        window.scrollTo({ top: 0, behavior: 'smooth' });
-    }, 400); 
-}
-
-window.editOrder = function(id) {
-    const index = orders.findIndex(o => o.id === id);
-    if (index === -1) return;
-    const data = orders[index];
-    
-    document.getElementById('editIndex').value = index;
-    document.getElementById('inpContactName').value = data.contactName || data.name || '';
-    document.getElementById('inpContactPhone').value = data.contactPhone || data.phone || '';
-    document.getElementById('inpAddress').value = data.address || '';
-    
-    let paxList = [];
-    if (Array.isArray(data.passengers)) {
-        paxList = data.passengers;
-    } else if (data.name) {
-        paxList = [{name: data.name, nik: data.nik || '-', dob: '', type: 'adult'}];
-    }
-    
-    const adults = paxList.filter(p => !p.type || p.type === 'adult'); 
-    const infants = paxList.filter(p => p.type === 'infant');
-
-    document.getElementById('inpPaxCount').value = adults.length || 1;
-    document.getElementById('inpInfantCount').value = infants.length || 0;
-    
-    updatePassengerForms(); 
-    
-    setTimeout(() => {
-        const itemWrappers = document.querySelectorAll('.passenger-item');
-        let adultIdx = 0;
-        let infantIdx = 0;
-
-        itemWrappers.forEach(el => {
-            const type = el.getAttribute('data-type');
-            const nameInput = el.querySelector('.pax-name');
-            const nikInput = el.querySelector('.pax-nik');
-            const dobInput = el.querySelector('.pax-dob');
-
-            if (type === 'adult' && adults[adultIdx]) {
-                nameInput.value = adults[adultIdx].name;
-                nikInput.value = adults[adultIdx].nik;
-                if(dobInput) dobInput.value = adults[adultIdx].dob || '';
-                adultIdx++;
-            } else if (type === 'infant' && infants[infantIdx]) {
-                nameInput.value = infants[infantIdx].name;
-                nikInput.value = infants[infantIdx].nik;
-                if(dobInput) dobInput.value = infants[infantIdx].dob || '';
-                infantIdx++;
-            }
-        });
-    }, 50);
-
-    document.getElementById('inpOrigin').value = data.origin || '';
-    document.getElementById('inpDest').value = data.dest || '';
-    document.getElementById('inpDate').value = data.date || '';
-    document.getElementById('inpWarDate').value = data.warDate || ''; 
-    document.getElementById('inpTrain').value = data.train || '';
-    document.getElementById('inpTripType').value = data.tripType || 'one_way';
-    
-    toggleTripType();
-    
-    if(data.tripType === 'round_trip') {
-        document.getElementById('inpReturnOrigin').value = data.returnOrigin || '';
-        document.getElementById('inpReturnDest').value = data.returnDest || '';
-        document.getElementById('inpReturnDate').value = data.returnDate || '';
-        document.getElementById('inpReturnWarDate').value = data.returnWarDate || '';
-        document.getElementById('inpReturnTrain').value = data.returnTrain || '';
-    }
-    
-    document.getElementById('inpPaymentMethod').value = data.paymentMethod || 'Tunai';
-    document.getElementById('inpPaymentMethodReturn').value = data.paymentMethodReturn || 'Tunai';
-    
-    const adultCount = adults.length || 1;
-    
-    const priceDepart = data.price || 0;
-    document.getElementById('inpPrice').value = priceDepart;
-    document.getElementById('inpPricePerPax').value = priceDepart > 0 ? Math.round(priceDepart / adultCount) : 0;
-    
-    const feeDepart = (data.feeDepart !== undefined) ? data.feeDepart : (data.fee || 0);
-    document.getElementById('inpFeeDepart').value = feeDepart;
-    
-    const priceReturn = data.returnPrice || 0;
-    document.getElementById('inpReturnPrice').value = priceReturn;
-    document.getElementById('inpReturnPricePerPax').value = priceReturn > 0 ? Math.round(priceReturn / adultCount) : 0;
-    
-    const feeReturn = data.feeReturn || 0;
-    document.getElementById('inpFeeReturn').value = feeReturn;
-
-    calcRemaining();
-
-    if(data.transferScreenshot) {
-        document.getElementById('inpTransferData').value = data.transferScreenshot;
-        document.getElementById('imgTransfer').src = data.transferScreenshot;
-        document.getElementById('previewTransfer').classList.remove('hidden');
-    }
-    if(data.chatScreenshot) {
-        document.getElementById('inpChatData').value = data.chatScreenshot;
-        document.getElementById('imgChat').src = data.chatScreenshot;
-        document.getElementById('previewChat').classList.remove('hidden');
-    }
-    if(data.transferScreenshotReturn) {
-        document.getElementById('inpTransferDataReturn').value = data.transferScreenshotReturn;
-        document.getElementById('imgTransferReturn').src = data.transferScreenshotReturn;
-        document.getElementById('previewTransferReturn').classList.remove('hidden');
-    }
-    if(data.chatScreenshotReturn) {
-        document.getElementById('inpChatDataReturn').value = data.chatScreenshotReturn;
-        document.getElementById('imgChatReturn').src = data.chatScreenshotReturn;
-        document.getElementById('previewChatReturn').classList.remove('hidden');
-    }
-
-    document.getElementById('btnSaveText').innerText = "UPDATE DATA";
-    navTo('input');
-}
-
-window.updateSettlement = async function(id, newVal) {
-    toggleLoader(true);
-    const index = orders.findIndex(o => o.id === id);
-    if(index !== -1) {
-        const nextStatus = newVal === '-' ? 'pending' : 'success';
-        orders[index].settlementMethod = newVal;
-        orders[index].status = nextStatus;
-        
-        renderOrderList(document.getElementById('searchInput').value);
-        
-        const isDetailOpen = !document.getElementById('page-detail').classList.contains('hidden');
-        if(isDetailOpen) openDetailView(id); 
-
-        renderStats(); 
-        try {
-             await supabase.from('orders').update({ settlementMethod: newVal, status: nextStatus }).eq('id', id);
-            showToast("Info Pelunasan Updated");
-        } catch(e) { console.error(e); } finally { toggleLoader(false); }
-    } else toggleLoader(false);
-}
-// --- HELPER LAINNYA ---
-function toggleLoader(show) {
-    const loader = document.getElementById('global-loader');
-    if (loaderTimeout) { clearTimeout(loaderTimeout); loaderTimeout = null; }
-    if (show) {
-        loader.classList.remove('hidden');
-        loaderTimeout = setTimeout(() => { if (!loader.classList.contains('hidden')) toggleLoader(false); }, 15000); 
-    } else loader.classList.add('hidden');
-}
-
-window.handleUploadZoneClick = function(zoneId, inputId) {
-    const zone = document.getElementById(zoneId);
-    const hint = document.getElementById(zoneId.replace('zone', 'hint')); 
-    const input = document.getElementById(inputId);
-    if (activeUploadZone === zoneId) {
-        input.click(); setTimeout(resetUploadZones, 500);
-    } else {
-        resetUploadZones(); 
-        activeUploadZone = zoneId;
-        zone.classList.add('upload-zone-active');
-        if(hint) hint.classList.remove('hidden');
-        
-        setTimeout(() => { 
-            zone.scrollIntoView({ behavior: "smooth", block: "start", inline: "nearest" }); 
-        }, 300);
-    }
-}
-
-function resetUploadZones() {
-    activeUploadZone = null;
-    document.querySelectorAll('.upload-zone-base').forEach(el => el.classList.remove('upload-zone-active'));
-    const h1 = document.getElementById('hintTransfer'); if(h1) h1.classList.add('hidden');
-    const h2 = document.getElementById('hintChat'); if(h2) h2.classList.add('hidden');
-    const h3 = document.getElementById('hintTransferReturn'); if(h3) h3.classList.add('hidden');
-    const h4 = document.getElementById('hintChatReturn'); if(h4) h4.classList.add('hidden');
-}
-
-function setupImageUploader(inputId, hiddenDataId, imgId, containerId) {
-    const fileInput = document.getElementById(inputId);
-    if(!fileInput) return;
-    
-    fileInput.addEventListener('change', function(e) {
-        toggleLoader(true);
-        processFile(e.target.files[0], (dataUrl) => {
-            document.getElementById(hiddenDataId).value = dataUrl;
-            document.getElementById(imgId).src = dataUrl;
-            document.getElementById(containerId).classList.remove('hidden');
-            resetUploadZones();
-            toggleLoader(false);
-        });
+        groupedKredit[keyName].totalAmount += order.total;
+        groupedKredit[keyName].paidAmount += (order.kredit_paid || 0);
+        groupedKredit[keyName].transactionCount += 1;
     });
-}
 
-function processFile(file, callback) {
-    if (!file) { toggleLoader(false); return; }
-    const reader = new FileReader();
-    reader.onload = function(event) {
-        const img = new Image();
-        img.crossOrigin = "anonymous";
-        img.onload = function() {
-            const canvas = document.createElement('canvas');
-            const ctx = canvas.getContext('2d');
-            const MAX_WIDTH = 600; 
-            let width = img.width; let height = img.height;
-            if (width > MAX_WIDTH) { height *= MAX_WIDTH / width; width = MAX_WIDTH; }
-            canvas.width = width; canvas.height = height;
-            ctx.drawImage(img, 0, 0, width, height);
-            callback(canvas.toDataURL('image/jpeg', 0.6)); 
-        }
-        img.src = event.target.result;
-    }
-    reader.readAsDataURL(file);
-}
+    const groupedArray = Object.values(groupedKredit);
+    container.innerHTML = groupedArray.map((data, index) => {
+        const sisa = data.totalAmount - data.paidAmount;
+        const nameStr = data.displayName.replace(/'/g, "\\'"); 
+        
+        let isLunas = sisa <= 0;
+        let sisaColorClass = isLunas ? 'text-green-500' : 'text-red-500';
+        let badgeSisaHtml = isLunas
+            ? `<span class="text-[8px] font-bold border px-1.5 py-0.5 rounded shadow-sm bg-green-50 text-green-600 border-green-100 uppercase">LUNAS</span>`
+            : `<span class="text-[8px] font-bold border px-1.5 py-0.5 rounded shadow-sm bg-red-50 text-red-600 border-red-100 uppercase">BLM LUNAS</span>`;
 
-function setupHistoryUploader() {
-    const historyInput = document.getElementById('inpHistoryUpload');
-    historyInput.addEventListener('change', function(e) {
-        if (!currentUploadOrderId || !currentUploadType) return;
-        const file = e.target.files[0];
-        if (!file) return;
-        showToast("Upload gambar...");
-        toggleLoader(true);
-        processFile(file, async (base64Data) => {
-            try {
-                const fileName = `${currentUploadOrderId}_${currentUploadType}_${Date.now()}`;
-                const publicUrl = await uploadToSupabaseStorage(base64Data, fileName);
-                const updateData = {};
-                if (currentUploadType === 'settlement') updateData.settlementProof = publicUrl;
-                else if (currentUploadType === 'kai_ticket') updateData.kaiTicketFile = publicUrl;
-
-                await supabase.from('orders').update(updateData).eq('id', currentUploadOrderId);
+        return `
+        <div class="bg-white rounded-xl p-4 shadow-sm border border-red-100 mb-3 hover:bg-red-50 transition-colors relative cursor-pointer active:scale-[0.98]" onclick="openKreditDetail('${nameStr}')">
+            <div class="grid grid-cols-[32px_1fr_auto_32px] gap-3 items-center">
                 
-                const idx = orders.findIndex(o => o.id === currentUploadOrderId);
-                if(idx !== -1) {
-                     if (currentUploadType === 'settlement') orders[idx].settlementProof = publicUrl;
-                     else orders[idx].kaiTicketFile = publicUrl;
-                     
-                     const isDetailOpen = !document.getElementById('page-detail').classList.contains('hidden');
-                     if(isDetailOpen) openDetailView(currentUploadOrderId);
-                }
-                showToast("Tersimpan!");
-            } catch(e) { console.error(e); alert("Gagal simpan."); } finally {
-                currentUploadOrderId = null; currentUploadType = null;
-                historyInput.value = ''; toggleLoader(false);
-            }
-        });
-    });
-}
-window.toggleTripType = function() {
-    const type = document.getElementById('inpTripType').value;
-    const fields = document.getElementById('returnTripFields');
-    const uploadTabContainer = document.getElementById('uploadTabContainer');
-    const payReturnSection = document.getElementById('paymentReturnSection'); 
-    
-    const inpRetDate = document.getElementById('inpReturnDate');
-    const inpRetTrain = document.getElementById('inpReturnTrain');
-    const inpRetOrg = document.getElementById('inpReturnOrigin');
-    const inpRetDest = document.getElementById('inpReturnDest');
-
-    if(type === 'round_trip') {
-        fields.classList.remove('hidden'); fields.classList.add('fade-in');
-        uploadTabContainer.classList.remove('hidden');
-        payReturnSection.classList.remove('hidden'); 
-        
-        inpRetDate.required = true;
-        inpRetTrain.required = true;
-        if(inpRetOrg) inpRetOrg.required = true;
-        if(inpRetDest) inpRetDest.required = true;
-        
-        document.getElementById('lblUploadDepart').classList.remove('hidden');
-        document.getElementById('labelTransfer').innerText = "Bukti Transfer (Pergi)";
-        document.getElementById('labelChat').innerText = "Chat WA (Pergi)";
-        
-    } else {
-        fields.classList.add('hidden'); fields.classList.remove('fade-in');
-        uploadTabContainer.classList.add('hidden'); 
-        payReturnSection.classList.add('hidden'); 
-        
-        switchUploadTab('depart');
-        
-        inpRetDate.required = false;
-        inpRetTrain.required = false;
-        if(inpRetOrg) inpRetOrg.required = false;
-        if(inpRetDest) inpRetDest.required = false;
-
-        document.getElementById('inpReturnPricePerPax').value = '';
-        document.getElementById('inpReturnPrice').value = '';
-        document.getElementById('inpFeeReturn').value = ''; 
-        
-        calcRemaining();
-
-        document.getElementById('lblUploadDepart').classList.add('hidden');
-        document.getElementById('labelTransfer').innerText = "Bukti Transfer";
-        document.getElementById('labelChat').innerText = "Chat WA";
-    }
-    setTimeout(enableSmoothInputUX, 200);
-}
-
-window.calcH45 = function() {
-    const dateVal = document.getElementById('inpDate').value;
-    if(dateVal) {
-        const d = new Date(dateVal); d.setDate(d.getDate() - 45);
-        document.getElementById('inpWarDate').value = d.toISOString().split('T')[0];
-    }
-}
-window.calcReturnH45 = function() {
-    const dateVal = document.getElementById('inpReturnDate').value;
-    if(dateVal) {
-        const d = new Date(dateVal); d.setDate(d.getDate() - 45);
-        document.getElementById('inpReturnWarDate').value = d.toISOString().split('T')[0];
-    }
-}
-window.printReceipt = function(orderId) {
-    const order = orders.find(o => o.id === orderId);
-    if (!order) return;
-    toggleLoader(true);
-    
-    renderReceiptToDOM(order);
-    
-    showToast("RENDER E-TIKET...");
-    setTimeout(() => { captureAndShowModal('receipt-render-area'); }, 800);
-}
-// --- CORE: RENDER NOTA BERDASARKAN TAB AKTIF & DATA LENGKAP ---
-function renderReceiptToDOM(order) {
-    const sectionDepart = document.getElementById('rec-ticket-depart');
-    const sectionReturn = document.getElementById('rec-ticket-return');
-    
-    const priceTotalEl = document.getElementById('rec-price-total');
-    const priceDpEl = document.getElementById('rec-price-dp');
-    const priceRemainingEl = document.getElementById('rec-price-remaining');
-    
-    // Reset Visibility
-    sectionDepart.classList.add('hidden');
-    sectionReturn.classList.add('hidden');
-
-    // --- SHARED DATA (PENUMPANG) ---
-    let paxList = Array.isArray(order.passengers) ? order.passengers : (order.name ? [{name: order.name, nik: order.nik || '-', type: 'adult'}] : []);
-    const mainPaxName = paxList.length > 0 ? paxList[0].name : (order.contactName || 'PENUMPANG');
-    
-    const adults = paxList.filter(p => !p.type || p.type === 'adult').length;
-    const infants = paxList.filter(p => p.type === 'infant').length;
-    
-    let paxCountStr = `${adults} Dewasa`;
-    if(infants > 0) paxCountStr += `, ${infants} Bayi`;
-
-    let paxHtml = '';
-    paxList.forEach(p => {
-        const isInfant = p.type === 'infant';
-        const paxTypeLabel = isInfant ? '<span class="text-[10px] bg-pink-500/20 border border-pink-500/30 px-2 py-0.5 rounded ml-2 text-pink-400 align-middle tracking-widest">BAYI</span>' : '';
-        
-        let dobStr = '';
-        if (p.dob) {
-            const dObj = new Date(p.dob);
-            if(!isNaN(dObj)) {
-                dobStr = dObj.toLocaleDateString('id-ID', { day: '2-digit', month: 'short', year: 'numeric' }).toUpperCase();
-            }
-        }
-        
-        // UPDATE: Layout Tanggal Lahir pindah ke bawah, menggunakan stack rapi (Diperbesar)
-        let dobDisplayReceipt = '';
-        if (dobStr) {
-            dobDisplayReceipt = `
-                <div class="mt-2 pt-2 border-t border-dashed border-white/10 flex items-center gap-2">
-                    <i class="fas fa-calendar-alt text-davka-orange text-[12px] opacity-80"></i>
-                    <span class="text-[12px] text-gray-400 uppercase tracking-widest">Lahir:</span>
-                    <span class="text-[14px] text-white font-bold font-mono tracking-widest">${dobStr}</span>
+                <div class="w-8 h-8 rounded-full bg-red-50 text-red-500 flex items-center justify-center text-xs font-black shadow-sm">
+                    ${index + 1}
                 </div>
+                
+                <div class="flex flex-col min-w-0">
+                    <span class="text-[13px] font-extrabold text-brand-900 leading-tight truncate mb-0.5">${data.displayName}</span>
+                    <span class="text-[10px] text-gray-500 font-semibold truncate"><i class="fas fa-file-invoice-dollar text-gray-400 mr-1"></i>${data.transactionCount} Transaksi</span>
+                </div>
+
+                <div class="flex flex-col items-end justify-center text-right">
+                    <span class="text-[13px] font-extrabold ${sisaColorClass} mb-1">${formatRupiah(sisa)}</span>
+                    ${badgeSisaHtml}
+                </div>
+
+                <button onclick="hapusSemuaKreditPelanggan('${nameStr}', event)" class="w-8 h-8 flex items-center justify-center rounded-lg text-red-400 hover:text-red-600 hover:bg-red-50 transition-all ml-auto focus:outline-none" title="Hapus Semua Kredit ${data.displayName}">
+                    <i class="fas fa-trash-alt text-sm pointer-events-none"></i>
+                </button>
+            </div>
+        </div>
+        `;
+    }).join('');
+}
+
+function openKreditDetail(customerName) {
+    const targetName = customerName.trim().toUpperCase();
+    currentDetailKreditName = targetName;
+    const customerOrders = allOrders.filter(o => o.customer.trim().toUpperCase() === targetName && o.payment === 'kredit');
+    
+    if (customerOrders.length === 0) {
+        closeKreditDetail();
+        return;
+    }
+
+    const titleEl = document.getElementById('kredit-detail-title');
+    if (titleEl) titleEl.innerText = `Rincian: ${customerOrders[0].customer}`;
+
+    let itemsHTML = '';
+    let totalKreditAll = 0;
+    let totalPaidAll = 0;
+    let counter = 1;
+
+    customerOrders.forEach(order => {
+        totalKreditAll += order.total;
+        totalPaidAll += (order.kredit_paid || 0);
+        
+        const sisaOrder = order.total - (order.kredit_paid || 0);
+        
+        const isLunas = sisaOrder <= 0;
+        const statusLunasHtml = isLunas ? `<span class="text-[9px] font-bold bg-green-100 text-green-600 px-1.5 py-0.5 rounded uppercase leading-none shadow-sm">LUNAS</span>` : '';
+
+        const itemsArr = typeof order.items === 'string' ? JSON.parse(order.items || '[]') : (order.items || []);
+        const idAttr = typeof order.id === 'string' ? `'${order.id}'` : order.id;
+
+        itemsArr.forEach(item => {
+            // REVISI PREMIUM: Interceptor untuk Detail Riwayat Transaksi Kredit
+            let itemName = item.name;
+            if(itemName === "BC Kecil") itemName = "Bed Cover Kecil";
+            if(itemName === "BC Sedang") itemName = "Bed Cover Sedang";
+            if(itemName === "BC Besar") itemName = "Bed Cover Besar";
+
+            itemsHTML += `
+            <div class="grid grid-cols-[16px_1.4fr_35px_40px_1fr_25px] gap-1.5 py-3 border-b border-gray-100 last:border-0 items-center text-gray-700 hover:bg-gray-50 transition-colors px-1 -mx-1 rounded-lg">
+                <span class="text-[11px] font-bold text-gray-400">${counter++}</span>
+                <div class="flex flex-col min-w-0 pr-1">
+                    <div class="flex items-start gap-1.5 flex-wrap">
+                        <span class="text-xs font-bold text-brand-900 leading-snug break-words">${itemName}</span>
+                        ${statusLunasHtml}
+                    </div>
+                </div>
+                <span class="text-[10px] font-extrabold bg-brand-50 text-brand-900 px-1 py-1 rounded border border-brand-100 text-center whitespace-nowrap">${item.qty}${item.unit.toUpperCase()}</span>
+                <span class="text-[10px] text-gray-500 font-medium text-center leading-tight">${formatTanggalSingkat(order.date)}</span>
+                <span class="text-[11px] font-extrabold ${isLunas ? 'text-green-500' : 'text-red-500'} text-right">${formatRupiah(item.qty * (item.price || 0))}</span>
+                
+                <button onclick="hapusPesanan(${idAttr}, event)" class="w-7 h-7 flex items-center justify-center rounded text-gray-400 hover:text-red-500 hover:bg-red-50 transition-all ml-auto focus:outline-none" title="Hapus Transaksi">
+                    <i class="fas fa-times text-xs pointer-events-none"></i>
+                </button>
+            </div>
             `;
-        }
-
-        // UPDATE: NIK & Nama disusun menurun (flex-col) 100% rapi (Ukuran Font Diperbesar Signifikan)
-        paxHtml += `
-            <div class="flex flex-col bg-black/40 p-4 rounded-xl mb-3 border border-white/10 shadow-inner w-full">
-                <p class="text-[18px] font-black text-white uppercase break-words leading-tight tracking-widest flex items-center">${p.name} ${paxTypeLabel}</p>
-                <p class="text-[18px] text-gray-200 font-bold font-mono mt-2 tracking-widest"><i class="fas fa-id-card text-gray-500 mr-2 text-[14px]"></i>ID: ${p.nik || '-'}</p>
-                ${dobDisplayReceipt}
-            </div>
-        `;
-    });
-
-    const address = order.address || '-';
-
-    // --- TAMPILKAN BERDASARKAN TAB YANG AKTIF ---
-    if (currentDetailTab === 'return' && order.tripType === 'round_trip') {
-        // === NOTA PULANG ===
-        sectionReturn.classList.remove('hidden');
-        
-        const retOrg = (order.returnOrigin || order.dest || 'ORG').toUpperCase();
-        const retDes = (order.returnDest || order.origin || 'DES').toUpperCase();
-        
-        document.getElementById('rec-return-origin-code').innerText = retOrg;
-        document.getElementById('rec-return-dest-code').innerText = retDes;
-        
-        document.getElementById('rec-return-train-name').innerText = (order.returnTrain || 'KERETA').toUpperCase();
-        
-        const retDateObj = new Date(order.returnDate);
-        const retDateStr = order.returnDate ? retDateObj.toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' }) : '-';
-        document.getElementById('rec-return-date-depart').innerText = retDateStr.toUpperCase();
-
-        const retWarDateObj = new Date(order.returnWarDate);
-        const retWarDateStr = order.returnWarDate ? retWarDateObj.toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' }) : '-';
-        document.getElementById('rec-return-war-date').innerText = retWarDateStr.toUpperCase();
-        
-        const stampElReturn = document.getElementById('rec-stamp-return');
-        if (order.status === 'success') stampElReturn.classList.add('visible');
-        else stampElReturn.classList.remove('visible');
-
-        const returnTotal = order.returnPrice || 0;
-        const returnDp = order.feeReturn || 0;
-        let returnRemaining = returnTotal - returnDp;
-        if(order.status === 'success') returnRemaining = 0;
-
-        priceTotalEl.innerText = formatRupiah(returnTotal);
-        priceDpEl.innerText = formatRupiah(returnDp);
-        priceRemainingEl.innerText = formatRupiah(returnRemaining);
-        // Glow effect based on status (Size diperbesar di HTML, ini hanya logic class-nya)
-        priceRemainingEl.className = returnRemaining <= 0 ? "text-[32px] font-black text-green-400 font-mono glow-text-white drop-shadow-[0_0_10px_rgba(74,222,128,0.5)]" : "text-[32px] font-black text-[#0ea5e9] font-mono glow-text-white drop-shadow-[0_0_10px_rgba(14,165,233,0.5)]";
-
-        document.getElementById('rec-id').innerText = "#" + order.id.toString().slice(-6) + "-R";
-
-        document.getElementById('rec-return-contact-name').innerText = (order.contactName || mainPaxName).toUpperCase();
-        
-        const phoneElReturn = document.getElementById('rec-return-contact-phone');
-        phoneElReturn.innerText = order.contactPhone || '-';
-        
-        document.getElementById('rec-return-address').innerText = address.toUpperCase();
-        
-        document.getElementById('rec-return-payment-method').innerText = (order.paymentMethodReturn || order.paymentMethod || 'TUNAI').toUpperCase();
-        document.getElementById('rec-return-pax-count').innerText = paxCountStr;
-        document.getElementById('rec-return-pax-list').innerHTML = paxHtml;
-
-    } else {
-        // === NOTA PERGI ===
-        sectionDepart.classList.remove('hidden');
-
-        const origin = (order.origin || 'ORG').toUpperCase();
-        const dest = (order.dest || 'DES').toUpperCase();
-
-        document.getElementById('rec-origin-code').innerText = origin;
-        document.getElementById('rec-dest-code').innerText = dest;
-        
-        document.getElementById('rec-train-name').innerText = (order.train || 'KERETA').toUpperCase();
-
-        const dateObj = new Date(order.date);
-        const dateStr = order.date ? dateObj.toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' }) : '-';
-        document.getElementById('rec-date-depart').innerText = dateStr.toUpperCase();
-
-        const warDateObj = new Date(order.warDate);
-        const warDateStr = order.warDate ? warDateObj.toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' }) : '-';
-        document.getElementById('rec-war-date').innerText = warDateStr.toUpperCase();
-        
-        const stampElDepart = document.getElementById('rec-stamp-depart');
-        if (order.status === 'success') stampElDepart.classList.add('visible');
-        else stampElDepart.classList.remove('visible');
-
-        const departTotal = order.price || 0;
-        const departDp = (order.feeDepart !== undefined) ? order.feeDepart : (order.fee || 0);
-        let departRemaining = departTotal - departDp;
-        if(order.status === 'success') departRemaining = 0;
-
-        priceTotalEl.innerText = formatRupiah(departTotal);
-        priceDpEl.innerText = formatRupiah(departDp);
-        priceRemainingEl.innerText = formatRupiah(departRemaining);
-        // Glow effect based on status (Size diperbesar di HTML, ini hanya logic class-nya)
-        priceRemainingEl.className = departRemaining <= 0 ? "text-[32px] font-black text-green-400 font-mono glow-text-white drop-shadow-[0_0_10px_rgba(74,222,128,0.5)]" : "text-[32px] font-black text-davka-orange font-mono glow-text-orange";
-
-        document.getElementById('rec-id').innerText = "#" + order.id.toString().slice(-6);
-
-        document.getElementById('rec-contact-name').innerText = (order.contactName || mainPaxName).toUpperCase();
-        
-        const phoneElDepart = document.getElementById('rec-contact-phone');
-        phoneElDepart.innerText = order.contactPhone || '-';
-        
-        document.getElementById('rec-address').innerText = address.toUpperCase();
-        
-        document.getElementById('rec-payment-method').innerText = (order.paymentMethod || 'TUNAI').toUpperCase();
-        document.getElementById('rec-pax-count').innerText = paxCountStr;
-        document.getElementById('rec-pax-list').innerHTML = paxHtml;
-    }
-}
-
-function captureAndShowModal(elementId) {
-    const el = document.getElementById(elementId);
-    html2canvas(el, { 
-        scale: 3, 
-        useCORS: true, 
-        allowTaint: true, 
-        backgroundColor: null,
-        windowHeight: el.scrollHeight 
-    }) 
-    .then(canvas => { 
-        showImageModal(canvas.toDataURL("image/jpeg", 0.95), true); 
-        toggleLoader(false); 
-    })
-    .catch(err => { 
-        console.error("Render Error:", err); 
-        toggleLoader(false); 
-        alert("Gagal render gambar."); 
-    });
-}
-function renderUploadBtnHTML(id, type, file, label) {
-    if(file) {
-        return `<div class="relative w-full h-full rounded-lg overflow-hidden border border-white/10 group cursor-pointer bg-black/40">
-            <img src="${file}" class="w-full h-full object-cover opacity-60 group-hover:opacity-100 transition-all" onclick="showImageModal(this.src, true); event.stopPropagation();">
-            <div class="absolute inset-0 flex items-center justify-center pointer-events-none"><p class="text-[9px] text-white font-bold drop-shadow-md px-1 text-center leading-tight">${label}</p></div>
-            <button onclick="triggerHistoryUpload(${id}, '${type}')" class="absolute top-1 right-1 bg-black/60 text-white rounded-full w-5 h-5 flex items-center justify-center hover:bg-davka-orange transition-colors z-10"><i class="fas fa-pen text-[8px]"></i></button>
-        </div>`;
-    } else {
-        return `<button onclick="triggerHistoryUpload(${id}, '${type}')" class="w-full h-full bg-white/5 border border-white/10 border-dashed text-gray-500 rounded-lg text-[9px] hover:bg-white/10 hover:border-white/30 hover:text-gray-300 transition-all flex flex-col items-center justify-center gap-1 group">
-            <i class="fas fa-upload text-xs mb-0.5"></i><span>${label}</span>
-        </button>`;
-    }
-}
-
-window.triggerHistoryUpload = function(orderId, type) {
-    currentUploadOrderId = orderId; currentUploadType = type;
-    document.getElementById('inpHistoryUpload').click();
-}
-
-window.clearImage = function(type) {
-    if(type === 'transfer') {
-        document.getElementById('inpFileTransfer').value = ''; document.getElementById('inpTransferData').value = '';
-        document.getElementById('imgTransfer').src = ''; document.getElementById('previewTransfer').classList.add('hidden');
-    } else if (type === 'chat') {
-        document.getElementById('inpFileChat').value = ''; document.getElementById('inpChatData').value = '';
-        document.getElementById('imgChat').src = ''; document.getElementById('previewChat').classList.add('hidden');
-    } else if (type === 'transferReturn') {
-        document.getElementById('inpFileTransferReturn').value = ''; document.getElementById('inpTransferDataReturn').value = '';
-        document.getElementById('imgTransferReturn').src = ''; document.getElementById('previewTransferReturn').classList.add('hidden');
-    } else if (type === 'chatReturn') {
-        document.getElementById('inpFileChatReturn').value = ''; document.getElementById('inpChatDataReturn').value = '';
-        document.getElementById('imgChatReturn').src = ''; document.getElementById('previewChatReturn').classList.add('hidden');
-    }
-    resetUploadZones(); 
-}
-
-window.searchOrders = function() { renderOrderList(document.getElementById('searchInput').value); }
-function formatRupiah(num) { return new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', minimumFractionDigits: 0 }).format(num); }
-function updateDate() { document.getElementById('current-date').innerText = new Date().toLocaleDateString('id-ID', { weekday: 'short', day: 'numeric', month: 'short' }); }
-function updateGreeting() {
-    const hour = new Date().getHours();
-    let greeting = (hour >= 4 && hour < 11) ? 'Pagi' : (hour >= 11 && hour < 15) ? 'Siang' : (hour >= 15 && hour < 19) ? 'Sore' : 'Malam';
-    const el = document.getElementById('txt-greeting-time'); if(el) el.innerText = `Selamat ${greeting}`;
-}
-window.showToast = function(msg) {
-    const t = document.getElementById('toast');
-    document.getElementById('toastMsg').innerText = msg;
-    t.classList.remove('opacity-0', 'translate-y-[-20px]', 'pointer-events-none');
-    setTimeout(() => t.classList.add('opacity-0', 'translate-y-[-20px]', 'pointer-events-none'), 3000);
-}
-window.showImageModal = function(src, dl=false) {
-    document.getElementById('modalImg').src = src;
-    const acts = document.getElementById('modalActions'); acts.innerHTML = '';
-    if(dl) {
-        const btn = document.createElement('a');
-        btn.href = src; btn.download = `Davka_Ticket_${Date.now()}.jpg`; 
-        btn.className = "bg-davka-orange text-white text-xs font-bold py-2 px-4 rounded-full shadow-lg flex items-center gap-2";
-        btn.innerHTML = '<i class="fas fa-download"></i> Simpan ke Galeri';
-        acts.appendChild(btn);
-    }
-    document.getElementById('imageModal').classList.remove('hidden');
-}
-window.closeImageModal = function() { document.getElementById('imageModal').classList.add('hidden'); }
-
-window.resetForm = function() {
-    document.getElementById('orderForm').reset();
-    document.getElementById('editIndex').value = "-1";
-    document.getElementById('btnSaveText').innerText = "SIMPAN PESANAN";
-    document.getElementById('inpPaxCount').value = "1";
-    document.getElementById('inpInfantCount').value = "0"; 
-    document.getElementById('inpTripType').value = 'one_way';
-    
-    document.getElementById('inpPricePerPax').value = '';
-    if(document.getElementById('inpReturnPricePerPax')) document.getElementById('inpReturnPricePerPax').value = '';
-    
-    document.getElementById('inpRemainingDepart').value = 'Rp 0';
-    if(document.getElementById('inpRemainingReturn')) document.getElementById('inpRemainingReturn').value = 'Rp 0';
-    
-    document.getElementById('inpPaymentMethod').value = 'Tunai';
-    if(document.getElementById('inpPaymentMethodReturn')) document.getElementById('inpPaymentMethodReturn').value = 'Tunai';
-
-    toggleTripType(); 
-    clearImage('transfer'); clearImage('chat');
-    clearImage('transferReturn'); clearImage('chatReturn');
-    
-    updatePassengerForms(); 
-    calcRemaining();
-    resetUploadZones();
-    enableSmoothInputUX();
-}
-
-window.openDetailView = function(orderId) {
-    const order = orders.find(o => o.id === orderId);
-    if (!order) return;
-
-    currentDetailOrder = order;
-
-    document.getElementById('page-list').classList.add('hidden', 'fade-out');
-    document.getElementById('page-detail').classList.remove('hidden');
-    document.getElementById('page-detail').classList.add('fade-in');
-    
-    window.scrollTo({ top: 0, behavior: 'smooth' });
-
-    const displayName = (order.contactName || order.name || 'No Name').toUpperCase();
-    document.getElementById('detail-contact-name').innerText = displayName;
-    document.getElementById('detail-id').innerText = "#" + order.id.toString().slice(-6);
-    
-    const badge = document.getElementById('detail-status-badge');
-    badge.className = "px-3 py-1 rounded-full text-[10px] font-bold uppercase border ";
-    if (order.status === 'success') {
-        badge.innerText = "LUNAS";
-        badge.classList.add('bg-green-500/10', 'border-green-500/30', 'text-green-400');
-    } else if (order.status === 'cancel') {
-        badge.innerText = "BATAL";
-        badge.classList.add('bg-red-500/10', 'border-red-500/30', 'text-red-400');
-    } else {
-        badge.innerText = "PENDING";
-        badge.classList.add('bg-orange-500/10', 'border-orange-500/30', 'text-orange-400');
-    }
-
-    document.getElementById('detail-train').innerText = order.train || '-';
-    document.getElementById('detail-date').innerText = order.date ? new Date(order.date).toLocaleDateString('id-ID', {day: 'numeric', month: 'short', year: 'numeric'}) : '-';
-    document.getElementById('detail-war-date').innerText = order.warDate ? new Date(order.warDate).toLocaleDateString('id-ID', {day: 'numeric', month: 'short'}) : '-';
-    
-    const renderProof = (url, label) => url ? 
-        `<img src="${url}" class="w-full h-full object-cover rounded-lg cursor-pointer hover:opacity-80 transition-opacity" onclick="showImageModal(this.src, true)">` : 
-        `<div class="text-gray-600 text-[9px] text-center flex flex-col items-center justify-center h-full"><i class="fas fa-times-circle text-xs mb-1"></i>${label}</div>`;
-
-    document.getElementById('detail-img-transfer-depart').innerHTML = renderProof(order.transferScreenshot, "No TF Pergi");
-    document.getElementById('detail-img-chat-depart').innerHTML = renderProof(order.chatScreenshot, "No Chat Pergi");
-
-    const returnBadge = document.getElementById('badge-return-active');
-    const returnDataContainer = document.getElementById('data-return-exist');
-    const returnEmptyContainer = document.getElementById('data-return-empty');
-    const containerProofReturn = document.getElementById('container-proof-return');
-
-    if (order.tripType === 'round_trip') {
-        returnBadge.classList.remove('hidden');
-        returnDataContainer.classList.remove('hidden');
-        returnEmptyContainer.classList.add('hidden');
-        containerProofReturn.classList.remove('hidden');
-
-        document.getElementById('detail-return-train').innerText = order.returnTrain || '-';
-        document.getElementById('detail-return-date').innerText = order.returnDate ? new Date(order.returnDate).toLocaleDateString('id-ID', {day: 'numeric', month: 'short', year: 'numeric'}) : '-';
-        document.getElementById('detail-return-war-date').innerText = order.returnWarDate ? new Date(order.returnWarDate).toLocaleDateString('id-ID', {day: 'numeric', month: 'short'}) : '-';
-        
-        document.getElementById('detail-img-transfer-return').innerHTML = renderProof(order.transferScreenshotReturn, "No TF Pulang");
-        document.getElementById('detail-img-chat-return').innerHTML = renderProof(order.chatScreenshotReturn, "No Chat Pulang");
-
-    } else {
-        returnBadge.classList.add('hidden');
-        returnDataContainer.classList.add('hidden');
-        returnEmptyContainer.classList.remove('hidden');
-        containerProofReturn.classList.add('hidden');
-    }
-
-    let paxListHtml = '';
-    let paxArray = Array.isArray(order.passengers) ? order.passengers : (order.name ? [{name: order.name, nik: order.nik || '-', dob: '', type: 'adult'}] : []);
-    
-    paxArray.forEach((p, idx) => {
-        const isInfant = p.type === 'infant';
-        const iconColor = isInfant ? 'text-pink-400 bg-pink-500/10' : 'text-gray-300 bg-white/10';
-        const icon = isInfant ? 'fa-baby' : 'fa-user';
-        const label = isInfant ? '<span class="text-[8px] ml-2 px-1.5 py-0.5 rounded bg-pink-500/20 text-pink-400 border border-pink-500/30">BAYI</span>' : '';
-        
-        let dobBadge = '';
-        if (p.dob) {
-            const d = new Date(p.dob);
-            const dobFormat = !isNaN(d) ? d.toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' }).toUpperCase() : p.dob;
-            dobBadge = `<span class="flex items-center gap-1 text-gray-300 text-xs font-bold whitespace-nowrap"><i class="fas fa-calendar-alt opacity-70"></i> ${dobFormat}</span>`;
-        }
-
-        paxListHtml += `
-            <div class="flex items-start gap-3 border-b border-white/5 pb-3 pt-1 last:border-0 last:pb-0">
-                <div class="w-6 h-6 rounded-full ${iconColor} flex items-center justify-center text-[10px] font-bold shrink-0 mt-0.5">
-                    <i class="fas ${icon}"></i>
-                </div>
-                <div class="flex-1 min-w-0">
-                    <p class="text-xs font-bold text-white uppercase flex flex-wrap items-center gap-1">${p.name} ${label}</p>
-                    <div class="flex flex-col gap-1 mt-1.5">
-                        <p class="text-xs text-gray-300 font-bold whitespace-nowrap">NIK: ${p.nik}</p>
-                        ${dobBadge}
-                    </div>
-                </div>
-            </div>
-        `;
-    });
-    document.getElementById('detail-pax-list').innerHTML = paxListHtml;
-
-    document.getElementById('detail-cost-breakdown').innerHTML = '';
-    
-    switchTab('depart');
-
-    const settlementOptions = ["-", "Tunai", "Transfer CIMB Niaga", "Transfer Seabank", "Dana", "Gopay", "Ovo", "ShopeePay"];
-    const selectEl = document.getElementById('detail-settlement-select');
-    selectEl.innerHTML = settlementOptions.map(opt => `<option value="${opt}" ${order.settlementMethod === opt ? 'selected' : ''}>${opt === '-' ? 'Belum Lunas' : opt}</option>`).join('');
-    selectEl.onchange = function() { updateSettlement(orderId, this.value); };
-
-    document.getElementById('detail-upload-settlement').innerHTML = renderUploadBtnHTML(orderId, 'settlement', order.settlementProof, 'Bukti Lunas');
-    document.getElementById('detail-upload-ticket').innerHTML = renderUploadBtnHTML(orderId, 'kai_ticket', order.kaiTicketFile, 'E-Ticket KAI');
-
-    document.getElementById('btn-action-status').onclick = function() { toggleStatus(orderId); };
-    document.getElementById('btn-action-edit').onclick = function() { editOrder(orderId); };
-    document.getElementById('btn-action-print').onclick = function() { printReceipt(orderId); };
-    document.getElementById('btn-action-delete').onclick = function() { deleteOrder(orderId); };
-}
-
-window.closeDetailView = function() {
-    document.getElementById('page-detail').classList.add('hidden', 'fade-out');
-    document.getElementById('page-detail').classList.remove('fade-in');
-    document.getElementById('page-list').classList.remove('hidden');
-    document.getElementById('page-list').classList.add('fade-in');
-    
-    currentDetailOrder = null;
-    renderOrderList(document.getElementById('searchInput').value);
-}
-
-window.renderOrderList = function(filterText = '') {
-    const container = document.getElementById('ordersContainer');
-    container.innerHTML = '';
-    if(!orders) return;
-    
-    const sortedOrders = [...orders].sort((a, b) => {
-        return new Date(a.created_at || a.id) - new Date(b.created_at || b.id);
-    });
-    
-    const filtered = sortedOrders.filter(o => {
-        const name = o.contactName || o.name || '';
-        return name.toLowerCase().includes(filterText.toLowerCase());
-    });
-
-    if(filtered.length === 0) { 
-        document.getElementById('emptyState').classList.remove('hidden'); 
-        return; 
-    } else {
-        document.getElementById('emptyState').classList.add('hidden');
-    }
-
-    filtered.forEach((order, index) => {
-        let statusColorClass = '';
-        let indicatorColor = '';
-        
-        if (order.status === 'success') {
-            statusColorClass = 'bg-green-500/10 border-green-500/30 text-green-400';
-            indicatorColor = 'bg-green-500';
-        } else if (order.status === 'cancel') {
-            statusColorClass = 'bg-red-500/10 border-red-500/30 text-red-400';
-            indicatorColor = 'bg-red-500';
-        } else {
-            statusColorClass = 'bg-orange-500/10 border-orange-500/30 text-orange-400';
-            indicatorColor = 'bg-orange-500';
-        }
-
-        const displayName = (order.contactName || order.name || 'No Name').toUpperCase();
-        const displayNo = index + 1; 
-
-        const dateObj = new Date(order.date);
-        const dateStr = order.date ? dateObj.toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' }) : '-';
-        
-        let routeHtml = `
-            <div class="mt-1">
-                <p class="text-[10px] text-gray-300 font-bold flex items-center">
-                    <i class="fas fa-train text-davka-orange mr-1.5 text-[10px]"></i> 
-                    ${order.origin || '?'} 
-                    <i class="fas fa-chevron-right text-[8px] mx-1 opacity-50"></i> 
-                    ${order.dest || '?'}
-                </p>
-                <p class="text-[10px] text-gray-500 pl-4 font-mono">${dateStr}</p>
-            </div>
-        `;
-
-        if (order.tripType === 'round_trip') {
-            const retDateObj = new Date(order.returnDate);
-            const retDateStr = order.returnDate ? retDateObj.toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' }) : '-';
-            
-            const retOrg = order.returnOrigin || order.dest || '?';
-            const retDest = order.returnDest || order.origin || '?';
-
-            routeHtml += `
-            <div class="mt-1 pt-1 border-t border-white/5 relative">
-                <div class="absolute left-1.5 top-2 w-0.5 h-full bg-blue-500/20"></div>
-                <div class="flex justify-between items-start">
-                    <div>
-                        <p class="text-[10px] text-gray-300 font-bold flex items-center">
-                            <i class="fas fa-exchange-alt text-blue-400 mr-1.5 text-[10px]"></i> 
-                            ${retOrg} 
-                            <i class="fas fa-chevron-right text-[8px] mx-1 opacity-50"></i> 
-                            ${retDest}
-                        </p>
-                        <p class="text-[10px] text-gray-500 pl-4 font-mono">${retDateStr}</p>
-                    </div>
-                    
-                    <div class="px-1.5 py-0.5 rounded bg-black/20 border border-white/5 self-center mt-1">
-                        <p class="text-[8px] ${statusColorClass.split(' ')[2]} font-bold uppercase tracking-wide">
-                            ${order.status}
-                        </p>
-                    </div>
-                </div>
-            </div>`;
-        }
-
-        const item = document.createElement('div');
-        item.className = `rounded-xl border ${statusColorClass.split(' ')[1]} ${statusColorClass.split(' ')[0]} overflow-hidden mb-2 transition-all duration-300 active:scale-95`;
-        item.onclick = function() { openDetailView(order.id); };
-
-        const mainRow = `
-        <div class="flex items-start justify-between p-3 cursor-pointer select-none relative">
-            <div class="absolute left-0 top-0 bottom-0 w-1 ${indicatorColor}"></div>
-            
-            <div class="flex items-start gap-3 pl-2 overflow-hidden flex-1">
-                <div class="w-7 h-7 rounded-lg bg-black/20 flex items-center justify-center font-mono text-xs font-bold ${statusColorClass.split(' ')[2]} shrink-0 border border-white/5 mt-0.5">
-                    ${displayNo}
-                </div>
-                
-                <div class="min-w-0 flex-1">
-                    <div class="flex justify-between items-start">
-                        <h4 class="text-sm font-bold text-white truncate leading-tight">${displayName}</h4>
-                        <div class="px-2 py-0.5 rounded border border-white/10 bg-black/20">
-                            <p class="text-[9px] ${statusColorClass.split(' ')[2]} font-bold uppercase tracking-wide">
-                                ${order.status}
-                            </p>
-                        </div>
-                    </div>
-                    
-                    ${routeHtml}
-                </div>
-            </div>
-            
-            <div class="pl-2 flex items-center self-center">
-                <i class="fas fa-chevron-right text-white/30 text-xs"></i>
-            </div>
-        </div>`;
-
-        item.innerHTML = mainRow;
-        container.appendChild(item);
-    });
-}
-
-// --- FUNGSI UPDATE PERHITUNGAN STATISTIK ---
-function renderStats() {
-    let totalOmset = 0;
-    let totalTiketTerjual = 0;
-    let paxPending = 0;
-    let paxSukses = 0;
-    let paxBatal = 0;
-
-    if (orders) {
-        orders.forEach(o => {
-            // 1. Hitung jumlah penumpang dalam pesanan ini secara dinamis
-            let paxCount = 1;
-            if (Array.isArray(o.passengers)) {
-                // Gunakan semua penumpang yang terdaftar sebagai 1 tiket/kursi
-                paxCount = o.passengers.length; 
-            } else if (o.name) {
-                paxCount = 1;
-            }
-
-            // 2. Tambahkan ke perhitungan status berdasarkan jumlah PENUMPANG
-            if (o.status === 'pending') {
-                paxPending += paxCount;
-            } else if (o.status === 'success') {
-                paxSukses += paxCount;
-                totalTiketTerjual += paxCount;
-                
-                // 3. Akumulasikan Omset Total Keseluruhan (Pergi + Pulang jika ada) tanpa batasan bulan
-                const totalOrderPrice = (parseFloat(o.price) || 0) + (parseFloat(o.returnPrice) || 0);
-                totalOmset += totalOrderPrice;
-            } else if (o.status === 'cancel') {
-                paxBatal += paxCount;
-            }
         });
+    });
+
+    const sisaKredit = totalKreditAll - totalPaidAll;
+    
+    document.getElementById('kredit-detail-items').innerHTML = itemsHTML;
+    document.getElementById('kredit-detail-total').innerText = formatRupiah(totalKreditAll);
+    document.getElementById('kredit-detail-paid').innerText = formatRupiah(totalPaidAll);
+    document.getElementById('kredit-detail-sisa').innerText = formatRupiah(sisaKredit);
+    
+    window.currentSisaKredit = sisaKredit;
+    window.currentTotalKredit = totalKreditAll;
+    window.currentPaidKredit = totalPaidAll;
+    
+    document.getElementById('view-kredit').classList.add('hidden');
+    document.getElementById('view-kredit-detail').classList.remove('hidden');
+}
+
+function closeKreditDetail() {
+    currentDetailKreditName = null;
+    document.getElementById('view-kredit-detail').classList.add('hidden');
+    document.getElementById('view-kredit').classList.remove('hidden');
+    renderKreditList();
+}
+
+function openModalBayarKredit() {
+    document.getElementById('kredit-pay-sisa').innerText = formatRupiah(window.currentSisaKredit || 0);
+    document.getElementById('input-kredit-pay').value = '';
+    
+    const modal = document.getElementById('kredit-pay-modal');
+    const modalContent = document.getElementById('kredit-pay-modal-content');
+    modal.classList.remove('hidden');
+    modal.classList.add('flex');
+    setTimeout(() => {
+        modal.classList.remove('opacity-0');
+        modalContent.classList.remove('scale-95');
+        modalContent.classList.add('scale-100');
+    }, 10);
+}
+
+function closeModalBayarKredit() {
+    const modal = document.getElementById('kredit-pay-modal');
+    const modalContent = document.getElementById('kredit-pay-modal-content');
+    modal.classList.add('opacity-0');
+    modalContent.classList.remove('scale-100');
+    modalContent.classList.add('scale-95');
+    setTimeout(() => {
+        modal.classList.add('hidden');
+        modal.classList.remove('flex');
+    }, 300);
+}
+
+function fillBayarPenuh() {
+    document.getElementById('input-kredit-pay').value = window.currentSisaKredit || 0;
+}
+
+async function prosesBayarKredit() {
+    const inputVal = parseInt(document.getElementById('input-kredit-pay').value);
+    if (isNaN(inputVal) || inputVal <= 0) {
+        alert("Masukkan nominal pembayaran yang valid.");
+        return;
     }
 
-    // 4. Update UI Dashboard
-    document.getElementById('stat-today').innerText = totalTiketTerjual;
-    document.getElementById('stat-revenue').innerText = formatRupiah(totalOmset);
-    document.getElementById('stat-pending').innerText = paxPending;
-    document.getElementById('stat-success').innerText = paxSukses;
-    document.getElementById('stat-cancel').innerText = paxBatal;
+    if (inputVal > window.currentSisaKredit) {
+        alert("Nominal pembayaran melebihi sisa tagihan!");
+        return;
+    }
+
+    const btn = document.getElementById('btn-proses-kredit');
+    const originalHtml = btn.innerHTML;
+    btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i><span>MEMPROSES...</span>';
+    btn.disabled = true;
+
+    let customerOrders = allOrders.filter(o => o.customer.trim().toUpperCase() === currentDetailKreditName && o.payment === 'kredit');
+    customerOrders.sort((a, b) => new Date(a.date) - new Date(b.date));
+
+    let sisaBayarInput = inputVal;
+
+    for (let order of customerOrders) {
+        if (sisaBayarInput <= 0) break;
+
+        let sisaTagihanOrder = order.total - (order.kredit_paid || 0);
+        
+        if (sisaTagihanOrder > 0) {
+            let bayarUntukOrderIni = Math.min(sisaBayarInput, sisaTagihanOrder);
+            order.kredit_paid = (order.kredit_paid || 0) + bayarUntukOrderIni;
+            sisaBayarInput -= bayarUntukOrderIni;
+
+            saveLocalOrders(allOrders);
+            if (order._isPending) {
+                const pending = getPendingOrders();
+                const pi = pending.findIndex(o => o.id == order.id);
+                if (pi > -1) { 
+                    pending[pi].kredit_paid = order.kredit_paid; 
+                    savePendingOrders(pending); 
+                }
+            } else {
+                await supabaseClient.from('orders')
+                    .update({ kredit_paid: order.kredit_paid }) 
+                    .eq('id', order.id);
+            }
+        }
+    }
+
+    btn.innerHTML = originalHtml;
+    btn.disabled = false;
+    closeModalBayarKredit();
+    openKreditDetail(currentDetailKreditName);
 }
+
+function cetakRekapKredit() {
+    const customerOrders = allOrders.filter(o => o.customer.trim().toUpperCase() === currentDetailKreditName && o.payment === 'kredit');
+    
+    document.getElementById('kt-name').innerText = customerOrders[0].customer;
+    document.getElementById('kt-date').innerText = formatTanggalLokal(new Date().toISOString());
+    
+    let itemsHTML = '';
+    customerOrders.forEach(order => {
+        const sisaOrder = order.total - (order.kredit_paid || 0);
+        const isLunas = sisaOrder <= 0;
+        const tagLunas = isLunas ? ` <span class="text-[9px] bg-emerald-950/50 text-emerald-400 px-2 py-1 rounded border border-emerald-500/30 font-black tracking-widest ml-1 shadow-[0_0_8px_rgba(16,185,129,0.1)]">LUNAS</span>` : '';
+
+        const itemsArr = typeof order.items === 'string' ? JSON.parse(order.items || '[]') : (order.items || []);
+        itemsArr.forEach(item => {
+            // REVISI PREMIUM: Interceptor untuk Rekap Nota Kredit
+            let itemName = item.name;
+            if(itemName === "BC Kecil") itemName = "Bed Cover Kecil";
+            if(itemName === "BC Sedang") itemName = "Bed Cover Sedang";
+            if(itemName === "BC Besar") itemName = "Bed Cover Besar";
+
+            itemsHTML += `
+            <div class="flex justify-between items-center text-xs text-slate-300 border-b border-dashed border-slate-700/50 last:border-0 py-3">
+                <div class="flex flex-col">
+                    <span class="font-bold text-cyan-50 tracking-wide text-sm">${itemName} <span class="text-cyan-500/80 font-mono text-xs">(${item.qty}${item.unit.toUpperCase()})</span>${tagLunas}</span>
+                    <span class="text-[11px] text-slate-500 font-mono mt-1">${formatTanggalSingkat(order.date)}</span>
+                </div>
+                <span class="font-mono font-black ${isLunas ? 'text-slate-600 line-through' : 'text-cyan-300'} whitespace-nowrap text-sm">${formatRupiah(item.qty * (item.price || 0))}</span>
+            </div>
+            `;
+        });
+    });
+
+    document.getElementById('kt-items').innerHTML = itemsHTML;
+    document.getElementById('kt-total').innerText = formatRupiah(window.currentTotalKredit);
+    document.getElementById('kt-paid').innerText = formatRupiah(window.currentPaidKredit);
+    document.getElementById('kt-sisa').innerText = formatRupiah(window.currentSisaKredit);
+
+    const modal = document.getElementById('kredit-ticket-modal');
+    const modalContent = document.getElementById('kredit-ticket-modal-content');
+    modal.classList.remove('hidden');
+    modal.classList.add('flex');
+    setTimeout(() => {
+        modal.classList.remove('opacity-0');
+        modalContent.classList.remove('scale-95');
+        modalContent.classList.add('scale-100');
+    }, 10);
+}
+
+function closeKreditTicketModal() {
+    const modal = document.getElementById('kredit-ticket-modal');
+    const modalContent = document.getElementById('kredit-ticket-modal-content');
+    modal.classList.add('opacity-0');
+    modalContent.classList.remove('scale-100');
+    modalContent.classList.add('scale-95');
+    setTimeout(() => {
+        modal.classList.add('hidden');
+        modal.classList.remove('flex');
+    }, 300);
+}
+
+function downloadKreditTicket() {
+    const originalElement = document.getElementById('kredit-ticket-area');
+    const btnDownload = document.getElementById('btn-download-kt');
+    const originalContent = btnDownload.innerHTML;
+    
+    btnDownload.innerHTML = '<i class="fas fa-circle-notch fa-spin"></i><span>Memproses Nota...</span>';
+    btnDownload.disabled = true;
+    btnDownload.classList.add('opacity-70');
+
+    const offScreenContainer = document.createElement('div');
+    offScreenContainer.style.position = 'absolute';
+    offScreenContainer.style.left = '-9999px';
+    offScreenContainer.style.top = '0';
+    offScreenContainer.style.width = '420px'; 
+    offScreenContainer.style.backgroundColor = '#0b1120'; 
+    
+    const clone = originalElement.cloneNode(true);
+    clone.style.height = 'auto';
+    clone.style.maxHeight = 'none';
+    clone.style.overflow = 'visible';
+    clone.classList.remove('overflow-y-auto');
+    clone.style.padding = '24px'; 
+
+    const blurElements = clone.querySelectorAll('.blur-xl');
+    blurElements.forEach(el => {
+        el.classList.remove('blur-xl', 'bg-cyan-500', 'opacity-20');
+        el.style.boxShadow = '0 0 50px 20px rgba(6, 182, 212, 0.3)';
+        el.style.backgroundColor = 'transparent';
+    });
+
+    const mixBlendElements = clone.querySelectorAll('.mix-blend-screen');
+    mixBlendElements.forEach(el => {
+        el.classList.remove('mix-blend-screen');
+        el.style.opacity = '0.04';
+    });
+
+    offScreenContainer.appendChild(clone);
+    document.body.appendChild(offScreenContainer);
+
+    document.fonts.ready.then(() => {
+        html2canvas(clone, { 
+            scale: 4, 
+            backgroundColor: "#0b1120", 
+            useCORS: true, 
+            allowTaint: true, 
+            windowWidth: 420 
+        })
+        .then(canvas => {
+            document.body.removeChild(offScreenContainer);
+            btnDownload.innerHTML = originalContent;
+            btnDownload.disabled = false;
+            btnDownload.classList.remove('opacity-70');
+            
+            const image = canvas.toDataURL("image/jpeg", 1.0);
+            const link = document.createElement('a');
+            const custName = document.getElementById('kt-name').innerText.replace(/[^a-z0-9]/gi, '_').toUpperCase();
+            
+            link.download = `NOTA-TAGIHAN-KREDIT-${custName}.jpg`;
+            link.href = image;
+            link.click();
+        }).catch(error => {
+            if(document.body.contains(offScreenContainer)) document.body.removeChild(offScreenContainer);
+            btnDownload.innerHTML = originalContent;
+            btnDownload.disabled = false;
+            btnDownload.classList.remove('opacity-70');
+            alert("Terjadi kesalahan saat memproses Nota Tagihan.");
+        });
+    });
+}
+
+function resetForm() {
+    document.getElementById('custName').value = "";
+    document.getElementById('custAddress').value = ""; 
+    state.selectedServiceIds = [];
+    state.quantities = {};
+    state.total = 0;
+    
+    state.isBedCoverOpen = false;
+    const inputAreaBedCover = document.getElementById('input-area-2');
+    if(inputAreaBedCover) inputAreaBedCover.classList.add('hidden');
+
+    services.forEach(srv => {
+        const inputArea = document.getElementById(`input-area-${srv.id}`);
+        const inputField = document.getElementById(`input-${srv.id}`);
+        
+        if (srv.id === 21 || srv.id === 22 || srv.id === 23) {
+            if(inputField) inputField.value = 0;
+            state.quantities[srv.id] = 0;
+        } else {
+            if(inputArea) inputArea.classList.add('hidden');
+            if(inputField) inputField.value = 1;
+            state.quantities[srv.id] = 1;
+        }
+    });
+    
+    updateServiceUI();
+    hitungTotal();
+}
+
+function shakeElement(id) {
+    const el = document.getElementById(id);
+    if(el) {
+        el.classList.add('ring-2', 'ring-red-500', 'animate-pulse');
+        setTimeout(() => { el.classList.remove('ring-2', 'ring-red-500', 'animate-pulse'); }, 500);
+    }
+}
+
+// Jalankan aplikasi pertama kali
+initApp();

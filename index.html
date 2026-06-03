@@ -1,805 +1,986 @@
 <!DOCTYPE html>
 <html lang="id">
 <head>
+    <link rel="manifest" href="manifest.json">
+    <link rel="icon" type="image/jpeg" href="logo.jpg">
+    <link rel="apple-touch-icon" href="logo.jpg">
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Ziedan Laundry Premium PWA</title>
+    <title>Davka Travel - Admin Dashboard</title>
     
-    <meta name="theme-color" content="#0ea5e9">
-    <meta name="apple-mobile-web-app-capable" content="yes">
-    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-    <link rel="apple-touch-icon" href="logo.jpg">
-    <link rel="manifest" href="manifest.json">
-
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
-
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    
     <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&family=Cinzel:wght@400;700&family=Courier+Prime:wght@400;700&display=swap" rel="stylesheet">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+
     <script>
         tailwind.config = {
             theme: {
                 extend: {
-                    fontFamily: {
-                        sans: ['"Plus Jakarta Sans"', 'sans-serif'],
-                    },
                     colors: {
-                        brand: {
-                            50: '#f0f9ff', 100: '#e0f2fe', 200: '#bae6fd', 300: '#7dd3fc', 400: '#38bdf8',
-                            500: '#0ea5e9', 600: '#0284c7', 700: '#0369a1', 800: '#075985', 900: '#0c4a6e',
+                        davka: {
+                            bg: '#00040f',      
+                            surface: '#0b1221', 
+                            navy: '#0f172a',    
+                            orange: '#ff5400',  
+                            accent: '#0ea5e9',  
+                            glass: 'rgba(15, 23, 42, 0.7)',
+                            border: 'rgba(255, 255, 255, 0.08)'
                         }
                     },
+                    fontFamily: {
+                        sans: ['Plus Jakarta Sans', 'sans-serif'], 
+                        serif: ['Cinzel', 'serif'],
+                        mono: ['Courier Prime', 'monospace'],
+                    },
                     boxShadow: {
-                        'soft': '0 4px 20px -2px rgba(0, 0, 0, 0.05)',
+                        'neon': '0 0 15px rgba(255, 84, 0, 0.3)',
+                        'glow': '0 0 20px rgba(14, 165, 233, 0.2)'
                     }
                 }
             }
         }
     </script>
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+
     <link rel="stylesheet" href="style.css">
 </head>
-<body class="bg-[#f0f9ff] text-gray-800 font-sans antialiased overflow-hidden h-screen flex flex-col relative">
+<body class="bg-davka-bg text-white min-h-screen relative pb-32 overflow-x-hidden selection:bg-davka-orange selection:text-white">
 
-    <div id="intro-splash" class="fixed inset-0 z-[100] bg-black flex items-center justify-center transition-opacity duration-1000 ease-in-out">
-        <video id="intro-video" src="intro.mp4" autoplay muted playsinline class="w-full h-full object-contain md:object-cover"></video>
+    <div id="splash-screen" class="fixed inset-0 z-[10000] flex items-center justify-center bg-black overflow-hidden splash-transition">
+        <video id="intro-video" class="absolute inset-0 w-full h-full object-contain z-10" playsinline muted autoplay>
+            <source src="intro.mp4" type="video/mp4">
+            Browser Anda tidak mendukung video tag.
+        </video>
+        
+        <div class="absolute inset-0 bg-gradient-to-t from-davka-bg via-transparent to-transparent opacity-0 z-20" id="video-overlay"></div>
+        
+        <div id="post-video-loader" class="video-loader-wrapper">
+            <div class="video-loader-track">
+                <div id="post-video-fill" class="video-loader-fill"></div>
+            </div>
+            <p class="video-loader-text">INITIALIZING SYSTEM...</p>
+        </div>
+
+        <button id="btn-skip-intro" class="absolute bottom-10 right-6 z-[60] text-[10px] font-bold text-white/50 border border-white/20 px-4 py-2 rounded-full uppercase tracking-widest hover:bg-white/10 hover:text-white transition-all backdrop-blur-md hidden">
+            SKIP <i class="fas fa-forward ml-2"></i>
+        </button>
     </div>
-
-    <div class="fixed inset-0 z-0 pointer-events-none flex items-center justify-center overflow-hidden opacity-[0.04] mix-blend-multiply print:hidden">
-        <img src="logo.jpg" alt="Watermark" class="w-[150%] md:w-[80%] h-auto max-w-none transform -rotate-12 scale-125 grayscale">
-    </div>
-
-    <!-- UPDATE HEADER (Floating Glassmorphism Island) -->
-    <header class="fixed top-4 left-4 right-4 z-50 transition-all duration-300 print:hidden" id="main-header">
-        <div class="bg-white/85 backdrop-blur-xl shadow-[0_8px_30px_rgb(0,0,0,0.06)] border border-white/80 rounded-[2rem] px-4 py-3 flex items-center justify-between">
-            <div class="flex items-center gap-3">
-                <img src="logo.jpg" alt="Ziedan Laundry Logo" class="w-[48px] h-[48px] rounded-full object-cover border-2 border-white ring-1 ring-brand-100 shadow-sm">
-                <div class="flex flex-col justify-center">
-                    <h1 class="font-extrabold text-transparent bg-clip-text bg-gradient-to-r from-brand-700 via-brand-500 to-cyan-400 leading-none text-lg md:text-xl tracking-tight drop-shadow-sm uppercase">ZIEDAN LAUNDRY</h1>
-                    <span class="text-[8px] font-black text-white bg-gradient-to-r from-brand-500 to-cyan-400 px-2 py-0.5 rounded-full tracking-widest uppercase shadow-sm mt-1 w-max border border-brand-200">PREMIUM CARE</span>
-                </div>
+    
+    <div id="global-loader" class="loading-overlay hidden">
+        <div class="relative w-16 h-16 mb-6 flex items-center justify-center">
+            <div class="absolute inset-0 rounded-full bg-gradient-to-tr from-davka-orange via-davka-accent to-davka-orange blur-md animate-spin-slow opacity-70"></div>
+            <div class="absolute inset-0 rounded-full bg-gradient-to-tr from-davka-orange via-davka-accent to-transparent animate-spin-slow"></div>
+            <div class="absolute inset-[3px] bg-davka-bg rounded-full z-10"></div>
+            
+            <div class="absolute inset-0 z-20 flex items-center justify-center">
+                <span class="font-serif font-bold text-2xl text-transparent bg-clip-text bg-gradient-to-br from-white to-gray-400 drop-shadow-lg">D</span>
             </div>
             
-            <button id="menu-btn" onclick="toggleMenu()" class="w-10 h-10 shrink-0 flex flex-col justify-center items-center gap-1.5 rounded-full bg-brand-50 hover:bg-brand-100 text-brand-700 active:scale-90 transition-all z-[60] border border-brand-100 shadow-sm relative overflow-hidden">
-                <span class="hamburger-line w-5 h-[2.5px] bg-current rounded-full transition-all duration-300"></span>
-                <span class="hamburger-line w-3.5 h-[2.5px] bg-current rounded-full transition-all duration-300 ml-auto mr-2.5"></span>
-                <span class="hamburger-line w-5 h-[2.5px] bg-current rounded-full transition-all duration-300"></span>
-            </button>
+            <div class="absolute inset-[-10px] border border-white/5 rounded-full animate-ping-slow opacity-20"></div>
         </div>
-    </header>
-    <!-- AKHIR UPDATE HEADER -->
-    
-    <div id="menu-overlay" class="fixed inset-0 bg-brand-900/40 backdrop-blur-md z-[55] hidden flex-col justify-end items-center print:hidden pb-8 px-4 transition-opacity duration-300">
-        <div class="bg-white/95 backdrop-blur-xl w-full max-w-sm rounded-[2rem] p-6 shadow-2xl border border-white transform translate-y-10 opacity-0 transition-all duration-500 menu-card flex flex-col gap-4">
-            <div class="w-12 h-1.5 bg-gray-200 rounded-full mx-auto mb-1"></div>
-            <h3 class="text-center font-extrabold text-gray-400 text-[10px] tracking-widest uppercase mb-2">Pilih Aksi</h3>
-            
-            <button onclick="navTo('home')" class="w-full group flex items-center gap-4 p-4 rounded-2xl bg-brand-50 hover:bg-brand-100 active:scale-[0.98] border border-brand-100 transition-all duration-300 shadow-sm">
-                <div class="w-12 h-12 rounded-xl bg-white shadow-sm flex items-center justify-center text-brand-500 group-hover:scale-110 group-hover:rotate-3 transition-all">
-                    <i class="fas fa-plus-circle text-xl"></i>
-                </div>
-                <div class="flex flex-col text-left">
-                    <span class="font-extrabold text-brand-900 text-base">Buat Pesanan</span>
-                    <span class="text-[11px] text-brand-600 font-medium mt-0.5">Input data cucian baru</span>
-                </div>
-                <i class="fas fa-chevron-right text-brand-300 ml-auto text-xs group-hover:translate-x-1 transition-transform"></i>
-            </button>
-
-            <button onclick="navTo('orders')" class="w-full group flex items-center gap-4 p-4 rounded-2xl bg-white hover:bg-gray-50 active:scale-[0.98] border border-gray-200 transition-all duration-300 shadow-sm">
-                <div class="w-12 h-12 rounded-xl bg-gray-50 shadow-sm flex items-center justify-center text-gray-500 group-hover:scale-110 group-hover:rotate-3 transition-all border border-gray-100">
-                    <i class="fas fa-list-check text-xl"></i>
-                </div>
-                <div class="flex flex-col text-left">
-                    <span class="font-extrabold text-gray-700 text-base">Data Pesanan</span>
-                    <span class="text-[11px] text-gray-500 font-medium mt-0.5">Riwayat & Nota Bayar</span>
-                </div>
-                <i class="fas fa-chevron-right text-gray-300 ml-auto text-xs group-hover:translate-x-1 transition-transform"></i>
-            </button>
-
-            <button onclick="navTo('kredit')" class="w-full group flex items-center gap-4 p-4 rounded-2xl bg-white hover:bg-red-50 active:scale-[0.98] border border-gray-200 transition-all duration-300 shadow-sm">
-                <div class="w-12 h-12 rounded-xl bg-red-50 shadow-sm flex items-center justify-center text-red-500 group-hover:scale-110 group-hover:rotate-3 transition-all border border-red-100">
-                    <i class="fas fa-hand-holding-dollar text-xl"></i>
-                </div>
-                <div class="flex flex-col text-left">
-                    <span class="font-extrabold text-gray-700 text-base">Data Kredit</span>
-                    <span class="text-[11px] text-gray-500 font-medium mt-0.5">Rekap tagihan per nama</span>
-                </div>
-                <i class="fas fa-chevron-right text-gray-300 ml-auto text-xs group-hover:translate-x-1 transition-transform"></i>
-            </button>
-        </div>
+        
+        <p class="text-white/80 text-[10px] font-bold tracking-[0.3em] animate-pulse font-sans">
+            MEMPROSES DATA
+        </p>
     </div>
-    <main class="flex-1 overflow-y-auto pt-28 pb-32 px-6 scroll-smooth z-10 print:pt-0 print:pb-0 print:px-0 print:overflow-visible" id="main-content">
-        <div id="view-home" class="transition-all duration-300 print:hidden relative z-10">
-            <section class="mb-8 animate-fade-in-up">
-                <div class="bg-white/80 backdrop-blur-sm rounded-3xl p-1 shadow-soft border border-brand-100">
-                    <div class="space-y-1">
-                        <div class="relative group">
-                            <div class="absolute inset-y-0 left-0 pl-5 flex items-center pointer-events-none">
-                                <i class="far fa-user text-gray-300 group-focus-within:text-brand-500 transition-colors"></i>
-                            </div>
-                            <input type="text" id="custName" 
-                                class="w-full pl-12 pr-4 py-4 bg-transparent rounded-2xl text-brand-900 placeholder-gray-400 focus:outline-none focus:bg-brand-50 transition-all font-medium text-sm"
-                                placeholder="Nama Lengkap">
-                        </div>
-                        <div class="w-full h-px bg-brand-50 mx-auto w-[90%]"></div>
-                        <div class="relative group">
-                            <div class="absolute inset-y-0 left-0 pl-5 flex items-center pointer-events-none">
-                                <i class="fas fa-map-marker-alt text-gray-300 group-focus-within:text-brand-500 transition-colors"></i>
-                            </div>
-                            <input type="text" id="custAddress" 
-                                class="w-full pl-12 pr-4 py-4 bg-transparent rounded-2xl text-brand-900 placeholder-gray-400 focus:outline-none focus:bg-brand-50 transition-all font-medium text-sm"
-                                placeholder="Alamat Lengkap / Rumah">
+
+    <div class="fixed top-0 left-0 w-full h-full overflow-hidden -z-10 pointer-events-none">
+        <div class="absolute top-[-10%] left-[-10%] w-[50%] h-[50%] bg-blue-600/10 rounded-full blur-[120px]"></div>
+        <div class="absolute bottom-[10%] right-[-10%] w-[50%] h-[50%] bg-davka-orange/10 rounded-full blur-[120px]"></div>
+    </div>
+
+    <header class="header-hero z-0 bg-davka-surface transition-all duration-500 ease-in-out">
+        <img src="header.png" crossorigin="anonymous" alt="Header Background" class="absolute inset-0 w-full h-full opacity-80">
+        <div class="absolute inset-0 bg-gradient-to-b from-black/60 via-transparent to-davka-bg/90"></div>
+    </header>
+
+    <div id="header-spacer" class="hidden"></div>
+
+    <main id="app-content" class="px-5 w-full max-w-md mx-auto -mt-24 relative z-30">
+        
+        <section id="page-dashboard" class="fade-in space-y-4">
+            
+            <div class="pt-16 pb-2">
+                
+                <div class="flex flex-col justify-start items-start px-2 mb-6">
+                    <h1 id="txt-greeting-time" class="text-2xl font-black text-white drop-shadow-lg leading-tight">
+                        Selamat...
+                    </h1>
+                    <p class="text-sm font-bold text-davka-orange tracking-widest uppercase mt-1 drop-shadow-md">
+                        Hai, Davka ganteng
+                    </p>
+                </div>
+
+                <div class="flex justify-between items-center px-2 mb-4">
+                    <div>
+                        <span class="inline-block px-3 py-1 rounded-full bg-davka-orange/20 border border-davka-orange/50 text-[10px] text-davka-orange font-bold tracking-wider mb-1">
+                            <i class="fas fa-crown mr-1"></i> PREMIUM ACCESS
+                        </span>
+                    </div>
+                    <div class="text-right">
+                        <div class="inline-block bg-black/40 backdrop-blur-md border border-white/10 px-3 py-1.5 rounded-xl shadow-lg">
+                            <p class="text-[10px] text-white font-bold uppercase tracking-wider shadow-black drop-shadow-md" id="current-date">-</p>
                         </div>
                     </div>
                 </div>
-            </section>
-            <section class="mb-6 animate-fade-in-up" style="animation-delay: 0.1s;">
-                <div class="flex items-center justify-between mb-4 px-1">
-                    <h2 class="text-sm font-bold text-brand-900">Pilih Layanan</h2>
-                    <span class="text-[10px] bg-white text-brand-600 border border-brand-100 px-2 py-1 rounded-full font-bold tracking-wide shadow-sm">BEST PRICE</span>
+
+                <div class="glass p-5 rounded-3xl relative overflow-hidden mb-4 border border-white/10">
+                    <div class="absolute -right-10 -top-10 w-40 h-40 bg-davka-orange rounded-full blur-3xl opacity-10"></div>
+                    
+                    <div class="relative z-10">
+                        <p class="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-1">Total Omset</p>
+                        <h2 class="text-3xl font-black text-white mb-3" id="stat-revenue">Rp 0</h2>
+                        
+                        <div class="inline-flex items-center gap-2 bg-white/5 px-3 py-1.5 rounded-lg border border-white/5">
+                            <div class="w-2 h-2 rounded-full bg-green-500 animate-pulse"></div>
+                            <p class="text-[10px] text-gray-300">
+                                <span class="text-white font-bold text-sm mr-1" id="stat-today">0</span> 
+                                Tiket Terjual
+                            </p>
+                        </div>
+                    </div>
+                </div>
+                <div class="glass p-1 rounded-2xl flex justify-between items-center text-center shadow-lg">
+                    <div class="flex-1 py-3 hover:bg-white/5 rounded-xl transition-colors">
+                        <p class="text-[10px] text-gray-400 font-bold uppercase mb-1">Pending</p>
+                        <p class="text-lg font-bold text-yellow-500" id="stat-pending">0</p>
+                    </div>
+                    <div class="w-px h-8 bg-white/10"></div>
+                    <div class="flex-1 py-3 hover:bg-white/5 rounded-xl transition-colors">
+                        <p class="text-[10px] text-gray-400 font-bold uppercase mb-1">Sukses</p>
+                        <p class="text-lg font-bold text-green-500" id="stat-success">0</p>
+                    </div>
+                    <div class="w-px h-8 bg-white/10"></div>
+                    <div class="flex-1 py-3 hover:bg-white/5 rounded-xl transition-colors">
+                        <p class="text-[10px] text-gray-400 font-bold uppercase mb-1">Batal</p>
+                        <p class="text-lg font-bold text-red-500" id="stat-cancel">0</p>
+                    </div>
+                </div>
+            </div>
+        </section>
+        <section id="page-input" class="hidden fade-in pb-10 pt-4">
+            <div class="flex justify-between items-center mb-6 mt-2">
+                <div>
+                    <h2 class="text-xl font-bold text-white">Form Pemesanan</h2>
+                    <div class="h-1 w-10 bg-davka-orange rounded-full mt-1"></div>
+                </div>
+                <button onclick="resetForm()" class="text-[10px] font-bold text-davka-orange bg-davka-orange/10 px-3 py-2 rounded-full hover:bg-davka-orange hover:text-white transition-all flex items-center gap-2">
+                    <i class="fas fa-sync-alt"></i> RESET FORM
+                </button>
+            </div>
+            <form id="orderForm" class="space-y-5">
+                <input type="hidden" id="editIndex" value="-1">
+                <div class="glass p-5 rounded-3xl space-y-4">
+                    <div class="flex items-center gap-2 mb-2">
+                        <div class="w-8 h-8 rounded-full bg-blue-500/20 flex items-center justify-center text-blue-400">
+                            <i class="fas fa-address-book text-xs"></i>
+                        </div>
+                        <h3 class="text-sm font-bold text-white">Data Pemesan</h3>
+                    </div>
+
+                    <div class="space-y-4">
+                        <div class="space-y-1">
+                            <label class="text-[10px] font-bold text-davka-orange uppercase tracking-wider pl-2 block">Nama Kontak</label>
+                            <input type="text" id="inpContactName" required class="input-modern w-full outline-none" placeholder="Masukkan Nama Lengkap" autocapitalize="characters">
+                        </div>
+                        
+                        <div class="space-y-1">
+                            <label class="text-[10px] font-bold text-davka-orange uppercase tracking-wider pl-2 block">WhatsApp (62..)</label>
+                            <input type="tel" id="inpContactPhone" required class="input-modern w-full outline-none" placeholder="08xxxxxxxxxx">
+                        </div>
+
+                        <div class="space-y-1">
+                            <label class="text-[10px] font-bold text-davka-orange uppercase tracking-wider pl-2 block">Alamat Lengkap</label>
+                            <textarea id="inpAddress" rows="2" class="input-modern w-full outline-none" placeholder="Nama Jalan, Kota..." autocapitalize="characters"></textarea>
+                        </div>
+                    </div>
+                </div>
+                <div class="glass p-5 rounded-3xl space-y-4">
+                    <div class="flex flex-col gap-3 border-b border-white/5 pb-3">
+                        <div class="flex items-center gap-2">
+                            <div class="w-8 h-8 rounded-full bg-green-500/20 flex items-center justify-center text-green-400">
+                                <i class="fas fa-users text-xs"></i>
+                            </div>
+                            <h3 class="text-sm font-bold text-white">Penumpang</h3>
+                        </div>
+                        
+                        <div class="grid grid-cols-2 gap-3">
+                            <div class="bg-davka-bg rounded-xl px-3 py-2 border border-davka-border flex justify-between items-center relative overflow-hidden">
+                                <div class="absolute left-0 top-0 bottom-0 w-1 bg-davka-orange"></div>
+                                <span class="text-[10px] text-gray-400 uppercase font-bold pl-2">Dewasa</span>
+                                <select id="inpPaxCount" onchange="updatePassengerForms()" class="bg-transparent text-white text-sm font-bold text-right focus:outline-none w-12 cursor-pointer appearance-none z-10">
+                                    <option value="1">1</option>
+                                    <option value="2">2</option>
+                                    <option value="3">3</option>
+                                    <option value="4">4</option>
+                                    <option value="5">5</option>
+                                    <option value="6">6</option>
+                                    <option value="7">7</option>
+                                    <option value="8">8</option>
+                                </select>
+                                <i class="fas fa-chevron-down text-[8px] text-gray-500 absolute right-0 pointer-events-none"></i>
+                            </div>
+                            
+                            <div class="bg-davka-bg rounded-xl px-3 py-2 border border-davka-border flex justify-between items-center relative overflow-hidden">
+                                <div class="absolute left-0 top-0 bottom-0 w-1 bg-pink-500"></div>
+                                <span class="text-[10px] text-gray-400 uppercase font-bold pl-2">Bayi</span>
+                                <select id="inpInfantCount" onchange="updatePassengerForms()" class="bg-transparent text-white text-sm font-bold text-right focus:outline-none w-12 cursor-pointer appearance-none z-10">
+                                    <option value="0">0</option>
+                                    <option value="1">1</option>
+                                    <option value="2">2</option>
+                                    <option value="3">3</option>
+                                    <option value="4">4</option>
+                                </select>
+                                <i class="fas fa-chevron-down text-[8px] text-gray-500 absolute right-0 pointer-events-none"></i>
+                            </div>
+                        </div>
+                    </div>
+                    <div id="passengerForms" class="space-y-4"></div>
+                </div>
+                <div class="glass p-5 rounded-3xl space-y-4">
+                    <div class="flex items-center gap-2 mb-2">
+                        <div class="w-8 h-8 rounded-full bg-davka-orange/20 flex items-center justify-center text-davka-orange">
+                            <i class="fas fa-train text-xs"></i>
+                        </div>
+                        <h3 class="text-sm font-bold text-white">Detail Perjalanan</h3>
+                    </div>
+                    
+                    <div>
+                        <select id="inpTripType" onchange="toggleTripType()" class="w-full bg-davka-bg border border-davka-border rounded-xl px-4 py-3 text-sm text-white focus:border-davka-orange outline-none">
+                            <option value="one_way">Sekali Jalan</option>
+                            <option value="round_trip">Pulang Pergi (PP)</option>
+                        </select>
+                    </div>
+
+                    <div class="flex items-center gap-3">
+                        <div class="flex-1">
+                            <label class="text-[10px] text-gray-400 ml-1 mb-1 block">STASIUN ASAL (LENGKAP)</label>
+                            <input type="text" id="inpOrigin" required class="w-full bg-davka-bg border border-davka-border rounded-xl px-4 py-3 text-lg font-bold text-white text-center uppercase focus:border-davka-orange outline-none" placeholder="Cth: GAMBIR" autocapitalize="characters">
+                        </div>
+                        <i class="fas fa-arrow-right text-gray-500 mt-5"></i>
+                        <div class="flex-1">
+                            <label class="text-[10px] text-gray-400 ml-1 mb-1 block">STASIUN TUJUAN (LENGKAP)</label>
+                            <input type="text" id="inpDest" required class="w-full bg-davka-bg border border-davka-border rounded-xl px-4 py-3 text-lg font-bold text-white text-center uppercase focus:border-davka-orange outline-none" placeholder="Cth: TUGU" autocapitalize="characters">
+                        </div>
+                    </div>
+
+                    <div class="bg-davka-bg/50 p-3 rounded-xl border border-white/5">
+                        <label class="text-[10px] font-bold text-davka-orange block mb-2 tracking-widest">KEBERANGKATAN</label>
+                        <div class="grid grid-cols-2 gap-3 mb-3">
+                            <div>
+                                <label class="text-[10px] text-gray-400">Tanggal</label>
+                                <input type="date" id="inpDate" onchange="calcH45()" required class="w-full bg-davka-surface border border-davka-border rounded-lg p-2 text-xs text-white focus:border-davka-orange outline-none">
+                            </div>
+                            <div>
+                                <label class="text-[10px] text-davka-orange font-bold">Beli Tiket</label>
+                                <input type="date" id="inpWarDate" class="w-full bg-davka-surface border border-davka-orange/30 rounded-lg p-2 text-xs text-davka-orange font-bold outline-none" readonly>
+                            </div>
+                        </div>
+                        <input type="text" id="inpTrain" required class="w-full bg-davka-surface border border-davka-border rounded-lg p-2.5 text-xs text-white focus:border-davka-orange outline-none" placeholder="Nama Kereta (Cth: Taksaka)" autocapitalize="characters">
+                    </div>
+                    
+                    <div id="returnTripFields" class="hidden bg-davka-bg/50 p-3 rounded-xl border border-white/5 relative overflow-hidden">
+                        <div class="absolute left-0 top-0 bottom-0 w-1 bg-blue-500"></div>
+                        <label class="text-[10px] font-bold text-blue-500 block mb-3 tracking-widest pl-2">KEPULANGAN (PP)</label>
+                        
+                        <div class="flex items-center gap-2 mb-3 pl-2">
+                             <div class="flex-1">
+                                <label class="text-[9px] text-gray-400 mb-1 block">ASAL (BALIK)</label>
+                                <input type="text" id="inpReturnOrigin" class="w-full bg-davka-surface border border-davka-border rounded-lg p-2 text-sm font-bold text-white uppercase focus:border-blue-500 outline-none" placeholder="Cth: TUGU" autocapitalize="characters">
+                            </div>
+                            <i class="fas fa-arrow-right text-gray-600 text-[10px] mt-4"></i>
+                            <div class="flex-1">
+                                <label class="text-[9px] text-gray-400 mb-1 block">TUJUAN (BALIK)</label>
+                                <input type="text" id="inpReturnDest" class="w-full bg-davka-surface border border-davka-border rounded-lg p-2 text-sm font-bold text-white uppercase focus:border-blue-500 outline-none" placeholder="Cth: GAMBIR" autocapitalize="characters">
+                            </div>
+                        </div>
+
+                        <div class="grid grid-cols-2 gap-3 mb-3 pl-2">
+                            <div>
+                                <label class="text-[10px] text-gray-400">Tanggal Balik</label>
+                                <input type="date" id="inpReturnDate" onchange="calcReturnH45()" class="w-full bg-davka-surface border border-davka-border rounded-lg p-2 text-xs text-white focus:border-blue-500 outline-none">
+                            </div>
+                            <div>
+                                <label class="text-[10px] text-blue-500 font-bold">Beli Tiket</label>
+                                <input type="date" id="inpReturnWarDate" class="w-full bg-davka-surface border border-blue-500/30 rounded-lg p-2 text-xs text-blue-500 font-bold outline-none" readonly>
+                            </div>
+                        </div>
+                        <input type="text" id="inpReturnTrain" class="w-full bg-davka-surface border border-davka-border rounded-lg p-2.5 text-xs text-white focus:border-blue-500 outline-none ml-2 w-[98%]" placeholder="Nama Kereta (Cth: Argo Lawu)" autocapitalize="characters">
+                    </div>
+                </div>
+                <div class="glass p-5 rounded-3xl space-y-4">
+                    <div class="flex items-center gap-2 mb-2">
+                        <div class="w-8 h-8 rounded-full bg-purple-500/20 flex items-center justify-center text-purple-400">
+                            <i class="fas fa-file-upload text-xs"></i>
+                        </div>
+                        <h3 class="text-sm font-bold text-white">Upload Bukti</h3>
+                    </div>
+                    
+                    <div id="uploadTabContainer" class="hidden flex bg-white/5 p-1 rounded-xl mb-4 relative">
+                        <button type="button" onclick="switchUploadTab('depart')" id="btn-upload-depart" class="flex-1 py-2 text-[10px] font-bold uppercase rounded-lg transition-all bg-davka-orange text-white shadow-lg">
+                            <i class="fas fa-plane-departure mr-1"></i> Tiket Pergi
+                        </button>
+                        <button type="button" onclick="switchUploadTab('return')" id="btn-upload-return" class="flex-1 py-2 text-[10px] font-bold uppercase rounded-lg transition-all text-gray-400 hover:text-white">
+                            <i class="fas fa-plane-arrival mr-1"></i> Tiket Pulang
+                        </button>
+                    </div>
+
+                    <div id="uploadContainerDepart" class="grid grid-cols-1 gap-4 animate-scale-up">
+                        <p class="text-[9px] text-gray-500 uppercase font-bold text-center mb-1 hidden" id="lblUploadDepart">Dokumen Keberangkatan</p>
+                        
+                        <div id="zoneTransfer" onclick="handleUploadZoneClick('zoneTransfer', 'inpFileTransfer')" class="upload-zone-base bg-davka-bg p-4 rounded-xl border border-davka-border text-center group cursor-pointer hover:border-davka-orange transition-all duration-200 relative h-48 flex flex-col items-center justify-center select-none active:scale-[0.98]">
+                            <input type="file" id="inpFileTransfer" accept="image/*" class="hidden">
+                            
+                            <i class="fas fa-receipt text-3xl text-gray-600 group-hover:text-davka-orange mb-3 transition-colors"></i>
+                            <p class="text-xs text-gray-400 font-bold" id="labelTransfer">Bukti Transfer (Pergi)</p>
+                            <p class="text-[10px] text-gray-500 mt-1" id="subLabelTransfer">Ketuk 1x Pilih, Ketuk lagi Buka</p>
+                            
+                            <div id="hintTransfer" class="hidden absolute top-3 right-3 bg-davka-orange text-white text-[9px] font-bold px-3 py-1 rounded-full animate-bounce shadow-lg z-30">
+                                <i class="fas fa-hand-pointer mr-1"></i> BUKA FILE
+                            </div>
+
+                            <textarea id="inpTransferData" class="hidden"></textarea>
+                            
+                            <div id="previewTransfer" class="hidden absolute inset-0 bg-black z-20 rounded-xl overflow-hidden">
+                                <img id="imgTransfer" onclick="showImageModal(this.src, true); event.stopPropagation();" class="w-full h-full object-cover opacity-90 hover:opacity-100 transition-opacity cursor-zoom-in">
+                                
+                                <button type="button" onclick="clearImage('transfer'); event.stopPropagation();" class="absolute top-2 right-2 bg-red-600 text-white rounded-full w-8 h-8 flex items-center justify-center z-30 shadow-lg active:scale-90 transition-transform">
+                                    <i class="fas fa-times text-xs"></i>
+                                </button>
+                                
+                                <div class="absolute bottom-0 left-0 w-full bg-black/70 backdrop-blur-sm py-2 pointer-events-none">
+                                    <p class="text-[10px] text-white font-bold text-center"><i class="fas fa-download mr-1 text-davka-orange"></i> Ketuk foto untuk simpan</p>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div id="zoneChat" onclick="handleUploadZoneClick('zoneChat', 'inpFileChat')" class="upload-zone-base bg-davka-bg p-4 rounded-xl border border-davka-border text-center group cursor-pointer hover:border-green-500 transition-all duration-200 relative h-48 flex flex-col items-center justify-center select-none active:scale-[0.98]">
+                            <input type="file" id="inpFileChat" accept="image/*" class="hidden">
+                            
+                            <i class="fab fa-whatsapp text-3xl text-gray-600 group-hover:text-green-500 mb-3 transition-colors"></i>
+                            <p class="text-xs text-gray-400 font-bold" id="labelChat">Chat WA (Pergi)</p>
+                            <p class="text-[10px] text-gray-500 mt-1" id="subLabelChat">Ketuk 1x Pilih, Ketuk lagi Buka</p>
+                            
+                            <div id="hintChat" class="hidden absolute top-3 right-3 bg-green-500 text-white text-[9px] font-bold px-3 py-1 rounded-full animate-bounce shadow-lg z-30">
+                                <i class="fas fa-hand-pointer mr-1"></i> BUKA FILE
+                            </div>
+
+                            <textarea id="inpChatData" class="hidden"></textarea>
+                            
+                            <div id="previewChat" class="hidden absolute inset-0 bg-black z-20 rounded-xl overflow-hidden">
+                                <img id="imgChat" onclick="showImageModal(this.src, true); event.stopPropagation();" class="w-full h-full object-cover opacity-90 hover:opacity-100 transition-opacity cursor-zoom-in">
+                                
+                                <button type="button" onclick="clearImage('chat'); event.stopPropagation();" class="absolute top-2 right-2 bg-red-600 text-white rounded-full w-8 h-8 flex items-center justify-center z-30 shadow-lg active:scale-90 transition-transform">
+                                    <i class="fas fa-times text-xs"></i>
+                                </button>
+                                
+                                <div class="absolute bottom-0 left-0 w-full bg-black/70 backdrop-blur-sm py-2 pointer-events-none">
+                                    <p class="text-[10px] text-white font-bold text-center"><i class="fas fa-download mr-1 text-green-500"></i> Ketuk foto untuk simpan</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div id="uploadContainerReturn" class="hidden grid grid-cols-1 gap-4 animate-scale-up">
+                         <p class="text-[9px] text-blue-500 uppercase font-bold text-center mb-1">Dokumen Kepulangan</p>
+                         
+                         <div id="zoneTransferReturn" onclick="handleUploadZoneClick('zoneTransferReturn', 'inpFileTransferReturn')" class="upload-zone-base bg-davka-bg p-4 rounded-xl border border-blue-500/30 text-center group cursor-pointer hover:border-blue-500 transition-all duration-200 relative h-48 flex flex-col items-center justify-center select-none active:scale-[0.98]">
+                            <input type="file" id="inpFileTransferReturn" accept="image/*" class="hidden">
+                            
+                            <i class="fas fa-receipt text-3xl text-gray-600 group-hover:text-blue-500 mb-3 transition-colors"></i>
+                            <p class="text-xs text-gray-400 font-bold" id="labelTransferReturn">Bukti Transfer (Pulang)</p>
+                            <p class="text-[10px] text-gray-500 mt-1">Ketuk 1x Pilih, Ketuk lagi Buka</p>
+                            
+                            <div id="hintTransferReturn" class="hidden absolute top-3 right-3 bg-blue-500 text-white text-[9px] font-bold px-3 py-1 rounded-full animate-bounce shadow-lg z-30">
+                                <i class="fas fa-hand-pointer mr-1"></i> BUKA FILE
+                            </div>
+
+                            <textarea id="inpTransferDataReturn" class="hidden"></textarea>
+                            
+                            <div id="previewTransferReturn" class="hidden absolute inset-0 bg-black z-20 rounded-xl overflow-hidden">
+                                <img id="imgTransferReturn" onclick="showImageModal(this.src, true); event.stopPropagation();" class="w-full h-full object-cover opacity-90 hover:opacity-100 transition-opacity cursor-zoom-in">
+                                
+                                <button type="button" onclick="clearImage('transferReturn'); event.stopPropagation();" class="absolute top-2 right-2 bg-red-600 text-white rounded-full w-8 h-8 flex items-center justify-center z-30 shadow-lg active:scale-90 transition-transform">
+                                    <i class="fas fa-times text-xs"></i>
+                                </button>
+                                
+                                <div class="absolute bottom-0 left-0 w-full bg-black/70 backdrop-blur-sm py-2 pointer-events-none">
+                                    <p class="text-[10px] text-white font-bold text-center"><i class="fas fa-download mr-1 text-blue-500"></i> Ketuk foto untuk simpan</p>
+                                </div>
+                            </div>
+                        </div>
+
+                         <div id="zoneChatReturn" onclick="handleUploadZoneClick('zoneChatReturn', 'inpFileChatReturn')" class="upload-zone-base bg-davka-bg p-4 rounded-xl border border-blue-500/30 text-center group cursor-pointer hover:border-blue-500 transition-all duration-200 relative h-48 flex flex-col items-center justify-center select-none active:scale-[0.98]">
+                            <input type="file" id="inpFileChatReturn" accept="image/*" class="hidden">
+                            
+                            <i class="fab fa-whatsapp text-3xl text-gray-600 group-hover:text-blue-500 mb-3 transition-colors"></i>
+                            <p class="text-xs text-gray-400 font-bold" id="labelChatReturn">Chat WA (Pulang)</p>
+                            <p class="text-[10px] text-gray-500 mt-1">Ketuk 1x Pilih, Ketuk lagi Buka</p>
+                            
+                            <div id="hintChatReturn" class="hidden absolute top-3 right-3 bg-blue-500 text-white text-[9px] font-bold px-3 py-1 rounded-full animate-bounce shadow-lg z-30">
+                                <i class="fas fa-hand-pointer mr-1"></i> BUKA FILE
+                            </div>
+
+                            <textarea id="inpChatDataReturn" class="hidden"></textarea>
+                            
+                            <div id="previewChatReturn" class="hidden absolute inset-0 bg-black z-20 rounded-xl overflow-hidden">
+                                <img id="imgChatReturn" onclick="showImageModal(this.src, true); event.stopPropagation();" class="w-full h-full object-cover opacity-90 hover:opacity-100 transition-opacity cursor-zoom-in">
+                                
+                                <button type="button" onclick="clearImage('chatReturn'); event.stopPropagation();" class="absolute top-2 right-2 bg-red-600 text-white rounded-full w-8 h-8 flex items-center justify-center z-30 shadow-lg active:scale-90 transition-transform">
+                                    <i class="fas fa-times text-xs"></i>
+                                </button>
+                                
+                                <div class="absolute bottom-0 left-0 w-full bg-black/70 backdrop-blur-sm py-2 pointer-events-none">
+                                    <p class="text-[10px] text-white font-bold text-center"><i class="fas fa-download mr-1 text-blue-500"></i> Ketuk foto untuk simpan</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="glass p-5 rounded-3xl space-y-4 border-t-4 border-davka-orange">
+                    <h3 class="text-sm font-bold text-davka-orange uppercase tracking-widest text-center">Rincian Pembayaran</h3>
+                    
+                    <div class="space-y-3">
+                        <div class="relative bg-davka-bg/30 p-2 rounded-xl border border-white/5">
+                            <label class="text-[10px] font-bold text-davka-orange block mb-2 tracking-widest pl-1"><i class="fas fa-plane-departure mr-1"></i> BIAYA KEBERANGKATAN</label>
+                            
+                            <div class="mb-3 px-1">
+                                <label class="text-[9px] text-gray-500 font-bold uppercase mb-1 block">Metode Bayar (Pergi)</label>
+                                <select id="inpPaymentMethod" class="w-full bg-davka-bg border border-davka-border rounded-xl px-4 py-3 text-xs text-white focus:border-davka-orange outline-none">
+                                    <option value="Tunai">Tunai</option>
+                                    <option value="Transfer CIMB Niaga">Transfer CIMB Niaga</option>
+                                    <option value="Transfer Seabank">Transfer Seabank</option>
+                                    <option value="Dana">Dana</option>
+                                    <option value="Gopay">Gopay</option>
+                                    <option value="Ovo">Ovo</option>
+                                    <option value="ShopeePay">ShopeePay</option>
+                                </select>
+                            </div>
+
+                            <div class="flex items-center justify-between bg-davka-bg p-3 rounded-xl border border-davka-border mb-2">
+                                <label class="text-xs text-gray-400">Harga Pergi/Pax</label>
+                                <input type="number" id="inpPricePerPax" oninput="calcTotalFromPax()" class="bg-transparent text-right text-white font-bold outline-none w-32 focus:text-davka-orange transition-colors" placeholder="0">
+                            </div>
+
+                            <div class="flex items-center justify-between bg-davka-bg p-3 rounded-xl border border-davka-border mb-2">
+                                <label class="text-xs text-gray-400">Total Pergi</label>
+                                <input type="number" id="inpPrice" oninput="calcRemaining()" required class="bg-transparent text-right text-white font-bold outline-none w-32 focus:text-davka-orange transition-colors" placeholder="0">
+                            </div>
+
+                            <div class="flex items-center justify-between bg-davka-bg p-3 rounded-xl border border-davka-border mb-2">
+                                <label class="text-xs text-gray-400">DP Pergi</label>
+                                <input type="number" id="inpFeeDepart" oninput="calcRemaining()" class="bg-transparent text-right text-davka-orange font-bold outline-none w-32" placeholder="0">
+                            </div>
+
+                            <div class="flex items-center justify-between bg-davka-surface p-4 rounded-xl border border-white/10">
+                                <label class="text-xs font-bold text-white uppercase">Sisa Tagihan Pergi</label>
+                                <input type="text" id="inpRemainingDepart" class="bg-transparent text-right text-red-500 font-black text-lg outline-none w-40 cursor-default" placeholder="Rp 0" readonly>
+                            </div>
+                        </div>
+                        <div id="paymentReturnSection" class="hidden relative pt-2 border-t border-dashed border-white/10 mt-2 bg-blue-500/5 p-2 rounded-xl border border-blue-500/20">
+                            <label class="text-[10px] font-bold text-blue-500 block mb-2 tracking-widest pl-1"><i class="fas fa-plane-arrival mr-1"></i> BIAYA KEPULANGAN (PP)</label>
+                            
+                            <div class="mb-3 px-1">
+                                <label class="text-[9px] text-blue-400 font-bold uppercase mb-1 block">Metode Bayar (Pulang)</label>
+                                <select id="inpPaymentMethodReturn" class="w-full bg-davka-bg border border-blue-500/30 rounded-xl px-4 py-3 text-xs text-white focus:border-blue-500 outline-none">
+                                    <option value="Tunai">Tunai</option>
+                                    <option value="Transfer CIMB Niaga">Transfer CIMB Niaga</option>
+                                    <option value="Transfer Seabank">Transfer Seabank</option>
+                                    <option value="Dana">Dana</option>
+                                    <option value="Gopay">Gopay</option>
+                                    <option value="Ovo">Ovo</option>
+                                    <option value="ShopeePay">ShopeePay</option>
+                                </select>
+                            </div>
+
+                            <div class="flex items-center justify-between bg-davka-bg p-3 rounded-xl border border-blue-500/30 mb-2">
+                                <label class="text-xs text-gray-400">Harga Pulang/Pax</label>
+                                <input type="number" id="inpReturnPricePerPax" oninput="calcTotalFromPax()" class="bg-transparent text-right text-white font-bold outline-none w-32 focus:text-blue-400 transition-colors" placeholder="0">
+                            </div>
+
+                            <div class="flex items-center justify-between bg-davka-bg p-3 rounded-xl border border-blue-500/30 mb-2">
+                                <label class="text-xs text-gray-400">Total Pulang</label>
+                                <input type="number" id="inpReturnPrice" oninput="calcRemaining()" class="bg-transparent text-right text-white font-bold outline-none w-32 focus:text-blue-400 transition-colors" placeholder="0">
+                            </div>
+
+                            <div class="flex items-center justify-between bg-davka-bg p-3 rounded-xl border border-blue-500/30 mb-2">
+                                <label class="text-xs text-gray-400">DP Pulang</label>
+                                <input type="number" id="inpFeeReturn" oninput="calcRemaining()" class="bg-transparent text-right text-blue-400 font-bold outline-none w-32" placeholder="0">
+                            </div>
+
+                            <div class="flex items-center justify-between bg-blue-900/20 p-4 rounded-xl border border-blue-500/30">
+                                <label class="text-xs font-bold text-blue-400 uppercase">Sisa Tagihan Pulang</label>
+                                <input type="text" id="inpRemainingReturn" class="bg-transparent text-right text-red-500 font-black text-lg outline-none w-40 cursor-default" placeholder="Rp 0" readonly>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="pt-2 pb-10 space-y-3">
+                    <button type="submit" class="w-full bg-gradient-to-r from-davka-orange to-red-600 text-white font-bold py-4 rounded-2xl shadow-lg shadow-orange-500/30 active:scale-95 transition-transform flex justify-center items-center gap-2">
+                        <i class="fas fa-save"></i> <span id="btnSaveText">SIMPAN PESANAN</span>
+                    </button>
+                </div>
+            </form>
+        </section>
+        <section id="page-list" class="hidden fade-in space-y-4">
+            <div class="pt-16 pb-2">
+                <div class="mb-4">
+                    <div class="flex justify-between items-center mb-3">
+                        <h2 class="text-xl font-bold text-white">Data Pemesan</h2>
+                        <div class="bg-davka-surface px-2 py-1 rounded border border-white/10">
+                            <i class="fas fa-history text-davka-orange text-xs"></i>
+                        </div>
+                    </div>
+                    <div class="relative">
+                        <input type="text" id="searchInput" onkeyup="searchOrders()" placeholder="Cari nama kontak..." class="w-full bg-davka-surface border border-white/10 text-white rounded-2xl py-3 pl-12 pr-4 focus:outline-none focus:border-davka-orange focus:ring-1 focus:ring-davka-orange transition-all shadow-inner" autocapitalize="characters">
+                        <i class="fas fa-search absolute left-4 top-3.5 text-gray-500"></i>
+                    </div>
+                </div>
+
+                <div id="ordersContainer" class="space-y-4 pb-48">
+                </div>
+            
+                <div id="emptyState" class="hidden flex flex-col items-center justify-center py-20 text-gray-600">
+                    <div class="w-20 h-20 rounded-full bg-davka-surface flex items-center justify-center mb-4">
+                        <i class="fas fa-inbox text-3xl opacity-30"></i>
+                    </div>
+                    <p class="text-sm">Belum ada pesanan.</p>
+                </div>
+            </div>
+        </section>
+        <section id="page-detail" class="hidden fade-in pb-32">
+            <div class="pt-16 px-1">
+                <div class="flex items-center gap-3 mb-6">
+                    <div>
+                        <h2 class="text-lg font-bold text-white leading-none" id="detail-contact-name">NAMA KONTAK</h2>
+                        <p class="text-[10px] text-gray-400 mt-1" id="detail-id">#ID000000</p>
+                    </div>
+                    <div class="ml-auto">
+                        <div id="detail-status-badge" class="px-3 py-1 rounded-full text-[10px] font-bold uppercase border">
+                            STATUS
+                        </div>
+                    </div>
                 </div>
                 
-                <div class="grid grid-cols-2 gap-4">
-                    <div onclick="toggleService(0)" id="srv-0" class="service-card group relative p-4 bg-white/90 backdrop-blur-sm rounded-3xl border border-brand-300 border-dashed shadow-sm hover:shadow-soft transition-all duration-300 cursor-pointer overflow-hidden">
-                        <div class="absolute top-3 right-3 opacity-0 check-icon transition-all duration-300 text-brand-500 transform scale-50 group-active:scale-100 z-10">
-                            <i class="fas fa-circle-check text-lg"></i>
+                <div class="glass p-5 rounded-3xl mb-4 relative overflow-hidden">
+                    <div class="absolute top-0 left-0 w-1 h-full bg-davka-orange" id="detail-card-accent"></div>
+                    
+                    <div class="flex justify-between items-start text-center mb-6 relative">
+                        <div class="flex-1 min-w-0"> 
+                            <h3 class="text-xl font-black text-white break-words leading-tight" id="detail-origin">ORG</h3> 
+                            <p class="text-[10px] text-gray-400 uppercase tracking-wider mt-1">Asal</p>
                         </div>
-                        <button onclick="openCustomServiceModal(event, 0)" class="absolute top-2.5 right-11 w-7 h-7 rounded-full bg-white hover:bg-brand-100 text-gray-400 hover:text-brand-600 border border-brand-100 flex items-center justify-center transition-all z-20 shadow-sm active:scale-95" title="Atur Layanan">
-                            <i class="fas fa-cog text-[10px]"></i>
+                        
+                        <div class="px-2 shrink-0 relative z-10 flex flex-col items-center justify-start pt-0.5"> 
+                            <div id="detail-route-wrapper" class="w-9 h-9 rounded-full bg-davka-bg/80 border border-white/10 flex items-center justify-center shadow-neon backdrop-blur-sm">
+                                <i id="detail-route-icon" class="fas fa-train text-davka-orange text-sm drop-shadow-md"></i>
+                            </div>
+                        </div>
+
+                        <div class="flex-1 min-w-0"> 
+                            <h3 class="text-xl font-black text-white break-words leading-tight" id="detail-dest">DES</h3> 
+                            <p class="text-[10px] text-gray-400 uppercase tracking-wider mt-1">Tujuan</p>
+                        </div>
+                    </div>
+
+                    <div class="flex bg-white/5 p-1 rounded-xl mb-4 relative" id="tab-container">
+                        <button onclick="switchTab('depart')" id="tab-btn-depart" class="flex-1 py-2 text-[10px] font-bold uppercase rounded-lg transition-all bg-davka-orange text-white shadow-lg">
+                            <i class="fas fa-train mr-1"></i> Pergi
                         </button>
-                        <div class="w-10 h-10 rounded-2xl bg-brand-50 text-brand-500 flex items-center justify-center mb-3 group-hover:scale-110 transition-transform duration-300">
-                            <i class="fas fa-jug-detergent"></i>
+                        <button onclick="switchTab('return')" id="tab-btn-return" class="flex-1 py-2 text-[10px] font-bold uppercase rounded-lg transition-all text-gray-400 hover:text-white relative">
+                            <i class="fas fa-exchange-alt mr-1"></i> Pulang
+                            <span id="badge-return-active" class="hidden absolute top-1 right-2 w-1.5 h-1.5 bg-blue-500 rounded-full"></span>
+                        </button>
+                    </div>
+
+                    <div id="tab-content-depart" class="animate-scale-up">
+                        <div class="bg-white/5 rounded-xl p-3 border border-white/10 mb-3">
+                            <p class="text-[9px] text-davka-orange font-bold uppercase mb-1 opacity-70">Detail Keberangkatan</p>
+                            <div class="flex justify-between items-end">
+                                <div>
+                                    <p class="text-sm font-bold text-white" id="detail-train">Nama Kereta</p>
+                                    <p class="text-[10px] text-gray-300 mt-0.5" id="detail-date">-</p>
+                                </div>
+                                <div class="text-right">
+                                    <p class="text-[9px] text-gray-500">War Tiket</p>
+                                    <p class="text-[10px] text-davka-orange font-bold" id="detail-war-date">-</p>
+                                </div>
+                            </div>
                         </div>
-                        <h3 id="label-srv-0-name" class="font-bold text-brand-900 leading-tight mb-1">Cuci Komplit</h3>
-                        <p class="text-[11px] text-gray-400 mb-3">Cuci + Setrika</p>
-                        <div class="flex items-center justify-between">
-                            <p class="text-xs font-bold text-brand-600"><span id="label-srv-0-price">Rp 7.000</span><span id="label-srv-0-unit" class="text-[10px] text-gray-400 font-normal">/kg</span></p>
-                        </div>
-                        <div id="input-area-0" class="hidden mt-3 pt-3 border-t border-brand-50 animate-fade-in-up" onclick="event.stopPropagation()">
-                            <div class="flex items-center bg-brand-50 rounded-xl p-1 border border-brand-100">
-                                <input type="number" id="input-0" value="1" step="0.1" min="0.1"
-                                    class="w-full bg-transparent px-2 py-1 text-sm text-center font-bold text-brand-900 focus:outline-none"
-                                    placeholder="0" oninput="updateQty(0, this.value)">
-                                <span id="label-srv-0-unit-input" class="text-[10px] font-bold text-brand-400 pr-3">KG</span>
+
+                        <div class="grid grid-cols-2 gap-2">
+                            <div id="detail-img-transfer-depart" class="bg-black/20 rounded-lg p-2 h-24 flex items-center justify-center border border-white/5 text-gray-500 text-[9px] text-center">
+                                No Transfer
+                            </div>
+                            <div id="detail-img-chat-depart" class="bg-black/20 rounded-lg p-2 h-24 flex items-center justify-center border border-white/5 text-gray-500 text-[9px] text-center">
+                                No Chat
                             </div>
                         </div>
                     </div>
 
-                    <div onclick="toggleService(1)" id="srv-1" class="service-card group relative p-4 bg-white/90 backdrop-blur-sm rounded-3xl border border-brand-300 border-dashed shadow-sm hover:shadow-soft transition-all duration-300 cursor-pointer overflow-hidden">
-                        <div class="absolute top-3 right-3 opacity-0 check-icon transition-all duration-300 text-brand-500 transform scale-50 z-10">
-                            <i class="fas fa-circle-check text-lg"></i>
-                        </div>
-                        <button onclick="openCustomServiceModal(event, 1)" class="absolute top-2.5 right-11 w-7 h-7 rounded-full bg-white hover:bg-brand-100 text-gray-400 hover:text-brand-600 border border-brand-100 flex items-center justify-center transition-all z-20 shadow-sm active:scale-95" title="Atur Layanan">
-                            <i class="fas fa-cog text-[10px]"></i>
-                        </button>
-                        <div class="w-10 h-10 rounded-2xl bg-brand-50 text-brand-500 flex items-center justify-center mb-3 group-hover:scale-110 transition-transform duration-300">
-                            <i class="fas fa-spray-can-sparkles"></i>
-                        </div>
-                        <h3 id="label-srv-1-name" class="font-bold text-brand-900 leading-tight mb-1">Setrika Saja</h3>
-                        <p class="text-[11px] text-gray-400 mb-3">Rapih & Wangi</p>
-                        <div class="flex items-center justify-between">
-                            <p class="text-xs font-bold text-brand-600"><span id="label-srv-1-price">Rp 4.000</span><span id="label-srv-1-unit" class="text-[10px] text-gray-400 font-normal">/kg</span></p>
-                        </div>
-                        <div id="input-area-1" class="hidden mt-3 pt-3 border-t border-brand-50 animate-fade-in-up" onclick="event.stopPropagation()">
-                            <div class="flex items-center bg-brand-50 rounded-xl p-1 border border-brand-100">
-                                <input type="number" id="input-1" value="1" step="0.1" min="0.1"
-                                    class="w-full bg-transparent px-2 py-1 text-sm text-center font-bold text-brand-900 focus:outline-none"
-                                    placeholder="0" oninput="updateQty(1, this.value)">
-                                <span id="label-srv-1-unit-input" class="text-[10px] font-bold text-brand-400 pr-3">KG</span>
-                            </div>
-                        </div>
-                    </div>
-                    <div onclick="toggleBedCoverAccordion()" id="srv-2" class="col-span-2 service-card group relative p-5 bg-white/90 backdrop-blur-sm rounded-3xl border border-brand-300 border-dashed shadow-sm hover:shadow-soft transition-all duration-300 cursor-pointer overflow-hidden">
-                        <div class="absolute top-4 right-4 opacity-0 check-icon transition-all duration-300 text-brand-500 transform scale-50 z-10">
-                            <i class="fas fa-circle-check text-xl"></i>
-                        </div>
-                        <button onclick="openCustomServiceModal(event, 2)" class="absolute top-3.5 right-12 w-8 h-8 rounded-full bg-white hover:bg-brand-100 text-gray-400 hover:text-brand-600 border border-brand-100 flex items-center justify-center transition-all z-20 shadow-sm active:scale-95" title="Atur Layanan">
-                            <i class="fas fa-cog text-xs"></i>
-                        </button>
-                        
-                        <div class="flex items-center gap-4 mb-2">
-                            <div class="w-12 h-12 rounded-2xl bg-brand-50 text-brand-500 flex items-center justify-center group-hover:scale-110 transition-transform duration-300 shrink-0">
-                                <i class="fas fa-bed text-lg"></i>
-                            </div>
-                            <div class="flex flex-col text-left">
-                                <h3 id="label-srv-2-name" class="font-bold text-brand-900 text-base leading-tight mb-0.5">Bed Cover</h3>
-                                <p class="text-[11px] text-gray-400">Multi-Ukuran (Kecil/Sedang/Besar)</p>
-                            </div>
-                        </div>
-
-                        <div class="flex items-center justify-between mt-1">
-                            <p id="label-srv-2-summary" class="text-sm font-bold text-brand-600">Pilih Varian</p>
-                        </div>
-                        
-                        <div id="input-area-2" class="hidden mt-4 pt-4 border-t border-brand-100 space-y-2.5 animate-fade-in-up" onclick="event.stopPropagation()">
+                    <div id="tab-content-return" class="hidden animate-scale-up">
+                        <div class="bg-white/5 rounded-xl p-3 border border-blue-500/30 relative overflow-hidden mb-3">
+                            <div class="absolute left-0 top-0 bottom-0 w-1 bg-blue-500"></div>
+                            <p class="text-[9px] text-blue-400 font-bold uppercase mb-1 opacity-70">Detail Kepulangan</p>
                             
-                            <div class="flex items-center justify-between bg-brand-50/60 p-3 rounded-2xl border border-brand-100/80 gap-3">
-                                <div class="flex flex-col text-left pl-1 min-w-0 flex-1">
-                                    <span id="label-srv-21-name" class="text-[13px] font-extrabold text-brand-900 leading-tight block">Bed Cover Kecil</span>
-                                    <span id="label-srv-21-price" class="text-[11px] font-bold text-brand-600 mt-1">Rp 15.000</span>
-                                </div>
-                                <div class="flex items-center bg-white rounded-xl border border-brand-200 p-1 shadow-sm shrink-0">
-                                    <button onclick="stepSubQty(21, -1)" class="w-7 h-7 rounded-lg bg-brand-50 hover:bg-brand-100 text-brand-700 font-extrabold flex items-center justify-center active:scale-90 transition-all text-xs">-</button>
-                                    <input type="number" id="input-21" value="0" min="0" class="w-10 bg-transparent text-center font-bold text-[13px] text-brand-900 focus:outline-none [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none" oninput="directSubQtyInput(21, this.value)">
-                                    <button onclick="stepSubQty(21, 1)" class="w-7 h-7 rounded-lg bg-brand-50 hover:bg-brand-100 text-brand-700 font-extrabold flex items-center justify-center active:scale-90 transition-all text-xs">+</button>
-                                </div>
-                            </div>
-
-                            <div class="flex items-center justify-between bg-brand-50/60 p-3 rounded-2xl border border-brand-100/80 gap-3">
-                                <div class="flex flex-col text-left pl-1 min-w-0 flex-1">
-                                    <span id="label-srv-22-name" class="text-[13px] font-extrabold text-brand-900 leading-tight block">Bed Cover Sedang</span>
-                                    <span id="label-srv-22-price" class="text-[11px] font-bold text-brand-600 mt-1">Rp 20.000</span>
-                                </div>
-                                <div class="flex items-center bg-white rounded-xl border border-brand-200 p-1 shadow-sm shrink-0">
-                                    <button onclick="stepSubQty(22, -1)" class="w-7 h-7 rounded-lg bg-brand-50 hover:bg-brand-100 text-brand-700 font-extrabold flex items-center justify-center active:scale-90 transition-all text-xs">-</button>
-                                    <input type="number" id="input-22" value="0" min="0" class="w-10 bg-transparent text-center font-bold text-[13px] text-brand-900 focus:outline-none [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none" oninput="directSubQtyInput(22, this.value)">
-                                    <button onclick="stepSubQty(22, 1)" class="w-7 h-7 rounded-lg bg-brand-50 hover:bg-brand-100 text-brand-700 font-extrabold flex items-center justify-center active:scale-90 transition-all text-xs">+</button>
+                            <div id="data-return-exist">
+                                <div class="flex justify-between items-end">
+                                    <div>
+                                        <p class="text-sm font-bold text-white" id="detail-return-train">Nama Kereta</p>
+                                        <p class="text-[10px] text-gray-300 mt-0.5" id="detail-return-date">-</p>
+                                    </div>
+                                    <div class="text-right">
+                                        <p class="text-[9px] text-gray-500">War Tiket</p>
+                                        <p class="text-[10px] text-blue-400 font-bold" id="detail-return-war-date">-</p>
+                                    </div>
                                 </div>
                             </div>
 
-                            <div class="flex items-center justify-between bg-brand-50/60 p-3 rounded-2xl border border-brand-100/80 gap-3">
-                                <div class="flex flex-col text-left pl-1 min-w-0 flex-1">
-                                    <span id="label-srv-23-name" class="text-[13px] font-extrabold text-brand-900 leading-tight block">Bed Cover Besar</span>
-                                    <span id="label-srv-23-price" class="text-[11px] font-bold text-brand-600 mt-1">Rp 25.000</span>
+                            <div id="data-return-empty" class="hidden text-center py-2">
+                                <p class="text-[10px] text-gray-500 italic">Tidak ada data kepulangan (Sekali Jalan)</p>
+                            </div>
+                        </div>
+
+                        <div id="container-proof-return" class="grid grid-cols-2 gap-2">
+                            <div id="detail-img-transfer-return" class="bg-black/20 rounded-lg p-2 h-24 flex items-center justify-center border border-white/5 text-gray-500 text-[9px] text-center">
+                                No Transfer
+                            </div>
+                            <div id="detail-img-chat-return" class="bg-black/20 rounded-lg p-2 h-24 flex items-center justify-center border border-white/5 text-gray-500 text-[9px] text-center">
+                                No Chat
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="glass p-5 rounded-3xl mb-4">
+                    <h3 class="text-xs font-bold text-gray-400 uppercase tracking-widest mb-3 border-b border-white/10 pb-2">Penumpang</h3>
+                    <div id="detail-pax-list" class="space-y-3"></div>
+                </div>
+
+                <div class="glass p-5 rounded-3xl mb-24">
+                     <h3 class="text-xs font-bold text-gray-400 uppercase tracking-widest mb-3 border-b border-white/10 pb-2">Pembayaran & Status</h3>
+                     
+                     <div id="detail-cost-breakdown" class="hidden mb-3 border-b border-white/5 pb-2 space-y-1">
+                        </div>
+
+                     <div class="grid grid-cols-2 gap-4 mb-4">
+                        <div>
+                            <p class="text-[9px] text-gray-500 uppercase">Total Keseluruhan</p>
+                            <p class="text-sm font-bold text-davka-orange" id="detail-price">Rp 0</p>
+                        </div>
+                        <div class="text-right">
+                            <p class="text-[9px] text-gray-500 uppercase">Sisa Tagihan Total</p>
+                            <p class="text-sm font-black text-red-500" id="detail-remaining">Rp 0</p>
+                        </div>
+                     </div>
+
+                     <div class="mb-4">
+                        <label class="text-[10px] text-gray-400 mb-1 block">Update Metode Pelunasan</label>
+                        <select id="detail-settlement-select" class="w-full bg-davka-bg border border-white/10 rounded-lg px-3 py-2 text-xs text-white outline-none focus:border-davka-orange">
+                            </select>
+                     </div>
+
+                     <div class="grid grid-cols-2 gap-3 mb-4">
+                        <div id="detail-upload-settlement" class="h-32"></div> 
+                        <div id="detail-upload-ticket" class="h-32"></div> 
+                     </div>
+
+                     <div class="grid grid-cols-4 gap-2 border-t border-white/10 pt-4">
+                        <button id="btn-action-status" class="col-span-1 bg-white/5 border border-white/10 rounded-xl py-3 flex flex-col items-center justify-center gap-1 hover:bg-white/10 text-gray-400 transition-all">
+                            <i class="fas fa-sync-alt text-sm"></i>
+                            <span class="text-[8px] font-bold uppercase">Status</span>
+                        </button>
+                         <button id="btn-action-edit" class="col-span-1 bg-blue-500/10 border border-blue-500/30 rounded-xl py-3 flex flex-col items-center justify-center gap-1 hover:bg-blue-500/20 text-blue-400 transition-all">
+                            <i class="fas fa-edit text-sm"></i>
+                            <span class="text-[8px] font-bold uppercase">Edit</span>
+                        </button>
+                         <button id="btn-action-print" class="col-span-1 bg-orange-500/10 border border-orange-500/30 rounded-xl py-3 flex flex-col items-center justify-center gap-1 hover:bg-orange-500/20 text-orange-400 transition-all">
+                            <i class="fas fa-file-invoice text-sm"></i>
+                            <span class="text-[8px] font-bold uppercase">Nota</span>
+                        </button>
+                         <button id="btn-action-delete" class="col-span-1 bg-red-500/10 border border-red-500/30 rounded-xl py-3 flex flex-col items-center justify-center gap-1 hover:bg-red-500/20 text-red-400 transition-all">
+                            <i class="fas fa-trash text-sm"></i>
+                            <span class="text-[8px] font-bold uppercase">Hapus</span>
+                        </button>
+                     </div>
+                </div>
+            </div>
+        </section>
+    </main>
+    <nav class="fixed bottom-6 left-1/2 transform -translate-x-1/2 w-[90%] max-w-sm glass-nav z-50 rounded-full p-2 border border-white/10 shadow-2xl transition-all duration-300">
+        <div class="flex justify-between items-center px-2">
+            <button onclick="navTo('dashboard')" id="nav-dashboard" class="flex-1 flex flex-col items-center gap-1 text-gray-400 hover:text-white transition-colors py-2 active-nav rounded-full">
+                <i class="fas fa-home text-lg"></i>
+            </button>
+            
+            <div class="relative -top-6">
+                <button onclick="navTo('input')" id="nav-input" class="bg-gradient-to-br from-davka-orange to-red-500 text-white rounded-full w-14 h-14 flex items-center justify-center shadow-neon border-4 border-davka-bg active:scale-90 transition-transform">
+                    <i class="fas fa-plus text-xl"></i>
+                </button>
+            </div>
+
+            <button onclick="navTo('list')" id="nav-list" class="flex-1 flex flex-col items-center gap-1 text-gray-400 hover:text-white transition-colors py-2 rounded-full">
+                <i class="fas fa-list-ul text-lg"></i>
+            </button>
+        </div>
+    </nav>
+
+    <div id="toast" class="fixed top-8 left-1/2 transform -translate-x-1/2 glass px-6 py-3 rounded-full shadow-2xl z-[70] transition-all duration-300 opacity-0 pointer-events-none translate-y-[-20px] flex items-center gap-3 border border-green-500/30">
+        <div class="bg-green-500 rounded-full p-1"><i class="fas fa-check text-[10px] text-white"></i></div>
+        <span id="toastMsg" class="font-bold text-sm text-white">Berhasil!</span>
+    </div>
+
+    <div id="imageModal" onclick="closeImageModal()" class="fixed inset-0 z-[60] bg-black/95 hidden flex items-center justify-center p-4 backdrop-blur-md">
+        <div class="relative w-full max-w-lg flex flex-col items-center animate-scale-up">
+            <img id="modalImg" src="" class="max-w-full max-h-[70vh] rounded-xl shadow-2xl border border-gray-800 bg-white">
+            <div id="modalActions" class="flex gap-3 mt-6"></div>
+            <p class="mt-4 text-gray-500 text-[10px]">Ketuk area gelap untuk menutup</p>
+        </div>
+    </div>
+    <div id="receipt-render-area" style="width: 480px; position: fixed; left: -9999px;">
+        <div class="relative bg-davka-bg text-white font-sans overflow-hidden min-h-[800px] border-none flex flex-col cyber-grid-bg">
+            
+            <div class="absolute inset-0 z-0 pointer-events-none">
+                 <div class="absolute top-[-5%] right-[-10%] w-[60%] h-[30%] bg-davka-orange/30 rounded-full blur-[100px]"></div>
+                 <div class="absolute bottom-[-5%] left-[-10%] w-[60%] h-[30%] bg-[#0ea5e9]/20 rounded-full blur-[100px]"></div>
+            </div>
+
+            <div class="pt-6 pb-4 px-8 text-center relative z-10">
+                <div class="inline-block relative mt-2">
+                    <div class="absolute inset-0 bg-davka-orange blur-3xl opacity-50 rounded-full scale-150"></div>
+                    <img src="logo.jpg" crossorigin="anonymous" class="relative w-24 h-24 mx-auto rounded-full border-4 border-davka-orange shadow-[0_0_30px_rgba(255,84,0,0.8)] object-cover">
+                </div>
+                
+                <h1 class="text-3xl font-black tracking-[0.2em] text-white uppercase font-serif mt-5 drop-shadow-[0_0_10px_rgba(255,255,255,0.3)]">DAVKA TRAVEL</h1>
+                
+                <div class="flex justify-center items-center gap-3 mt-3 mb-2">
+                    <div class="h-[1px] w-12 bg-gradient-to-r from-transparent to-davka-orange/80"></div>
+                    <p class="text-[12px] font-bold tracking-[0.3em] text-davka-orange uppercase glow-text-orange">Digital Boarding Pass</p>
+                    <div class="h-[1px] w-12 bg-gradient-to-l from-transparent to-davka-orange/80"></div>
+                </div>
+            </div>
+
+            <div id="rec-ticket-depart" class="px-8 relative z-10 flex-1 flex flex-col gap-5">
+                <img id="rec-stamp-depart" src="stampel.jpg" crossorigin="anonymous" class="stamp-lunas-modern" alt="LUNAS">
+                
+                <div class="bg-[#0b1221]/80 rounded-2xl p-0 backdrop-blur-md relative overflow-hidden shadow-[0_0_25px_rgba(255,84,0,0.15)] border border-davka-orange/40">
+                    <div class="absolute top-0 left-0 w-2 h-full bg-davka-orange shadow-[0_0_15px_#ff5400]"></div>
+                    
+                    <div class="p-6">
+                        <div class="flex justify-between items-center mb-2 border-b border-dashed border-davka-orange/40 pb-4">
+                            <span class="text-[14px] text-davka-orange font-bold uppercase tracking-widest flex items-center mt-1"><i class="fas fa-train mr-2 text-lg"></i> Keberangkatan</span>
+                            <span class="text-[14px] text-white font-mono bg-davka-orange/20 px-4 py-2 rounded-lg border border-davka-orange/50 shadow-inner flex items-center justify-center" id="rec-date-depart">DD MMM YYYY</span>
+                        </div>
+                        
+                        <!-- PERBAIKAN UX: VERTICAL TIMELINE LAYOUT -->
+                        <div class="relative pl-8 my-6">
+                            <!-- Garis Vertikal Penghubung -->
+                            <div class="absolute left-[15px] top-6 bottom-6 w-0 border-l-2 border-dashed border-davka-orange/50"></div>
+                            
+                            <!-- Node Asal -->
+                            <div class="relative mb-6">
+                                <div class="absolute -left-8 top-1.5 w-7 h-7 rounded-full bg-davka-orange flex items-center justify-center shadow-[0_0_15px_#ff5400] z-10">
+                                    <div class="w-2.5 h-2.5 bg-white rounded-full"></div>
                                 </div>
-                                <div class="flex items-center bg-white rounded-xl border border-brand-200 p-1 shadow-sm shrink-0">
-                                    <button onclick="stepSubQty(23, -1)" class="w-7 h-7 rounded-lg bg-brand-50 hover:bg-brand-100 text-brand-700 font-extrabold flex items-center justify-center active:scale-90 transition-all text-xs">-</button>
-                                    <input type="number" id="input-23" value="0" min="0" class="w-10 bg-transparent text-center font-bold text-[13px] text-brand-900 focus:outline-none [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none" oninput="directSubQtyInput(23, this.value)">
-                                    <button onclick="stepSubQty(23, 1)" class="w-7 h-7 rounded-lg bg-brand-50 hover:bg-brand-100 text-brand-700 font-extrabold flex items-center justify-center active:scale-90 transition-all text-xs">+</button>
+                                <h2 class="text-[28px] font-black text-white leading-none tracking-tight uppercase" id="rec-origin-code">ORG</h2>
+                                <p class="text-[12px] text-gray-400 uppercase tracking-widest mt-1.5">Stasiun Asal</p>
+                            </div>
+
+                            <!-- Node Info Kereta (Tengah Timeline) -->
+                            <div class="relative mb-6">
+                                <div class="absolute -left-[2.1rem] top-1/2 transform -translate-y-1/2 bg-[#0b1221] py-3 z-10">
+                                     <i class="fas fa-train text-davka-orange text-xl drop-shadow-[0_0_8px_rgba(255,84,0,0.8)]"></i>
+                                </div>
+                                <div class="ml-4 flex justify-between items-center bg-black/40 rounded-xl p-3 border border-white/10 shadow-inner">
+                                    <div>
+                                        <p class="text-[10px] text-gray-400 uppercase font-bold tracking-wider mb-1">Nama Kereta</p>
+                                        <p class="text-[16px] font-black text-white uppercase tracking-wide" id="rec-train-name">TRAIN</p>
+                                    </div>
+                                    <div class="text-right">
+                                        <p class="text-[10px] text-gray-400 uppercase font-bold tracking-wider mb-1">Tgl War Tiket</p>
+                                        <p class="text-[14px] font-black text-[#0ea5e9] uppercase font-mono tracking-wide" id="rec-war-date">DD MMM YYYY</p>
+                                    </div>
                                 </div>
                             </div>
 
+                            <!-- Node Tujuan -->
+                            <div class="relative">
+                                <div class="absolute -left-8 top-1.5 w-7 h-7 rounded-full bg-[#0b1221] border-[3px] border-davka-orange flex items-center justify-center z-10">
+                                    <div class="w-2 h-2 bg-davka-orange rounded-full"></div>
+                                </div>
+                                <h2 class="text-[28px] font-black text-white leading-none tracking-tight uppercase" id="rec-dest-code">DES</h2>
+                                <p class="text-[12px] text-gray-400 uppercase tracking-widest mt-1.5">Stasiun Tujuan</p>
+                            </div>
+                        </div>
+                        <!-- END OF VERTICAL TIMELINE -->
+
+                    </div>
+                </div>
+
+                <div class="bg-[#0b1221]/90 border border-white/10 rounded-2xl p-5 relative flex flex-col gap-4 shadow-lg">
+                    <div class="flex justify-between border-b border-dashed border-white/20 pb-4">
+                        <div class="w-[60%] pr-3">
+                            <p class="text-[12px] text-gray-500 uppercase font-bold mb-1 tracking-wider">Data Pemesan</p>
+                            <p class="text-[18px] font-black text-white uppercase break-words leading-tight" id="rec-contact-name">NAME</p>
+                            <p class="text-[14px] text-davka-orange font-mono mt-1 mb-2 font-bold tracking-wider" id="rec-contact-phone">08XX</p>
+                            <p class="text-[12px] text-gray-500 uppercase font-bold mb-0.5 tracking-wider">Alamat</p>
+                            <p class="text-[14px] text-gray-300 leading-snug break-words" id="rec-address">ALAMAT</p>
+                        </div>
+                        <div class="text-right w-[40%] border-l border-white/10 pl-3 flex flex-col justify-start">
+                            <p class="text-[12px] text-gray-500 uppercase font-bold mb-2 tracking-wider">Pembayaran</p>
+                            <div class="inline-block bg-white/5 border border-white/10 px-3 py-2 rounded">
+                                <p class="text-[14px] font-black text-[#0ea5e9] uppercase break-words" id="rec-payment-method">METHOD</p>
+                            </div>
+                        </div>
+                    </div>
+                    <div>
+                         <div class="flex justify-between items-center mb-3">
+                             <p class="text-[14px] text-gray-400 uppercase font-bold tracking-widest"><i class="fas fa-users mr-1"></i> Data Penumpang</p>
+                             <p class="text-[12px] font-bold text-davka-orange bg-davka-orange/10 px-3 py-1.5 rounded border border-davka-orange/30" id="rec-pax-count">1 Dewasa</p>
+                         </div>
+                         <div id="rec-pax-list" class="space-y-3">
+                             </div>
+                    </div>
+                </div>
+            </div>
+
+            <div id="rec-ticket-return" class="hidden px-8 relative z-10 flex-1 flex flex-col gap-5 mt-0">
+                <img id="rec-stamp-return" src="stampel.jpg" crossorigin="anonymous" class="stamp-lunas-modern" alt="LUNAS">
+                
+                <div class="bg-[#0b1221]/80 rounded-2xl p-0 backdrop-blur-md relative overflow-hidden shadow-[0_0_25px_rgba(14,165,233,0.15)] border border-[#0ea5e9]/40">
+                    <div class="absolute top-0 left-0 w-2 h-full bg-[#0ea5e9] shadow-[0_0_15px_#0ea5e9]"></div>
+                    
+                     <div class="p-6">
+                        <div class="flex justify-between items-center mb-2 border-b border-dashed border-[#0ea5e9]/40 pb-4">
+                            <span class="text-[14px] text-[#0ea5e9] font-bold uppercase tracking-widest flex items-center mt-1"><i class="fas fa-exchange-alt mr-2 text-lg"></i> Kepulangan (PP)</span>
+                            <span class="text-[14px] text-white font-mono bg-[#0ea5e9]/20 px-4 py-2 rounded-lg border border-[#0ea5e9]/50 shadow-inner flex items-center justify-center" id="rec-return-date-depart">DD MMM YYYY</span>
+                        </div>
+                        
+                        <!-- PERBAIKAN UX: VERTICAL TIMELINE LAYOUT (PULANG) -->
+                        <div class="relative pl-8 my-6">
+                            <!-- Garis Vertikal Penghubung -->
+                            <div class="absolute left-[15px] top-6 bottom-6 w-0 border-l-2 border-dashed border-[#0ea5e9]/50"></div>
+                            
+                            <!-- Node Asal -->
+                            <div class="relative mb-6">
+                                <div class="absolute -left-8 top-1.5 w-7 h-7 rounded-full bg-[#0ea5e9] flex items-center justify-center shadow-[0_0_15px_#0ea5e9] z-10">
+                                    <div class="w-2.5 h-2.5 bg-white rounded-full"></div>
+                                </div>
+                                <h2 class="text-[28px] font-black text-white leading-none tracking-tight uppercase" id="rec-return-origin-code">ORG</h2>
+                                <p class="text-[12px] text-gray-400 uppercase tracking-widest mt-1.5">Stasiun Asal</p>
+                            </div>
+
+                            <!-- Node Info Kereta (Tengah Timeline) -->
+                            <div class="relative mb-6">
+                                <div class="absolute -left-[2.1rem] top-1/2 transform -translate-y-1/2 bg-[#0b1221] py-3 z-10">
+                                     <i class="fas fa-exchange-alt text-[#0ea5e9] text-xl drop-shadow-[0_0_8px_rgba(14,165,233,0.8)]"></i>
+                                </div>
+                                <div class="ml-4 flex justify-between items-center bg-black/40 rounded-xl p-3 border border-white/10 shadow-inner">
+                                    <div>
+                                        <p class="text-[10px] text-gray-400 uppercase font-bold tracking-wider mb-1">Nama Kereta</p>
+                                        <p class="text-[16px] font-black text-white uppercase tracking-wide" id="rec-return-train-name">TRAIN</p>
+                                    </div>
+                                    <div class="text-right">
+                                        <p class="text-[10px] text-gray-400 uppercase font-bold tracking-wider mb-1">Tgl War Tiket</p>
+                                        <p class="text-[14px] font-black text-davka-orange uppercase font-mono tracking-wide" id="rec-return-war-date">DD MMM YYYY</p>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Node Tujuan -->
+                            <div class="relative">
+                                <div class="absolute -left-8 top-1.5 w-7 h-7 rounded-full bg-[#0b1221] border-[3px] border-[#0ea5e9] flex items-center justify-center z-10">
+                                    <div class="w-2 h-2 bg-[#0ea5e9] rounded-full"></div>
+                                </div>
+                                <h2 class="text-[28px] font-black text-white leading-none tracking-tight uppercase" id="rec-return-dest-code">DES</h2>
+                                <p class="text-[12px] text-gray-400 uppercase tracking-widest mt-1.5">Stasiun Tujuan</p>
+                            </div>
+                        </div>
+                        <!-- END OF VERTICAL TIMELINE -->
+
+                    </div>
+                </div>
+
+                <div class="bg-[#0b1221]/90 border border-white/10 rounded-2xl p-5 relative flex flex-col gap-4 shadow-lg">
+                     <div class="flex justify-between border-b border-dashed border-white/20 pb-4">
+                        <div class="w-[60%] pr-3">
+                            <p class="text-[12px] text-gray-500 uppercase font-bold mb-1 tracking-wider">Data Pemesan</p>
+                            <p class="text-[18px] font-black text-white uppercase break-words leading-tight" id="rec-return-contact-name">NAME</p>
+                            <p class="text-[14px] text-[#0ea5e9] font-mono mt-1 mb-2 font-bold tracking-wider" id="rec-return-contact-phone">08XX</p>
+                            <p class="text-[12px] text-gray-500 uppercase font-bold mb-0.5 tracking-wider">Alamat</p>
+                            <p class="text-[14px] text-gray-300 leading-snug break-words" id="rec-return-address">ALAMAT</p>
+                        </div>
+                        <div class="text-right w-[40%] border-l border-white/10 pl-3 flex flex-col justify-start">
+                            <p class="text-[12px] text-gray-500 uppercase font-bold mb-2 tracking-wider">Pembayaran</p>
+                            <div class="inline-block bg-white/5 border border-white/10 px-3 py-2 rounded">
+                                <p class="text-[14px] font-black text-davka-orange uppercase break-words" id="rec-return-payment-method">METHOD</p>
+                            </div>
+                        </div>
+                    </div>
+                    <div>
+                         <div class="flex justify-between items-center mb-3">
+                             <p class="text-[14px] text-gray-400 uppercase font-bold tracking-widest"><i class="fas fa-users mr-1"></i> Data Penumpang</p>
+                             <p class="text-[12px] font-bold text-[#0ea5e9] bg-[#0ea5e9]/10 px-3 py-1.5 rounded border border-[#0ea5e9]/30" id="rec-return-pax-count">1 Dewasa</p>
+                         </div>
+                         <div id="rec-return-pax-list" class="space-y-3">
+                             </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="px-8 pb-8 relative z-10 mt-auto pt-6">
+                
+                <div class="bg-[#0b1221] rounded-2xl p-5 border border-white/10 shadow-[0_-5px_20px_rgba(0,0,0,0.5)] relative overflow-hidden">
+                    <div class="absolute right-0 bottom-0 w-32 h-32 bg-davka-orange/10 blur-[50px]"></div>
+                    
+                    <div class="flex justify-between items-end mb-4 border-b border-dashed border-white/20 pb-4">
+                        <div>
+                            <p class="text-[12px] text-gray-500 font-bold uppercase tracking-[0.2em] mb-1">ID Transaksi</p>
+                            <p class="text-2xl font-mono font-black text-white tracking-widest glow-text-white" id="rec-id">#000000</p>
+                        </div>
+                        <div class="text-right">
+                            <i class="fas fa-check-circle text-green-500 text-3xl drop-shadow-[0_0_12px_rgba(34,197,94,0.6)]"></i>
                         </div>
                     </div>
                     
-                    <div onclick="toggleService(5)" id="srv-5" class="service-card group relative p-4 bg-white/90 backdrop-blur-sm rounded-3xl border border-brand-300 border-dashed shadow-sm hover:shadow-soft transition-all duration-300 cursor-pointer overflow-hidden">
-                        <div class="absolute top-3 right-3 opacity-0 check-icon transition-all duration-300 text-brand-500 transform scale-50 z-10">
-                            <i class="fas fa-circle-check text-lg"></i>
-                        </div>
-                        <button onclick="openCustomServiceModal(event, 5)" class="absolute top-2.5 right-11 w-7 h-7 rounded-full bg-white hover:bg-brand-100 text-gray-400 hover:text-brand-600 border border-brand-100 flex items-center justify-center transition-all z-20 shadow-sm active:scale-95" title="Atur Layanan">
-                            <i class="fas fa-cog text-[10px]"></i>
-                        </button>
-                        <div class="w-10 h-10 rounded-2xl bg-brand-50 text-brand-500 flex items-center justify-center mb-3 group-hover:scale-110 transition-transform duration-300">
-                            <i class="fas fa-layer-group"></i>
-                        </div>
-                        <h3 id="label-srv-5-name" class="font-bold text-brand-900 leading-tight mb-1">Sprei Kasur</h3>
-                        <p class="text-[11px] text-gray-400 mb-3">Standard/Jumbo</p>
-                        <div class="flex items-center justify-between">
-                            <p class="text-xs font-bold text-brand-600"><span id="label-srv-5-price">Rp 10.000</span><span id="label-srv-5-unit" class="text-[10px] text-gray-400 font-normal">/pcs</span></p>
-                        </div>
-                        <div id="input-area-5" class="hidden mt-3 pt-3 border-t border-brand-50 animate-fade-in-up" onclick="event.stopPropagation()">
-                            <div class="flex items-center bg-brand-50 rounded-xl p-1 border border-brand-100">
-                                <input type="number" id="input-5" value="1" step="1" min="1"
-                                    class="w-full bg-transparent px-2 py-1 text-sm text-center font-bold text-brand-900 focus:outline-none"
-                                    placeholder="0" oninput="updateQty(5, this.value)">
-                                <span id="label-srv-5-unit-input" class="text-[10px] font-bold text-brand-400 pr-3">PCS</span>
-                            </div>
-                        </div>
-                    </div>
-
-                    <div onclick="toggleService(3)" id="srv-3" class="service-card group relative p-4 bg-brand-50/50 backdrop-blur-sm rounded-3xl border border-dashed border-brand-300 shadow-sm hover:shadow-soft transition-all duration-300 cursor-pointer overflow-hidden–">
-                        <div class="absolute top-3 right-3 opacity-0 check-icon transition-all duration-300 text-brand-500 transform scale-50 z-10">
-                            <i class="fas fa-circle-check text-lg"></i>
-                        </div>
-                        <button onclick="openCustomServiceModal(event, 3)" class="absolute top-2.5 right-11 w-7 h-7 rounded-full bg-white hover:bg-brand-100 text-gray-400 hover:text-brand-600 border border-brand-100 flex items-center justify-center transition-all z-20 shadow-sm active:scale-95" title="Atur Layanan">
-                            <i class="fas fa-cog text-[10px]"></i>
-                        </button>
-                        <div class="w-10 h-10 rounded-2xl bg-white text-brand-500 flex items-center justify-center mb-3 group-hover:scale-110 transition-transform duration-300 shadow-sm border border-brand-100">
-                            <i class="fas fa-star"></i>
-                        </div>
-                        <h3 id="label-srv-3-name" class="font-bold text-brand-900 leading-tight mb-1">Custom 1</h3>
-                        <p class="text-[11px] text-gray-400 mb-3">Layanan Pilihan</p>
-                        <div class="flex items-center justify-between">
-                            <p class="text-xs font-bold text-brand-600"><span id="label-srv-3-price">Rp 0</span><span id="label-srv-3-unit" class="text-[10px] text-gray-400 font-normal">/pcs</span></p>
-                        </div>
-                        <div id="input-area-3" class="hidden mt-3 pt-3 border-t border-brand-100 border-dashed animate-fade-in-up" onclick="event.stopPropagation()">
-                            <div class="flex items-center bg-white rounded-xl p-1 border border-brand-200">
-                                <input type="number" id="input-3" value="1" step="0.1" min="0.1"
-                                    class="w-full bg-transparent px-2 py-1 text-sm text-center font-bold text-brand-900 focus:outline-none"
-                                    placeholder="0" oninput="updateQty(3, this.value)">
-                                <span id="label-srv-3-unit-input" class="text-[10px] font-bold text-brand-400 pr-3">PCS</span>
-                            </div>
-                        </div>
-                    </div>
-
-                    <div onclick="toggleService(4)" id="srv-4" class="service-card group relative p-4 bg-brand-50/50 backdrop-blur-sm rounded-3xl border border-dashed border-brand-300 shadow-sm hover:shadow-soft transition-all duration-300 cursor-pointer overflow-hidden">
-                        <div class="absolute top-3 right-3 opacity-0 check-icon transition-all duration-300 text-brand-500 transform scale-50 z-10">
-                            <i class="fas fa-circle-check text-lg"></i>
-                        </div>
-                        <button onclick="openCustomServiceModal(event, 4)" class="absolute top-2.5 right-11 w-7 h-7 rounded-full bg-white hover:bg-brand-100 text-gray-400 hover:text-brand-600 border border-brand-100 flex items-center justify-center transition-all z-20 shadow-sm active:scale-95" title="Atur Layanan">
-                            <i class="fas fa-cog text-[10px]"></i>
-                        </button>
-                        <div class="w-10 h-10 rounded-2xl bg-white text-brand-500 flex items-center justify-center mb-3 group-hover:scale-110 transition-transform duration-300 shadow-sm border border-brand-100">
-                            <i class="fas fa-star"></i>
-                        </div>
-                        <h3 id="label-srv-4-name" class="font-bold text-brand-900 leading-tight mb-1">Custom 2</h3>
-                        <p class="text-[11px] text-gray-400 mb-3">Layanan Pilihan</p>
-                        <div class="flex items-center justify-between">
-                            <p class="text-xs font-bold text-brand-600"><span id="label-srv-4-price">Rp 0</span><span id="label-srv-4-unit" class="text-[10px] text-gray-400 font-normal">/pcs</span></p>
-                        </div>
-                        <div id="input-area-4" class="hidden mt-3 pt-3 border-t border-brand-100 border-dashed animate-fade-in-up" onclick="event.stopPropagation()">
-                            <div class="flex items-center bg-white rounded-xl p-1 border border-brand-200">
-                                <input type="number" id="input-4" value="1" step="0.1" min="0.1"
-                                    class="w-full bg-transparent px-2 py-1 text-sm text-center font-bold text-brand-900 focus:outline-none"
-                                    placeholder="0" oninput="updateQty(4, this.value)">
-                                <span id="label-srv-4-unit-input" class="text-[10px] font-bold text-brand-400 pr-3">PCS</span>
-                            </div>
-                        </div>
-                    </div>
-
-                    <div onclick="toggleService(6)" id="srv-6" class="service-card group relative p-4 bg-brand-50/50 backdrop-blur-sm rounded-3xl border border-dashed border-brand-300 shadow-sm hover:shadow-soft transition-all duration-300 cursor-pointer overflow-hidden">
-                        <div class="absolute top-3 right-3 opacity-0 check-icon transition-all duration-300 text-brand-500 transform scale-50 z-10">
-                            <i class="fas fa-circle-check text-lg"></i>
-                        </div>
-                        <button onclick="openCustomServiceModal(event, 6)" class="absolute top-2.5 right-11 w-7 h-7 rounded-full bg-white hover:bg-brand-100 text-gray-400 hover:text-brand-600 border border-brand-100 flex items-center justify-center transition-all z-20 shadow-sm active:scale-95" title="Atur Layanan">
-                            <i class="fas fa-cog text-[10px]"></i>
-                        </button>
-                        <div class="w-10 h-10 rounded-2xl bg-white text-brand-500 flex items-center justify-center mb-3 group-hover:scale-110 transition-transform duration-300 shadow-sm border border-brand-100">
-                            <i class="fas fa-star"></i>
-                        </div>
-                        <h3 id="label-srv-6-name" class="font-bold text-brand-900 leading-tight mb-1">Custom 3</h3>
-                        <p class="text-[11px] text-gray-400 mb-3">Layanan Lainnya</p>
-                        <div class="flex items-center justify-between">
-                            <p class="text-xs font-bold text-brand-600"><span id="label-srv-6-price">Rp 0</span><span id="label-srv-6-unit" class="text-[10px] text-gray-400 font-normal">/pcs</span></p>
-                        </div>
-                        <div id="input-area-6" class="hidden mt-3 pt-3 border-t border-brand-100 border-dashed animate-fade-in-up" onclick="event.stopPropagation()">
-                            <div class="flex items-center bg-white rounded-xl p-1 border border-brand-200">
-                                <input type="number" id="input-6" value="1" step="0.1" min="0.1"
-                                    class="w-full bg-transparent px-2 py-1 text-sm text-center font-bold text-brand-900 focus:outline-none"
-                                    placeholder="0" oninput="updateQty(6, this.value)">
-                                <span id="label-srv-6-unit-input" class="text-[10px] font-bold text-brand-400 pr-3">PCS</span>
-                            </div>
-                        </div>
-                    </div>
-
-                </div>
-            </section>
-        </div>
-        <div id="view-orders" class="hidden transition-all duration-300 animate-fade-in-up print:hidden relative z-10">
-            <div class="flex items-center gap-4 mb-6">
-                <button onclick="backToHome()" class="w-10 h-10 flex items-center justify-center rounded-xl bg-white shadow-sm border border-brand-100 text-brand-900 active:scale-90 transition-all">
-                    <i class="fas fa-chevron-left text-sm"></i>
-                </button>
-                <h2 class="text-lg font-extrabold text-brand-900">Data Pesanan</h2>
-                <div class="flex-1"></div>
-                <span class="text-[10px] font-bold text-brand-500 bg-brand-100 px-3 py-1 rounded-full">ADMIN MODE</span>
-            </div>
-
-            <div class="grid grid-cols-[32px_1fr_auto_32px] gap-3 px-4 mb-2 text-[10px] font-black text-brand-600 uppercase tracking-widest opacity-80 items-center">
-                <span class="text-center">#</span>
-                <span class="text-left pl-1">INFO PELANGGAN</span>
-                <span class="text-right pr-2">TAGIHAN</span>
-                <span></span> 
-            </div>
-
-            <div id="order-list" class="space-y-3">
-            </div>
-        </div>
-        <div id="view-kredit" class="hidden transition-all duration-300 animate-fade-in-up print:hidden relative z-10">
-            <div class="flex items-center gap-4 mb-6">
-                <button onclick="backToHome()" class="w-10 h-10 flex items-center justify-center rounded-xl bg-white shadow-sm border border-brand-100 text-brand-900 active:scale-90 transition-all">
-                    <i class="fas fa-chevron-left text-sm"></i>
-                </button>
-                <h2 class="text-lg font-extrabold text-brand-900">Data Kredit</h2>
-                <div class="flex-1"></div>
-                <span class="text-[10px] font-bold text-red-500 bg-red-100 px-3 py-1 rounded-full">REKAP NAMA</span>
-            </div>
-
-            <div class="grid grid-cols-[32px_1fr_auto_32px] gap-3 px-4 mb-2 text-[10px] font-black text-red-600 uppercase tracking-widest opacity-80 items-center">
-                <span class="text-center">#</span>
-                <span class="text-left pl-1">INFO PELANGGAN</span>
-                <span class="text-right pr-2">SISA KREDIT</span>
-                <span></span>
-            </div>
-
-            <div id="kredit-list" class="space-y-3">
-            </div>
-        </div>
-        <div id="view-kredit-detail" class="hidden transition-all duration-300 animate-fade-in-up relative z-10 print:hidden">
-            <div class="flex items-center gap-4 mb-6">
-                <button onclick="closeKreditDetail()" class="w-10 h-10 flex items-center justify-center rounded-xl bg-white shadow-sm border border-brand-100 text-brand-900 active:scale-90 transition-all">
-                    <i class="fas fa-chevron-left text-sm"></i>
-                </button>
-                <h2 id="kredit-detail-title" class="text-lg font-extrabold text-brand-900 truncate">Rincian Kredit</h2>
-            </div>
-
-            <div class="bg-gradient-to-br from-red-500 to-red-600 rounded-2xl p-5 shadow-md border border-red-400 mb-6 text-white relative overflow-hidden">
-                <div class="absolute top-0 right-0 w-32 h-32 bg-white opacity-5 rounded-full -mr-10 -mt-10 pointer-events-none"></div>
-                <div class="absolute bottom-0 left-0 w-24 h-24 bg-black opacity-5 rounded-full -ml-8 -mb-8 pointer-events-none"></div>
-                
-                <p class="text-[10px] font-bold uppercase tracking-wider mb-1 opacity-80">Total Sisa Tagihan</p>
-                <h3 id="kredit-detail-sisa" class="text-3xl font-black leading-tight mb-4 drop-shadow-sm">Rp 0</h3>
-                
-                <div class="flex justify-between items-center bg-black/10 rounded-xl p-3 backdrop-blur-sm border border-white/10">
-                    <div class="flex flex-col">
-                        <span class="text-[9px] uppercase tracking-wider opacity-70 font-bold">Total Tagihan</span>
-                        <span id="kredit-detail-total" class="font-bold text-sm">Rp 0</span>
-                    </div>
-                    <div class="w-px h-6 bg-white/20"></div>
-                    <div class="flex flex-col text-right">
-                        <span class="text-[9px] uppercase tracking-wider opacity-70 font-bold">Sudah Dibayar</span>
-                        <span id="kredit-detail-paid" class="font-bold text-sm">Rp 0</span>
-                    </div>
-                </div>
-            </div>
-
-            <div class="bg-white rounded-2xl p-4 shadow-sm border border-brand-100 mb-6">
-                <h4 class="text-[10px] text-gray-400 font-bold uppercase tracking-wider mb-3">Riwayat Transaksi (Belum Lunas)</h4>
-                <div class="grid grid-cols-[16px_1.4fr_35px_40px_1fr_25px] gap-1.5 mb-2 pb-2 border-b border-gray-100 text-[9px] font-black text-gray-400 uppercase tracking-widest items-center">
-                    <span>No</span>
-                    <span>Layanan</span>
-                    <span class="text-center">Qty</span>
-                    <span class="text-center">Tgl</span>
-                    <span class="text-right">Total</span>
-                    <span></span>
-                </div>
-                
-                <div id="kredit-detail-items" class="space-y-0">
-                </div>
-            </div>
-
-            <div class="space-y-3 mb-8">
-                <button onclick="openModalBayarKredit()" id="btn-bayar-kredit" class="w-full bg-green-500 hover:bg-green-600 text-white text-sm font-extrabold py-4 px-6 rounded-2xl active:scale-[0.98] transition-all flex items-center justify-center gap-2 shadow-md">
-                    <i class="fas fa-money-bill-wave"></i>
-                    <span>BAYAR KREDIT</span>
-                </button>
-                <button onclick="cetakRekapKredit()" id="btn-cetak-kredit" class="w-full bg-brand-900 hover:bg-brand-800 text-white text-sm font-extrabold py-4 px-6 rounded-2xl active:scale-[0.98] transition-all flex items-center justify-center gap-2 shadow-md">
-                    <i class="fas fa-print"></i>
-                    <span>CETAK REKAP & SISA TAGIHAN</span>
-                </button>
-            </div>
-        </div>
-
-        <div id="view-order-detail" class="hidden transition-all duration-300 animate-fade-in-up relative z-10 print:hidden">
-            <div class="flex items-center gap-4 mb-6">
-                <button onclick="closeOrderDetail()" class="w-10 h-10 flex items-center justify-center rounded-xl bg-white shadow-sm border border-brand-100 text-brand-900 active:scale-90 transition-all">
-                    <i class="fas fa-chevron-left text-sm"></i>
-                </button>
-                <h2 class="text-lg font-extrabold text-brand-900">Rincian Pesanan</h2>
-            </div>
-
-            <div class="bg-white rounded-2xl p-5 shadow-sm border border-brand-100 mb-4 flex justify-between items-start">
-                <div>
-                    <p class="text-[10px] text-gray-400 font-bold uppercase tracking-wider mb-1">Data Pelanggan</p>
-                    <h3 id="detail-name" class="text-base font-bold text-brand-900 leading-tight">...</h3>
-                    <p id="detail-address" class="text-xs text-brand-500 font-medium mt-1">...</p>
-                    <p id="detail-date" class="text-[10px] text-gray-400 mt-2">...</p>
-                </div>
-                <div class="text-right flex flex-col items-end gap-2">
-                     <span id="payment-badge" class="text-[10px] bg-green-50 text-green-600 px-2.5 py-1 rounded-lg border border-green-100 font-bold uppercase tracking-wider shadow-sm inline-block">CASH</span>
-                </div>
-            </div>
-
-            <div class="bg-white rounded-2xl p-5 shadow-sm border border-brand-100 mb-6">
-                <p class="text-[10px] text-gray-400 font-bold uppercase tracking-wider mb-3">Daftar Layanan</p>
-                <div id="detail-items" class="space-y-0">
-                </div>
-                <div class="w-full border-b border-dashed border-gray-200 my-4"></div>
-                <div class="flex justify-between items-center">
-                    <span class="text-xs text-gray-500 font-bold uppercase tracking-wider">TOTAL TAGIHAN</span>
-                    <span id="detail-total" class="text-lg font-extrabold text-brand-500">...</span>
-                </div>
-            </div>
-            
-            <div class="space-y-4 mb-8">
-                <div>
-                    <p class="text-[10px] text-gray-400 font-bold uppercase tracking-wider mb-2">Ubah Status Pembayaran</p>
-                    <div class="grid grid-cols-2 gap-3">
-                        <button onclick="updatePayment('cash')" id="btn-pay-cash" class="flex items-center justify-center gap-2 py-3 px-4 rounded-xl border border-green-200 bg-green-50 text-green-600 font-bold text-xs transition-all active:scale-95">
-                            CASH
-                        </button>
-                        <button onclick="updatePayment('kredit')" id="btn-pay-kredit" class="flex items-center justify-center gap-2 py-3 px-4 rounded-xl border border-gray-200 bg-gray-50 text-gray-400 font-bold text-xs transition-all active:scale-95">
-                            KREDIT
-                        </button>
-                    </div>
-                </div>
-
-                <div>
-                    <p class="text-[10px] text-gray-400 font-bold uppercase tracking-wider mb-2">Ubah Status Cucian</p>
-                    <div class="grid grid-cols-2 gap-3">
-                        <button onclick="updateOrderStatus('proses')" id="btn-status-proses" class="flex items-center justify-center gap-2 py-3 px-4 rounded-xl border border-gray-200 bg-gray-50 text-gray-400 font-bold text-xs transition-all active:scale-95">
-                            <i class="fas fa-spinner"></i> PROSES
-                        </button>
-                        <button onclick="updateOrderStatus('selesai')" id="btn-status-selesai" class="flex items-center justify-center gap-2 py-3 px-4 rounded-xl border border-gray-200 bg-gray-50 text-gray-400 font-bold text-xs transition-all active:scale-95">
-                            <i class="fas fa-check-double"></i> SELESAI
-                        </button>
-                    </div>
-                </div>
-
-                <div class="pt-2">
-                    <button onclick="openTicketModal()" class="w-full bg-brand-900 hover:bg-brand-800 text-white text-sm font-extrabold py-4 px-6 rounded-2xl active:scale-[0.98] transition-all flex items-center justify-center gap-2 shadow-md">
-                        <i class="fas fa-print"></i>
-                        <span>CETAK NOTA BAYAR</span>
-                    </button>
-                </div>
-            </div>
-        </div>
-        
-        <div class="h-4"></div>
-    </main>
-    <div id="kredit-pay-modal" class="fixed inset-0 z-[75] hidden flex-col items-center justify-center p-4 bg-brand-900/60 backdrop-blur-sm transition-opacity duration-300 opacity-0 print:hidden">
-        <div class="bg-white rounded-3xl w-full max-w-sm overflow-hidden flex flex-col shadow-2xl transform scale-95 transition-transform duration-300" id="kredit-pay-modal-content">
-            <div class="flex justify-between items-center p-4 border-b border-brand-100 bg-gradient-to-r from-green-50 to-emerald-50 shrink-0">
-                <h3 class="font-bold text-sm text-brand-900"><i class="fas fa-money-bill-wave text-green-500 mr-2"></i>Pembayaran Kredit</h3>
-                <button onclick="closeModalBayarKredit()" class="w-8 h-8 flex items-center justify-center rounded-full bg-white text-gray-500 hover:text-red-500 shadow-sm transition-colors border border-gray-200">
-                    <i class="fas fa-times text-sm"></i>
-                </button>
-            </div>
-            <div class="p-6 bg-white relative w-full">
-                <p class="text-xs text-gray-500 mb-2 font-medium">Sisa Tagihan saat ini:</p>
-                <p id="kredit-pay-sisa" class="text-2xl font-black text-red-500 mb-6">Rp 0</p>
-                
-                <div class="relative group mb-4">
-                    <div class="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
-                        <span class="text-gray-400 font-bold text-lg">Rp</span>
-                    </div>
-                    <input type="number" id="input-kredit-pay" class="w-full pl-12 pr-4 py-4 bg-transparent rounded-2xl text-brand-900 placeholder-gray-400 focus:outline-none focus:bg-brand-50 transition-all font-bold text-lg border border-gray-200" placeholder="0">
-                </div>
-                <button onclick="fillBayarPenuh()" class="text-[10px] font-bold text-brand-500 bg-brand-50 px-3 py-2 rounded-lg border border-brand-100 mb-2 active:scale-95 transition-all shadow-sm w-full">
-                    ISI BAYAR PENUH (LUNAS)
-                </button>
-            </div>
-            <div class="p-4 bg-gray-50 border-t border-gray-100 shrink-0">
-                <button onclick="prosesBayarKredit()" id="btn-proses-kredit" class="w-full bg-green-500 hover:bg-green-600 text-white text-sm font-extrabold py-4 rounded-xl active:scale-[0.98] transition-all flex items-center justify-center gap-2 shadow-md">
-                    <i class="fas fa-check-circle"></i>
-                    <span>KONFIRMASI PEMBAYARAN</span>
-                </button>
-            </div>
-        </div>
-    </div>
-    
-    <div id="kredit-ticket-modal" class="fixed inset-0 z-[70] hidden flex-col items-center justify-center p-4 bg-black/80 backdrop-blur-md transition-opacity duration-300 opacity-0 print:hidden">
-        <div class="bg-[#0f172a] rounded-3xl w-full max-w-sm overflow-hidden flex flex-col max-h-[95vh] shadow-[0_0_40px_rgba(8,145,178,0.2)] transform scale-95 transition-transform duration-300 border border-slate-800" id="kredit-ticket-modal-content">
-            <div class="flex justify-between items-center p-4 border-b border-slate-800 bg-slate-900/50 backdrop-blur-sm shrink-0">
-                <h3 class="font-bold text-sm text-cyan-400 tracking-wider uppercase"><i class="fas fa-file-invoice-dollar mr-2"></i>Nota Kredit</h3>
-                <button onclick="closeKreditTicketModal()" class="w-8 h-8 flex items-center justify-center rounded-full bg-slate-800 text-gray-400 hover:text-cyan-400 transition-colors border border-slate-700">
-                    <i class="fas fa-times text-sm"></i>
-                </button>
-            </div>
-            
-            <div class="overflow-y-auto p-0 bg-[#0b1120] relative w-full" id="kredit-ticket-area">
-                <div class="absolute inset-0 z-0 overflow-hidden pointer-events-none flex items-center justify-center">
-                    <div class="absolute inset-0 bg-[radial-gradient(circle_at_center,_var(--tw-gradient-stops))] from-cyan-900/20 via-[#0b1120] to-[#0b1120]"></div>
-                    <img src="logo.jpg" class="w-[120%] opacity-[0.03] grayscale transform -rotate-12 mix-blend-screen">
-                </div>
-
-                <div class="relative z-10 p-6">
-                    <div class="flex flex-col items-center justify-center mb-8 text-center">
-                        <div class="relative mb-5">
-                            <div class="absolute inset-0 bg-cyan-500 blur-xl opacity-20 rounded-full"></div>
-                            <img src="logo.jpg" alt="Logo" class="relative w-32 h-32 rounded-3xl object-cover border border-cyan-500/30 shadow-[0_0_25px_rgba(6,182,212,0.5)]">
-                        </div>
-                        <h1 class="font-black text-3xl tracking-tighter text-cyan-400 uppercase leading-none drop-shadow-[0_2px_10px_rgba(34,211,238,0.4)]">ZIEDAN LAUNDRY</h1>
-                        <span class="text-[10px] text-cyan-400/80 font-bold mt-2 tracking-[0.3em] uppercase">Premium Wash & Care</span>
-                        <span class="text-[9px] text-cyan-500/70 font-medium mt-1.5 tracking-widest uppercase">PNR BLOK MJ 24 | WA: 087779179533</span>
-
-                        <div class="mt-5 bg-cyan-950/50 text-cyan-300 border border-cyan-800/50 text-[11px] font-black px-5 py-2 rounded-full uppercase tracking-widest shadow-[0_0_10px_rgba(6,182,212,0.1)] backdrop-blur-sm">REKAP TAGIHAN</div>
-                    </div>
-
-                    <div class="flex items-center justify-center gap-2 mb-6 opacity-50">
-                        <div class="h-px bg-gradient-to-r from-transparent to-cyan-500/50 w-full"></div>
-                        <i class="fas fa-star text-[10px] text-cyan-500"></i>
-                        <div class="h-px bg-gradient-to-l from-transparent to-cyan-500/50 w-full"></div>
-                    </div>
-
-                    <div class="flex justify-between items-start mb-6">
-                        <div class="flex flex-col">
-                            <span class="text-[10px] text-slate-500 font-bold uppercase tracking-widest mb-1.5">Pelanggan</span>
-                            <h3 id="kt-name" class="text-xl font-black text-white leading-tight break-words uppercase tracking-wide">...</h3>
-                            <p id="kt-date" class="text-xs text-cyan-500 mt-1 font-mono">...</p>
-                        </div>
-                    </div>
-
-                    <div class="w-full border-b border-dashed border-slate-700 mb-6"></div>
-
-                    <div class="mb-6">
-                        <span class="text-[10px] text-slate-500 font-bold uppercase tracking-widest mb-3 block">Rincian Transaksi Belum Lunas</span>
-                        <div id="kt-items" class="space-y-3 text-gray-300">
-                        </div>
-                    </div>
-
-                    <div class="w-full border-b border-dashed border-slate-700 mb-6"></div>
-
-                    <div class="flex flex-col gap-2.5 bg-slate-800/30 p-5 rounded-2xl border border-slate-700/50 shadow-inner mb-8 backdrop-blur-md relative overflow-hidden">
-                        <div class="absolute top-0 left-0 w-1.5 h-full bg-gradient-to-b from-cyan-400 to-blue-600"></div>
+                    <div class="space-y-3">
                         <div class="flex justify-between items-center">
-                            <span class="text-xs text-slate-400 font-bold uppercase tracking-wider">Total Tagihan</span>
-                            <span id="kt-total" class="text-sm font-mono font-bold text-slate-300">...</span>
+                            <p class="text-[14px] text-gray-400 font-bold uppercase tracking-widest">Total Tagihan</p>
+                            <p class="text-[18px] font-bold text-white font-mono" id="rec-price-total">Rp 0</p>
                         </div>
                         <div class="flex justify-between items-center">
-                            <span class="text-xs text-slate-400 font-bold uppercase tracking-wider">Sudah Dibayar</span>
-                            <span id="kt-paid" class="text-sm font-mono font-bold text-slate-300">...</span>
+                            <p class="text-[14px] text-gray-400 font-bold uppercase tracking-widest">Telah Dibayar</p>
+                            <p class="text-[18px] font-bold text-green-400 font-mono" id="rec-price-dp">Rp 0</p>
                         </div>
-                        <div class="w-full border-b border-dashed border-slate-600/50 my-1.5"></div>
-                        <div class="flex justify-between items-center">
-                            <span class="text-xs text-cyan-400 font-black uppercase tracking-widest">Sisa Tagihan</span>
-                            <span id="kt-sisa" class="text-2xl font-mono font-black text-white drop-shadow-[0_0_8px_rgba(34,211,238,0.6)]">...</span>
+                        <div class="flex justify-between items-center pt-4 mt-3 border-t border-white/10">
+                            <p class="text-[16px] text-white font-bold uppercase tracking-widest">Sisa Tagihan</p>
+                            <p class="text-[32px] font-black text-davka-orange font-mono glow-text-orange" id="rec-price-remaining">Rp 0</p>
                         </div>
                     </div>
                 </div>
-            </div> 
 
-            <div class="p-4 bg-slate-900 border-t border-slate-800 shrink-0">
-                <button onclick="downloadKreditTicket()" id="btn-download-kt" class="w-full bg-gradient-to-r from-cyan-600 to-blue-600 hover:from-cyan-500 hover:to-blue-500 text-white text-xs font-black py-4 rounded-xl active:scale-[0.98] transition-all flex items-center justify-center gap-2 shadow-[0_4px_15px_rgba(8,145,178,0.3)] uppercase tracking-widest border border-cyan-400/20">
-                    <i class="fas fa-download"></i>
-                    <span>Simpan Tagihan</span>
-                </button>
+                <div class="mt-8 flex flex-col items-center">
+                    <div class="barcode-mockup mb-3 opacity-80 scale-110"></div>
+                    <p class="text-[10px] text-gray-500 font-mono tracking-[0.5em] uppercase">SCAN FOR AUTHENTICITY</p>
+                </div>
+
             </div>
+
+            <div class="bg-black/80 backdrop-blur-md p-4 relative z-10 border-t border-davka-orange/30 flex justify-between items-center">
+                <p class="text-[10px] text-davka-orange font-bold uppercase tracking-[0.4em] ml-2">POWERED BY DAVKA SYSTEM V2.0</p>
+                <div class="flex gap-1.5 mr-2">
+                    <div class="w-2 h-2 rounded bg-davka-orange shadow-[0_0_5px_#ff5400]"></div>
+                    <div class="w-2 h-2 rounded bg-[#0ea5e9] shadow-[0_0_5px_#0ea5e9]"></div>
+                    <div class="w-2 h-2 rounded bg-white shadow-[0_0_5px_#ffffff]"></div>
+                </div>
+            </div>
+
         </div>
     </div>
 
-    <div id="ticket-modal" class="fixed inset-0 z-[70] hidden flex-col items-center justify-center p-4 bg-black/80 backdrop-blur-md transition-opacity duration-300 opacity-0 print:hidden">
-        <div class="bg-[#0f172a] rounded-3xl w-full max-w-sm overflow-hidden flex flex-col max-h-[95vh] shadow-[0_0_40px_rgba(8,145,178,0.2)] transform scale-95 transition-transform duration-300 border border-slate-800" id="ticket-modal-content">
-            
-            <div class="flex justify-between items-center p-4 border-b border-slate-800 bg-slate-900/50 backdrop-blur-sm shrink-0">
-                <h3 class="font-bold text-sm text-cyan-400 tracking-wider uppercase"><i class="fas fa-receipt mr-2"></i>Nota Pembayaran</h3>
-                <button onclick="closeTicketModal()" class="w-8 h-8 flex items-center justify-center rounded-full bg-slate-800 text-gray-400 hover:text-cyan-400 transition-colors border border-slate-700">
-                    <i class="fas fa-times text-sm"></i>
-                </button>
-            </div>
-            
-            <div class="overflow-y-auto p-0 bg-[#0b1120] relative w-full" id="ticket-area">
-                <div class="absolute inset-0 z-0 overflow-hidden pointer-events-none flex items-center justify-center">
-                    <div class="absolute inset-0 bg-[radial-gradient(circle_at_center,_var(--tw-gradient-stops))] from-cyan-900/20 via-[#0b1120] to-[#0b1120]"></div>
-                    <img src="logo.jpg" class="w-[120%] opacity-[0.03] grayscale transform -rotate-12 mix-blend-screen">
-                </div>
-
-                <div class="relative z-10 p-6">
-                    <div class="flex flex-col items-center justify-center mb-8 text-center">
-                        <div class="relative mb-5">
-                            <div class="absolute inset-0 bg-cyan-500 blur-xl opacity-20 rounded-full"></div>
-                            <img src="logo.jpg" alt="Logo" class="relative w-32 h-32 rounded-3xl object-cover border border-cyan-500/30 shadow-[0_0_25px_rgba(6,182,212,0.5)]">
-                        </div>
-                        
-                        <h1 class="font-black text-3xl tracking-tighter text-cyan-400 uppercase leading-none drop-shadow-[0_2px_10px_rgba(34,211,238,0.4)]">ZIEDAN LAUNDRY</h1>
-                        <span class="text-[10px] text-cyan-400/80 font-bold mt-2 tracking-[0.3em] uppercase">Premium Wash & Care</span>
-                        <span class="text-[9px] text-cyan-500/70 font-medium mt-1.5 tracking-widest uppercase">PNR BLOK MJ 24 | WA: 087779179533</span>
-
-                        <div class="mt-5 bg-cyan-950/50 text-cyan-300 border border-cyan-800/50 text-[11px] font-black px-5 py-2 rounded-full uppercase tracking-widest shadow-[0_0_10px_rgba(6,182,212,0.1)] backdrop-blur-sm">BUKTI PEMBAYARAN</div>
-                    </div>
-
-                    <div class="flex items-center justify-center gap-2 mb-6 opacity-50">
-                        <div class="h-px bg-gradient-to-r from-transparent to-cyan-500/50 w-full"></div>
-                        <i class="fas fa-star text-[10px] text-cyan-500"></i>
-                        <div class="h-px bg-gradient-to-l from-transparent to-cyan-500/50 w-full"></div>
-                    </div>
-
-                    <div class="flex justify-between items-start mb-6">
-                        <div class="flex flex-col">
-                            <span class="text-[10px] text-slate-500 font-bold uppercase tracking-widest mb-1.5">Pelanggan</span>
-                            <h3 id="ticket-name" class="text-xl font-black text-white leading-tight break-words uppercase tracking-wide">...</h3>
-                            <p id="ticket-address" class="text-xs text-cyan-500/80 font-mono mt-1">...</p>
-                            <p id="ticket-date" class="text-xs text-slate-500 mt-2 font-mono">...</p>
-                        </div>
-                        <div class="flex flex-col gap-2.5 items-end">
-                            <span id="ticket-payment-badge" class="text-[10px] bg-slate-800/80 text-cyan-400 px-3 py-1.5 rounded border border-cyan-500/30 font-black uppercase tracking-widest text-center min-w-[75px] shadow-[0_0_10px_rgba(34,211,238,0.1)] backdrop-blur-sm">CASH</span>
-                            <span id="ticket-status-badge" class="text-[10px] bg-slate-800/80 text-blue-400 px-3 py-1.5 rounded border border-blue-500/30 font-black uppercase tracking-widest text-center min-w-[75px] shadow-[0_0_10px_rgba(59,130,246,0.1)] backdrop-blur-sm">PROSES</span>
-                        </div>
-                    </div>
-
-                    <div class="w-full border-b border-dashed border-slate-700 mb-6"></div>
-
-                    <div class="mb-6">
-                        <span class="text-[10px] text-slate-500 font-bold uppercase tracking-widest mb-3 block">Rincian Layanan</span>
-                        <div id="ticket-items" class="space-y-3 text-gray-300">
-                        </div>
-                    </div>
-
-                    <div class="w-full border-b border-dashed border-slate-700 mb-6"></div>
-
-                    <div class="flex justify-between items-center bg-cyan-950/20 p-5 rounded-2xl border border-cyan-500/20 shadow-[inset_0_0_20px_rgba(6,182,212,0.05)] mb-8 backdrop-blur-md relative overflow-hidden">
-                        <div class="absolute top-0 left-0 w-1.5 h-full bg-cyan-400 shadow-[0_0_10px_#22d3ee]"></div>
-                        <span class="text-xs text-cyan-400 font-bold uppercase tracking-widest pl-2">Total Tagihan</span>
-                        <span id="ticket-total" class="text-2xl font-mono font-black text-white drop-shadow-[0_0_10px_rgba(34,211,238,0.5)]">...</span>
-                    </div>
-                </div>
-            </div> 
-
-            <div class="p-4 bg-slate-900 border-t border-slate-800 shrink-0">
-                <button onclick="downloadETicket()" id="btn-download" class="w-full bg-gradient-to-r from-cyan-600 to-blue-600 hover:from-cyan-500 hover:to-blue-500 text-white text-xs font-black py-4 rounded-xl active:scale-[0.98] transition-all flex items-center justify-center gap-2 shadow-[0_4px_15px_rgba(8,145,178,0.3)] uppercase tracking-widest border border-cyan-400/20">
-                    <i class="fas fa-download"></i>
-                    <span>Simpan Nota</span>
-                </button>
-            </div>
-        </div>
-    </div>
-
-    <div id="custom-service-modal" class="fixed inset-0 z-[80] hidden flex-col items-center justify-center p-4 bg-brand-900/60 backdrop-blur-sm transition-opacity duration-300 opacity-0 print:hidden">
-        <div class="bg-white rounded-3xl w-full max-w-sm overflow-hidden flex flex-col shadow-2xl transform scale-95 transition-transform duration-300" id="custom-service-modal-content">
-            <div class="flex justify-between items-center p-4 border-b border-brand-100 bg-gradient-to-r from-brand-50 to-sky-50 shrink-0">
-                <h3 class="font-bold text-sm text-brand-900"><i class="fas fa-edit text-brand-500 mr-2"></i>Pengaturan Layanan</h3>
-                <button onclick="closeCustomServiceModal()" class="w-8 h-8 flex items-center justify-center rounded-full bg-white text-gray-500 hover:text-red-500 shadow-sm transition-colors border border-gray-200">
-                    <i class="fas fa-times text-sm"></i>
-                </button>
-            </div>
-            
-            <div class="p-6 bg-white relative w-full">
-                <input type="hidden" id="current-custom-id" value="">
-                
-                <div id="modal-standard-inputs" class="space-y-4">
-                    <div>
-                        <label class="text-[11px] font-bold text-gray-400 uppercase tracking-wider block mb-1">Nama Layanan</label>
-                        <input type="text" id="input-custom-name" class="w-full px-4 py-3 bg-gray-50 rounded-xl text-brand-900 placeholder-gray-400 focus:outline-none focus:bg-brand-50 border border-gray-200 font-medium text-sm" placeholder="Contoh: Cuci Sepatu / Karpet">
-                    </div>
-                    <div>
-                        <label class="text-[11px] font-bold text-gray-400 uppercase tracking-wider block mb-1">Harga (Rp)</label>
-                        <input type="number" id="input-custom-price" class="w-full px-4 py-3 bg-gray-50 rounded-xl text-brand-900 placeholder-gray-400 focus:outline-none focus:bg-brand-50 border border-gray-200 font-bold text-sm" placeholder="0">
-                    </div>
-                    <div>
-                        <label class="text-[11px] font-bold text-gray-400 uppercase tracking-wider block mb-1">Satuan</label>
-                        <div class="grid grid-cols-2 gap-3">
-                            <label class="flex items-center justify-center gap-2 py-3 px-4 rounded-xl border border-gray-200 bg-gray-50 text-gray-700 font-bold text-xs cursor-pointer select-none transition-all" id="label-unit-kg">
-                                <input type="radio" name="custom-unit" value="kg" id="unit-kg" class="hidden" onchange="refreshRadioUI()">
-                                <span>KG</span>
-                            </label>
-                            <label class="flex items-center justify-center gap-2 py-3 px-4 rounded-xl border border-gray-200 bg-gray-50 text-gray-700 font-bold text-xs cursor-pointer select-none transition-all" id="label-unit-pcs">
-                                <input type="radio" name="custom-unit" value="pcs" id="unit-pcs" checked class="hidden" onchange="refreshRadioUI()">
-                                <span>PCS</span>
-                            </label>
-                        </div>
-                    </div>
-                </div>
-
-                <div id="modal-bedcover-inputs" class="hidden space-y-3">
-                    <div>
-                        <label class="text-[11px] font-bold text-gray-400 uppercase tracking-wider block mb-1">Harga Bed Cover Kecil (Rp)</label>
-                        <input type="number" id="input-bc-kecil" class="w-full px-4 py-3 bg-gray-50 rounded-xl text-brand-900 focus:outline-none focus:bg-brand-50 border border-gray-200 font-bold text-sm" placeholder="0">
-                    </div>
-                    <div>
-                        <label class="text-[11px] font-bold text-gray-400 uppercase tracking-wider block mb-1">Harga Bed Cover Sedang (Rp)</label>
-                        <input type="number" id="input-bc-sedang" class="w-full px-4 py-3 bg-gray-50 rounded-xl text-brand-900 focus:outline-none focus:bg-brand-50 border border-gray-200 font-bold text-sm" placeholder="0">
-                    </div>
-                    <div>
-                        <label class="text-[11px] font-bold text-gray-400 uppercase tracking-wider block mb-1">Harga Bed Cover Besar (Rp)</label>
-                        <input type="number" id="input-bc-besar" class="w-full px-4 py-3 bg-gray-50 rounded-xl text-brand-900 focus:outline-none focus:bg-brand-50 border border-gray-200 font-bold text-sm" placeholder="0">
-                    </div>
-                </div>
-
-            </div>
-            <div class="p-4 bg-gray-50 border-t border-gray-100 shrink-0">
-                <button onclick="saveCustomServiceConfig()" class="w-full bg-brand-500 hover:bg-brand-600 text-white text-sm font-extrabold py-4 rounded-xl active:scale-[0.98] transition-all flex items-center justify-center gap-2 shadow-md">
-                    <i class="fas fa-check-circle"></i>
-                    <span>SIMPAN LAYANAN</span>
-                </button>
-            </div>
-        </div>
-    </div>
-    
-    <div id="footer-total" class="fixed bottom-6 w-[90%] left-1/2 -translate-x-1/2 bg-white/95 text-brand-900 rounded-[2.5rem] px-8 py-5 z-40 transition-all duration-500 shadow-glow border border-brand-100 backdrop-blur-xl">
-        <div class="flex items-center justify-between gap-5">
-            <div class="flex flex-col">
-                <span class="text-[10px] text-gray-400 font-bold uppercase tracking-wider">Total Tagihan</span>
-                <span class="text-xl font-bold text-brand-500 leading-none mt-1" id="txtTotal">Rp 0</span>
-            </div>
-            
-            <button onclick="prosesPesanan()" class="bg-brand-500 hover:bg-brand-600 text-white text-sm font-extrabold py-3.5 px-6 rounded-2xl active:scale-[0.95] transition-all flex items-center gap-2 shadow-md">
-                <i class="fas fa-clipboard-check text-xs"></i>
-                <span>SIMPAN</span>
-            </button>
-        </div>
-    </div>
-
-    <script>
-        document.addEventListener('DOMContentLoaded', () => {
-            const introSplash = document.getElementById('intro-splash');
-            const introVideo = document.getElementById('intro-video');
-
-            if (introSplash && introVideo) {
-                introVideo.addEventListener('ended', () => {
-                    introSplash.classList.add('opacity-0');
-                    setTimeout(() => {
-                        introSplash.style.display = 'none';
-                    }, 1000);
-                });
-
-                introVideo.addEventListener('error', () => {
-                    introSplash.style.display = 'none';
-                });
-            }
-        });
-    </script> 
-    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-    <script src="script.js"></script>
+    <input type="file" id="inpHistoryUpload" class="hidden" accept="image/*">
+   <script type="module" src="script.js"></script>
 </body>
 </html>

@@ -739,48 +739,47 @@
             <p class="mt-4 text-gray-500 text-[10px]">Ketuk area gelap untuk menutup</p>
         </div>
     </div>
+    
+    <!-- OPTIMASI VISUAL DENSITY AREA NOTA -->
     <div id="receipt-render-area" style="width: 480px; position: fixed; left: -9999px;">
-        <div class="relative bg-davka-bg text-white font-sans overflow-hidden min-h-[800px] border-none flex flex-col cyber-grid-bg">
+        <div class="relative bg-davka-bg text-white font-sans overflow-hidden min-h-min border-none flex flex-col cyber-grid-bg">
             
             <div class="absolute inset-0 z-0 pointer-events-none">
                  <div class="absolute top-[-5%] right-[-10%] w-[60%] h-[30%] bg-davka-orange/30 rounded-full blur-[100px]"></div>
                  <div class="absolute bottom-[-5%] left-[-10%] w-[60%] h-[30%] bg-[#0ea5e9]/20 rounded-full blur-[100px]"></div>
             </div>
 
-            <div class="pt-6 pb-4 px-8 text-center relative z-10">
-                <div class="inline-block relative mt-2">
+            <div class="pt-4 pb-3 px-6 text-center relative z-10">
+                <div class="inline-block relative mt-1">
                     <div class="absolute inset-0 bg-davka-orange blur-3xl opacity-50 rounded-full scale-150"></div>
                     <img src="logo.jpg" crossorigin="anonymous" class="relative w-24 h-24 mx-auto rounded-full border-4 border-davka-orange shadow-[0_0_30px_rgba(255,84,0,0.8)] object-cover">
                 </div>
                 
-                <h1 class="text-3xl font-black tracking-[0.2em] text-white uppercase font-serif mt-5 drop-shadow-[0_0_10px_rgba(255,255,255,0.3)]">DAVKA TRAVEL</h1>
+                <h1 class="text-3xl font-black tracking-[0.2em] text-white uppercase font-serif mt-3 drop-shadow-[0_0_10px_rgba(255,255,255,0.3)]">DAVKA TRAVEL</h1>
                 
-                <div class="flex justify-center items-center gap-3 mt-3 mb-2">
+                <div class="flex justify-center items-center gap-3 mt-2 mb-1">
                     <div class="h-[1px] w-12 bg-gradient-to-r from-transparent to-davka-orange/80"></div>
                     <p class="text-[12px] font-bold tracking-[0.3em] text-davka-orange uppercase glow-text-orange">Digital Boarding Pass</p>
                     <div class="h-[1px] w-12 bg-gradient-to-l from-transparent to-davka-orange/80"></div>
                 </div>
             </div>
 
-            <div id="rec-ticket-depart" class="px-8 relative z-10 flex-1 flex flex-col gap-5">
+            <div id="rec-ticket-depart" class="px-6 relative z-10 flex-1 flex flex-col gap-3">
                 <img id="rec-stamp-depart" src="stampel.jpg" crossorigin="anonymous" class="stamp-lunas-modern" alt="LUNAS">
                 
                 <div class="bg-[#0b1221]/80 rounded-2xl p-0 backdrop-blur-md relative overflow-hidden shadow-[0_0_25px_rgba(255,84,0,0.15)] border border-davka-orange/40">
                     <div class="absolute top-0 left-0 w-2 h-full bg-davka-orange shadow-[0_0_15px_#ff5400]"></div>
                     
-                    <div class="p-6">
-                        <div class="flex justify-between items-center mb-2 border-b border-dashed border-davka-orange/40 pb-4">
+                    <div class="p-4">
+                        <div class="flex justify-between items-center mb-2 border-b border-dashed border-davka-orange/40 pb-2">
                             <span class="text-[14px] text-davka-orange font-bold uppercase tracking-widest flex items-center mt-1"><i class="fas fa-train mr-2 text-lg"></i> Keberangkatan</span>
                             <span class="text-[14px] text-white font-mono bg-davka-orange/20 px-4 py-2 rounded-lg border border-davka-orange/50 shadow-inner flex items-center justify-center" id="rec-date-depart">DD MMM YYYY</span>
                         </div>
                         
-                        <!-- PERBAIKAN UX: VERTICAL TIMELINE LAYOUT -->
-                        <div class="relative pl-8 my-6">
-                            <!-- Garis Vertikal Penghubung -->
-                            <div class="absolute left-[15px] top-6 bottom-6 w-0 border-l-2 border-dashed border-davka-orange/50"></div>
+                        <div class="relative pl-8 my-3">
+                            <div class="absolute left-[15px] top-3 bottom-3 w-0 border-l-2 border-dashed border-davka-orange/50"></div>
                             
-                            <!-- Node Asal -->
-                            <div class="relative mb-6">
+                            <div class="relative mb-3">
                                 <div class="absolute -left-8 top-1.5 w-7 h-7 rounded-full bg-davka-orange flex items-center justify-center shadow-[0_0_15px_#ff5400] z-10">
                                     <div class="w-2.5 h-2.5 bg-white rounded-full"></div>
                                 </div>
@@ -788,8 +787,7 @@
                                 <p class="text-[12px] text-gray-400 uppercase tracking-widest mt-1.5">Stasiun Asal</p>
                             </div>
 
-                            <!-- Node Info Kereta (Tengah Timeline) -->
-                            <div class="relative mb-6">
+                            <div class="relative mb-3">
                                 <div class="absolute -left-[2.1rem] top-1/2 transform -translate-y-1/2 bg-[#0b1221] py-3 z-10">
                                      <i class="fas fa-train text-davka-orange text-xl drop-shadow-[0_0_8px_rgba(255,84,0,0.8)]"></i>
                                 </div>
@@ -805,7 +803,6 @@
                                 </div>
                             </div>
 
-                            <!-- Node Tujuan -->
                             <div class="relative">
                                 <div class="absolute -left-8 top-1.5 w-7 h-7 rounded-full bg-[#0b1221] border-[3px] border-davka-orange flex items-center justify-center z-10">
                                     <div class="w-2 h-2 bg-davka-orange rounded-full"></div>
@@ -814,13 +811,12 @@
                                 <p class="text-[12px] text-gray-400 uppercase tracking-widest mt-1.5">Stasiun Tujuan</p>
                             </div>
                         </div>
-                        <!-- END OF VERTICAL TIMELINE -->
 
                     </div>
                 </div>
 
-                <div class="bg-[#0b1221]/90 border border-white/10 rounded-2xl p-5 relative flex flex-col gap-4 shadow-lg">
-                    <div class="flex justify-between border-b border-dashed border-white/20 pb-4">
+                <div class="bg-[#0b1221]/90 border border-white/10 rounded-2xl p-4 relative flex flex-col gap-2 shadow-lg">
+                    <div class="flex justify-between border-b border-dashed border-white/20 pb-2">
                         <div class="w-[60%] pr-3">
                             <p class="text-[12px] text-gray-500 uppercase font-bold mb-1 tracking-wider">Data Pemesan</p>
                             <p class="text-[18px] font-black text-white uppercase break-words leading-tight" id="rec-contact-name">NAME</p>
@@ -846,25 +842,22 @@
                 </div>
             </div>
 
-            <div id="rec-ticket-return" class="hidden px-8 relative z-10 flex-1 flex flex-col gap-5 mt-0">
+            <div id="rec-ticket-return" class="hidden px-6 relative z-10 flex-1 flex flex-col gap-3 mt-0">
                 <img id="rec-stamp-return" src="stampel.jpg" crossorigin="anonymous" class="stamp-lunas-modern" alt="LUNAS">
                 
                 <div class="bg-[#0b1221]/80 rounded-2xl p-0 backdrop-blur-md relative overflow-hidden shadow-[0_0_25px_rgba(14,165,233,0.15)] border border-[#0ea5e9]/40">
                     <div class="absolute top-0 left-0 w-2 h-full bg-[#0ea5e9] shadow-[0_0_15px_#0ea5e9]"></div>
                     
-                     <div class="p-6">
-                        <div class="flex justify-between items-center mb-2 border-b border-dashed border-[#0ea5e9]/40 pb-4">
+                     <div class="p-4">
+                        <div class="flex justify-between items-center mb-2 border-b border-dashed border-[#0ea5e9]/40 pb-2">
                             <span class="text-[14px] text-[#0ea5e9] font-bold uppercase tracking-widest flex items-center mt-1"><i class="fas fa-exchange-alt mr-2 text-lg"></i> Kepulangan (PP)</span>
                             <span class="text-[14px] text-white font-mono bg-[#0ea5e9]/20 px-4 py-2 rounded-lg border border-[#0ea5e9]/50 shadow-inner flex items-center justify-center" id="rec-return-date-depart">DD MMM YYYY</span>
                         </div>
                         
-                        <!-- PERBAIKAN UX: VERTICAL TIMELINE LAYOUT (PULANG) -->
-                        <div class="relative pl-8 my-6">
-                            <!-- Garis Vertikal Penghubung -->
-                            <div class="absolute left-[15px] top-6 bottom-6 w-0 border-l-2 border-dashed border-[#0ea5e9]/50"></div>
+                        <div class="relative pl-8 my-3">
+                            <div class="absolute left-[15px] top-3 bottom-3 w-0 border-l-2 border-dashed border-[#0ea5e9]/50"></div>
                             
-                            <!-- Node Asal -->
-                            <div class="relative mb-6">
+                            <div class="relative mb-3">
                                 <div class="absolute -left-8 top-1.5 w-7 h-7 rounded-full bg-[#0ea5e9] flex items-center justify-center shadow-[0_0_15px_#0ea5e9] z-10">
                                     <div class="w-2.5 h-2.5 bg-white rounded-full"></div>
                                 </div>
@@ -872,8 +865,7 @@
                                 <p class="text-[12px] text-gray-400 uppercase tracking-widest mt-1.5">Stasiun Asal</p>
                             </div>
 
-                            <!-- Node Info Kereta (Tengah Timeline) -->
-                            <div class="relative mb-6">
+                            <div class="relative mb-3">
                                 <div class="absolute -left-[2.1rem] top-1/2 transform -translate-y-1/2 bg-[#0b1221] py-3 z-10">
                                      <i class="fas fa-exchange-alt text-[#0ea5e9] text-xl drop-shadow-[0_0_8px_rgba(14,165,233,0.8)]"></i>
                                 </div>
@@ -889,7 +881,6 @@
                                 </div>
                             </div>
 
-                            <!-- Node Tujuan -->
                             <div class="relative">
                                 <div class="absolute -left-8 top-1.5 w-7 h-7 rounded-full bg-[#0b1221] border-[3px] border-[#0ea5e9] flex items-center justify-center z-10">
                                     <div class="w-2 h-2 bg-[#0ea5e9] rounded-full"></div>
@@ -898,13 +889,12 @@
                                 <p class="text-[12px] text-gray-400 uppercase tracking-widest mt-1.5">Stasiun Tujuan</p>
                             </div>
                         </div>
-                        <!-- END OF VERTICAL TIMELINE -->
 
                     </div>
                 </div>
 
-                <div class="bg-[#0b1221]/90 border border-white/10 rounded-2xl p-5 relative flex flex-col gap-4 shadow-lg">
-                     <div class="flex justify-between border-b border-dashed border-white/20 pb-4">
+                <div class="bg-[#0b1221]/90 border border-white/10 rounded-2xl p-4 relative flex flex-col gap-2 shadow-lg">
+                     <div class="flex justify-between border-b border-dashed border-white/20 pb-2">
                         <div class="w-[60%] pr-3">
                             <p class="text-[12px] text-gray-500 uppercase font-bold mb-1 tracking-wider">Data Pemesan</p>
                             <p class="text-[18px] font-black text-white uppercase break-words leading-tight" id="rec-return-contact-name">NAME</p>
@@ -930,12 +920,12 @@
                 </div>
             </div>
 
-            <div class="px-8 pb-8 relative z-10 mt-auto pt-6">
+            <div class="px-6 pb-4 relative z-10 mt-auto pt-3">
                 
-                <div class="bg-[#0b1221] rounded-2xl p-5 border border-white/10 shadow-[0_-5px_20px_rgba(0,0,0,0.5)] relative overflow-hidden">
+                <div class="bg-[#0b1221] rounded-2xl p-4 border border-white/10 shadow-[0_-5px_20px_rgba(0,0,0,0.5)] relative overflow-hidden">
                     <div class="absolute right-0 bottom-0 w-32 h-32 bg-davka-orange/10 blur-[50px]"></div>
                     
-                    <div class="flex justify-between items-end mb-4 border-b border-dashed border-white/20 pb-4">
+                    <div class="flex justify-between items-end mb-3 border-b border-dashed border-white/20 pb-2">
                         <div>
                             <p class="text-[12px] text-gray-500 font-bold uppercase tracking-[0.2em] mb-1">ID Transaksi</p>
                             <p class="text-2xl font-mono font-black text-white tracking-widest glow-text-white" id="rec-id">#000000</p>
@@ -945,7 +935,7 @@
                         </div>
                     </div>
                     
-                    <div class="space-y-3">
+                    <div class="space-y-1.5">
                         <div class="flex justify-between items-center">
                             <p class="text-[14px] text-gray-400 font-bold uppercase tracking-widest">Total Tagihan</p>
                             <p class="text-[18px] font-bold text-white font-mono" id="rec-price-total">Rp 0</p>
@@ -954,21 +944,21 @@
                             <p class="text-[14px] text-gray-400 font-bold uppercase tracking-widest">Telah Dibayar</p>
                             <p class="text-[18px] font-bold text-green-400 font-mono" id="rec-price-dp">Rp 0</p>
                         </div>
-                        <div class="flex justify-between items-center pt-4 mt-3 border-t border-white/10">
+                        <div class="flex justify-between items-center pt-2 mt-2 border-t border-white/10">
                             <p class="text-[16px] text-white font-bold uppercase tracking-widest">Sisa Tagihan</p>
                             <p class="text-[32px] font-black text-davka-orange font-mono glow-text-orange" id="rec-price-remaining">Rp 0</p>
                         </div>
                     </div>
                 </div>
 
-                <div class="mt-8 flex flex-col items-center">
-                    <div class="barcode-mockup mb-3 opacity-80 scale-110"></div>
+                <div class="mt-4 flex flex-col items-center">
+                    <div class="barcode-mockup mb-1.5 opacity-80 scale-110"></div>
                     <p class="text-[10px] text-gray-500 font-mono tracking-[0.5em] uppercase">SCAN FOR AUTHENTICITY</p>
                 </div>
 
             </div>
 
-            <div class="bg-black/80 backdrop-blur-md p-4 relative z-10 border-t border-davka-orange/30 flex justify-between items-center">
+            <div class="bg-black/80 backdrop-blur-md p-3 relative z-10 border-t border-davka-orange/30 flex justify-between items-center">
                 <p class="text-[10px] text-davka-orange font-bold uppercase tracking-[0.4em] ml-2">POWERED BY DAVKA SYSTEM V2.0</p>
                 <div class="flex gap-1.5 mr-2">
                     <div class="w-2 h-2 rounded bg-davka-orange shadow-[0_0_5px_#ff5400]"></div>

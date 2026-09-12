@@ -100,6 +100,25 @@ function initializeAppLogic() {
     
     // UX ENHANCEMENT: Inisialisasi Smooth Scroll & Enter Key
     enableSmoothInputUX();
+    
+    // UX ENHANCEMENT: Hide menu saat keyboard muncul
+    setupKeyboardListener();
+}
+
+function setupKeyboardListener() {
+    const nav = document.querySelector('nav');
+    if (!nav) return;
+    
+    const initialHeight = window.innerHeight;
+    
+    window.addEventListener('resize', () => {
+        // Jika tinggi window menyusut drastis (> 150px), asumsikan keyboard muncul
+        if (window.innerHeight < initialHeight - 150) {
+            nav.style.display = 'none';
+        } else {
+            nav.style.display = ''; // Kembalikan ke style bawaan
+        }
+    });
 }
 
 // --- FEATURE: TAB SYSTEM LOGIC (PERGI / PULANG) ---
@@ -252,7 +271,6 @@ function renderDetailFinancials(mode) {
     remEl.innerText = formatRupiah(remaining);
     remEl.className = remaining <= 0 ? "text-sm font-black text-green-500" : "text-sm font-black text-red-500";
 }
-
 window.switchUploadTab = function(tabName) {
     const btnDepart = document.getElementById('btn-upload-depart');
     const btnReturn = document.getElementById('btn-upload-return');
@@ -498,7 +516,6 @@ async function fetchOrdersBg() {
         }
     }
 }
-
 // --- LOGIC UPLOAD & STORAGE ---
 async function uploadToSupabaseStorage(base64Data, fileName) {
     if (!base64Data || base64Data.startsWith('http')) return base64Data; 
@@ -713,7 +730,6 @@ window.navTo = function(pageId) {
         window.scrollTo({ top: 0, behavior: 'smooth' });
     }, 400); 
 }
-
 window.editOrder = function(id) {
     const index = orders.findIndex(o => o.id === id);
     if (index === -1) return;
@@ -1187,7 +1203,6 @@ function renderReceiptToDOM(order) {
         document.getElementById('rec-pax-list').innerHTML = paxHtml;
     }
 }
-
 function captureAndShowModal(elementId) {
     const el = document.getElementById(elementId);
     html2canvas(el, { 
@@ -1555,23 +1570,19 @@ function renderStats() {
 
     if (orders) {
         orders.forEach(o => {
-            // 1. Hitung jumlah penumpang dalam pesanan ini secara dinamis
             let paxCount = 1;
             if (Array.isArray(o.passengers)) {
-                // Gunakan semua penumpang yang terdaftar sebagai 1 tiket/kursi
                 paxCount = o.passengers.length; 
             } else if (o.name) {
                 paxCount = 1;
             }
 
-            // 2. Tambahkan ke perhitungan status berdasarkan jumlah PENUMPANG
             if (o.status === 'pending') {
                 paxPending += paxCount;
             } else if (o.status === 'success') {
                 paxSukses += paxCount;
                 totalTiketTerjual += paxCount;
                 
-                // 3. Akumulasikan Omset Total Keseluruhan (Pergi + Pulang jika ada) tanpa batasan bulan
                 const totalOrderPrice = (parseFloat(o.price) || 0) + (parseFloat(o.returnPrice) || 0);
                 totalOmset += totalOrderPrice;
             } else if (o.status === 'cancel') {
@@ -1580,7 +1591,6 @@ function renderStats() {
         });
     }
 
-    // 4. Update UI Dashboard
     document.getElementById('stat-today').innerText = totalTiketTerjual;
     document.getElementById('stat-revenue').innerText = formatRupiah(totalOmset);
     document.getElementById('stat-pending').innerText = paxPending;

@@ -739,7 +739,6 @@
             <p class="mt-4 text-gray-500 text-[10px]">Ketuk area gelap untuk menutup</p>
         </div>
     </div>
-    
     <!-- OPTIMASI VISUAL DENSITY AREA NOTA -->
     <div id="receipt-render-area" style="width: 480px; position: fixed; left: -9999px;">
         <div class="relative bg-davka-bg text-white font-sans overflow-hidden min-h-min border-none flex flex-col cyber-grid-bg">
@@ -752,7 +751,8 @@
             <div class="pt-4 pb-3 px-6 text-center relative z-10">
                 <div class="inline-block relative mt-1">
                     <div class="absolute inset-0 bg-black/20 rounded-full blur-md"></div>
-                    <img src="logo.jpg" crossorigin="anonymous" class="relative w-24 h-24 mx-auto rounded-full border border-white/20 shadow-lg object-cover">
+                    <!-- REVISI 1: Ukuran logo diperbesar dari w-24 h-24 menjadi w-32 h-32 -->
+                    <img src="logo.jpg" crossorigin="anonymous" class="relative w-32 h-32 mx-auto rounded-full border border-white/20 shadow-lg object-cover">
                 </div>
                 
                 <h1 class="text-3xl font-black tracking-[0.2em] text-white uppercase font-serif mt-3 drop-shadow-[0_0_10px_rgba(255,255,255,0.3)]">DAVKA TRAVEL</h1>
@@ -798,7 +798,8 @@
                                     </div>
                                     <div class="text-right">
                                         <p class="text-[10px] text-gray-400 uppercase font-bold tracking-wider mb-1">Tgl War Tiket</p>
-                                        <p class="text-[14px] font-black text-[#0ea5e9] uppercase font-mono tracking-wide" id="rec-war-date">DD MMM YYYY</p>
+                                        <!-- REVISI 2: Font tgl war diperbesar jadi text-[16px] -->
+                                        <p class="text-[16px] font-black text-[#0ea5e9] uppercase font-mono tracking-wide" id="rec-war-date">DD MMM YYYY</p>
                                     </div>
                                 </div>
                             </div>
@@ -826,15 +827,17 @@
                         </div>
                         <div class="text-right w-[40%] border-l border-white/10 pl-3 flex flex-col justify-start">
                             <p class="text-[12px] text-gray-500 uppercase font-bold mb-2 tracking-wider">Pembayaran</p>
-                            <div class="inline-block bg-white/5 border border-white/10 px-3 py-2 rounded">
-                                <p class="text-[14px] font-black text-[#0ea5e9] uppercase break-words" id="rec-payment-method">METHOD</p>
+                            <!-- REVISI 3: Ukuran padding container & font text pembayaran diperbesar (px-4 py-2.5, text-[16px]) -->
+                            <div class="inline-block bg-white/5 border border-white/10 px-4 py-2.5 rounded-lg">
+                                <p class="text-[16px] font-black text-[#0ea5e9] uppercase break-words" id="rec-payment-method">METHOD</p>
                             </div>
                         </div>
                     </div>
                     <div>
-                         <div class="flex justify-between items-center mb-3">
+                         <div class="flex justify-between items-center mb-3 mt-1">
                              <p class="text-[14px] text-gray-400 uppercase font-bold tracking-widest"><i class="fas fa-users mr-1"></i> Data Penumpang</p>
-                             <p class="text-[12px] font-bold text-davka-orange bg-davka-orange/10 px-3 py-1.5 rounded border border-davka-orange/30" id="rec-pax-count">1 Dewasa</p>
+                             <!-- REVISI 4: Ukuran badge penumpang diperbesar (text-[14px], px-4 py-2) -->
+                             <p class="text-[14px] font-bold text-davka-orange bg-davka-orange/10 px-4 py-2 rounded-lg border border-davka-orange/30" id="rec-pax-count">1 Dewasa</p>
                          </div>
                          <div id="rec-pax-list" class="space-y-3">
                              </div>
@@ -876,7 +879,8 @@
                                     </div>
                                     <div class="text-right">
                                         <p class="text-[10px] text-gray-400 uppercase font-bold tracking-wider mb-1">Tgl War Tiket</p>
-                                        <p class="text-[14px] font-black text-davka-orange uppercase font-mono tracking-wide" id="rec-return-war-date">DD MMM YYYY</p>
+                                        <!-- REVISI 2: Font tgl war diperbesar jadi text-[16px] -->
+                                        <p class="text-[16px] font-black text-davka-orange uppercase font-mono tracking-wide" id="rec-return-war-date">DD MMM YYYY</p>
                                     </div>
                                 </div>
                             </div>
@@ -904,15 +908,17 @@
                         </div>
                         <div class="text-right w-[40%] border-l border-white/10 pl-3 flex flex-col justify-start">
                             <p class="text-[12px] text-gray-500 uppercase font-bold mb-2 tracking-wider">Pembayaran</p>
-                            <div class="inline-block bg-white/5 border border-white/10 px-3 py-2 rounded">
-                                <p class="text-[14px] font-black text-davka-orange uppercase break-words" id="rec-return-payment-method">METHOD</p>
+                            <!-- REVISI 3: Ukuran padding container & font text pembayaran diperbesar (px-4 py-2.5, text-[16px]) -->
+                            <div class="inline-block bg-white/5 border border-white/10 px-4 py-2.5 rounded-lg">
+                                <p class="text-[16px] font-black text-davka-orange uppercase break-words" id="rec-return-payment-method">METHOD</p>
                             </div>
                         </div>
                     </div>
                     <div>
-                         <div class="flex justify-between items-center mb-3">
+                         <div class="flex justify-between items-center mb-3 mt-1">
                              <p class="text-[14px] text-gray-400 uppercase font-bold tracking-widest"><i class="fas fa-users mr-1"></i> Data Penumpang</p>
-                             <p class="text-[12px] font-bold text-[#0ea5e9] bg-[#0ea5e9]/10 px-3 py-1.5 rounded border border-[#0ea5e9]/30" id="rec-return-pax-count">1 Dewasa</p>
+                             <!-- REVISI 4: Ukuran badge penumpang diperbesar (text-[14px], px-4 py-2) -->
+                             <p class="text-[14px] font-bold text-[#0ea5e9] bg-[#0ea5e9]/10 px-4 py-2 rounded-lg border border-[#0ea5e9]/30" id="rec-return-pax-count">1 Dewasa</p>
                          </div>
                          <div id="rec-return-pax-list" class="space-y-3">
                              </div>

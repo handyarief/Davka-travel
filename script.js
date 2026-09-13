@@ -101,7 +101,7 @@ function initializeAppLogic() {
     // UX ENHANCEMENT: Inisialisasi Smooth Scroll & Enter Key
     enableSmoothInputUX();
     
-    // UX ENHANCEMENT: Hide menu saat keyboard muncul (Revisi Anti-Halusinasi)
+    // UX ENHANCEMENT: Hide menu saat keyboard muncul
     setupKeyboardListener();
 }
 
@@ -109,7 +109,6 @@ function setupKeyboardListener() {
     const nav = document.querySelector('nav');
     if (!nav) return;
     
-    // METODE 1: Deteksi dinamis form focus (Solusi teraman untuk Android & iOS)
     document.addEventListener('focusin', (e) => {
         const targetTag = e.target.tagName ? e.target.tagName.toLowerCase() : '';
         if (targetTag === 'input' || targetTag === 'select' || targetTag === 'textarea') {
@@ -118,7 +117,6 @@ function setupKeyboardListener() {
     });
 
     document.addEventListener('focusout', (e) => {
-        // Jeda waktu untuk mencegah nav berkedip jika user hanya berpindah dari input 1 ke input 2
         setTimeout(() => {
             const activeTag = document.activeElement && document.activeElement.tagName ? document.activeElement.tagName.toLowerCase() : '';
             if (activeTag !== 'input' && activeTag !== 'select' && activeTag !== 'textarea') {
@@ -127,13 +125,11 @@ function setupKeyboardListener() {
         }, 100);
     });
 
-    // METODE 2: Fallback Event Resize untuk browser tertentu
     const initialHeight = window.innerHeight;
     window.addEventListener('resize', () => {
         if (window.innerHeight < initialHeight - 150) {
             nav.classList.add('nav-hidden-keyboard');
         } else {
-            // Pastikan tidak ada input yang tertinggal fokusnya
             const activeTag = document.activeElement && document.activeElement.tagName ? document.activeElement.tagName.toLowerCase() : '';
             if (activeTag !== 'input' && activeTag !== 'select' && activeTag !== 'textarea') {
                 nav.classList.remove('nav-hidden-keyboard');
@@ -149,31 +145,25 @@ window.switchTab = function(tabName) {
     const contentDepart = document.getElementById('tab-content-depart');
     const contentReturn = document.getElementById('tab-content-return');
 
-    // Update Global Tracker
     currentDetailTab = tabName;
 
-    // Reset Styles (Inactive State)
     const inactiveClass = "flex-1 py-2 text-[10px] font-bold uppercase rounded-lg transition-all text-gray-400 hover:text-white relative";
     const activeClass = "flex-1 py-2 text-[10px] font-bold uppercase rounded-lg transition-all bg-davka-orange text-white shadow-lg relative";
 
     btnDepart.className = inactiveClass;
     btnReturn.className = inactiveClass;
     
-    // Hide Content
     contentDepart.classList.add('hidden');
     contentReturn.classList.add('hidden');
 
-    // Activate Requested Tab
     if (tabName === 'depart') {
         btnDepart.className = activeClass;
         contentDepart.classList.remove('hidden');
         
-        // RESET HEADER: Tampilkan rute PERGI
         if(currentDetailOrder) {
             document.getElementById('detail-origin').innerText = currentDetailOrder.origin || 'ORG';
             document.getElementById('detail-dest').innerText = currentDetailOrder.dest || 'DES';
             
-            // PERBAIKAN: Ubah style icon ke mode Pergi (Orange, Train)
             const accent = document.getElementById('detail-card-accent');
             if(accent) accent.className = "absolute top-0 left-0 w-1 h-full bg-davka-orange transition-colors";
             
@@ -183,14 +173,12 @@ window.switchTab = function(tabName) {
             const routeIcon = document.getElementById('detail-route-icon');
             if(routeIcon) routeIcon.className = "fas fa-train text-davka-orange text-sm drop-shadow-md transition-all";
             
-            // Render Finansial Khusus Pergi
             renderDetailFinancials('depart');
         }
     } else {
         btnReturn.className = activeClass;
         contentReturn.classList.remove('hidden');
 
-        // UPDATE HEADER: Tampilkan rute PULANG (Swap Origin & Dest)
         if(currentDetailOrder && currentDetailOrder.tripType === 'round_trip') {
             const retOrg = currentDetailOrder.returnOrigin || currentDetailOrder.dest || 'ORG';
             const retDes = currentDetailOrder.returnDest || currentDetailOrder.origin || 'DES';
@@ -198,7 +186,6 @@ window.switchTab = function(tabName) {
             document.getElementById('detail-origin').innerText = retOrg;
             document.getElementById('detail-dest').innerText = retDes;
             
-            // PERBAIKAN: Ubah style icon ke mode Pulang (Blue, Exchange)
             const accent = document.getElementById('detail-card-accent');
             if(accent) accent.className = "absolute top-0 left-0 w-1 h-full bg-blue-500 transition-colors";
             
@@ -208,7 +195,6 @@ window.switchTab = function(tabName) {
             const routeIcon = document.getElementById('detail-route-icon');
             if(routeIcon) routeIcon.className = "fas fa-exchange-alt text-blue-400 text-sm drop-shadow-md transition-all"; 
             
-            // Render Finansial Khusus Pulang
             renderDetailFinancials('return');
         }
     }
@@ -227,7 +213,6 @@ function renderDetailFinancials(mode) {
     let themeColor = '';
     let themeBorder = '';
 
-    // Tentukan data berdasarkan mode (Pergi/Pulang)
     if(mode === 'depart') {
         price = order.price || 0;
         dp = (order.feeDepart !== undefined) ? order.feeDepart : (order.fee || 0);
@@ -246,12 +231,10 @@ function renderDetailFinancials(mode) {
 
     remaining = price - dp;
 
-    // Jika status global 'success', sisa tagihan 0 (LUNAS)
     if (order.status === 'success') {
         remaining = 0;
     }
 
-    // Render HTML Kartu Pembayaran
     const html = `
     <div class="bg-davka-bg border ${themeBorder} rounded-xl p-3 mb-2 animate-scale-up">
         <div class="flex items-center gap-2 mb-2 border-b ${themeBorder} pb-2">
@@ -279,19 +262,17 @@ function renderDetailFinancials(mode) {
     </div>
     `;
 
-    // Inject ke DOM
     const costContainer = document.getElementById('detail-cost-breakdown');
     costContainer.innerHTML = html;
     costContainer.classList.remove('hidden');
 
-    // Update Label Total Bawah (Hanya untuk tab yang aktif)
     document.getElementById('detail-price').innerText = formatRupiah(price);
     
-    // Update Sisa Tagihan Bawah (Hanya untuk tab yang aktif)
     const remEl = document.getElementById('detail-remaining');
     remEl.innerText = formatRupiah(remaining);
     remEl.className = remaining <= 0 ? "text-sm font-black text-green-500" : "text-sm font-black text-red-500";
 }
+
 window.switchUploadTab = function(tabName) {
     const btnDepart = document.getElementById('btn-upload-depart');
     const btnReturn = document.getElementById('btn-upload-return');
@@ -313,17 +294,16 @@ window.switchUploadTab = function(tabName) {
         containerReturn.classList.remove('hidden');
     }
 }
+
 // --- UX ENGINE: SMOOTH SCROLL & ENTER KEY NAVIGATION ---
 function enableSmoothInputUX() {
     const formElements = document.querySelectorAll('input, select, textarea');
     
     formElements.forEach((el, index) => {
         el.removeEventListener('focus', handleInputFocus);
-        // Hapus listener click yang redundan
         el.removeEventListener('keydown', handleInputEnter);
 
         el.addEventListener('focus', handleInputFocus);
-        // Hapus penambahan listener click yang redundan
         el.addEventListener('keydown', (e) => handleInputEnter(e, index, formElements));
     });
 }
@@ -331,7 +311,7 @@ function handleInputFocus(e) {
     setTimeout(() => {
         e.target.scrollIntoView({ 
             behavior: 'smooth', 
-            block: 'center', // Diubah dari 'start' ke 'center' agar tidak tertutup keyboard
+            block: 'center', 
             inline: 'nearest' 
         });
     }, 300);
@@ -489,6 +469,7 @@ window.calcRemaining = function() {
         ? "bg-transparent text-right text-green-500 font-black text-lg outline-none w-40 cursor-default" 
         : "bg-transparent text-right text-red-500 font-black text-lg outline-none w-40 cursor-default";
 }
+
 // --- FETCH & REALTIME ---
 async function fetchOrders() {
     const { data, error } = await supabase
@@ -536,6 +517,7 @@ async function fetchOrdersBg() {
         }
     }
 }
+
 // --- LOGIC UPLOAD & STORAGE ---
 async function uploadToSupabaseStorage(base64Data, fileName) {
     if (!base64Data || base64Data.startsWith('http')) return base64Data; 
@@ -562,6 +544,7 @@ async function uploadToSupabaseStorage(base64Data, fileName) {
         return null; 
     }
 }
+
 // --- FORM HANDLING (SAVE & UPDATE) ---
 const orderForm = document.getElementById('orderForm');
 
@@ -653,6 +636,7 @@ orderForm.addEventListener('submit', async (e) => {
 
             settlementProof: existingOrder ? existingOrder.settlementProof : null,
             kaiTicketFile: existingOrder ? existingOrder.kaiTicketFile : null,
+            kaiTicketFileReturn: existingOrder ? existingOrder.kaiTicketFileReturn : null,
             status: existingOrder ? existingOrder.status : 'pending'
         };
 
@@ -750,6 +734,7 @@ window.navTo = function(pageId) {
         window.scrollTo({ top: 0, behavior: 'smooth' });
     }, 400); 
 }
+
 window.editOrder = function(id) {
     const index = orders.findIndex(o => o.id === id);
     if (index === -1) return;
@@ -883,6 +868,7 @@ window.updateSettlement = async function(id, newVal) {
         } catch(e) { console.error(e); } finally { toggleLoader(false); }
     } else toggleLoader(false);
 }
+
 // --- HELPER LAINNYA ---
 function toggleLoader(show) {
     const loader = document.getElementById('global-loader');
@@ -957,6 +943,7 @@ function processFile(file, callback) {
     reader.readAsDataURL(file);
 }
 
+// --- REVISI: SETUP HISTORY UPLOADER (MENDUKUNG E-TIKET PULANG) ---
 function setupHistoryUploader() {
     const historyInput = document.getElementById('inpHistoryUpload');
     historyInput.addEventListener('change', function(e) {
@@ -970,15 +957,18 @@ function setupHistoryUploader() {
                 const fileName = `${currentUploadOrderId}_${currentUploadType}_${Date.now()}`;
                 const publicUrl = await uploadToSupabaseStorage(base64Data, fileName);
                 const updateData = {};
+                
                 if (currentUploadType === 'settlement') updateData.settlementProof = publicUrl;
-                else if (currentUploadType === 'kai_ticket') updateData.kaiTicketFile = publicUrl;
+                else if (currentUploadType === 'kai_ticket_depart') updateData.kaiTicketFile = publicUrl;
+                else if (currentUploadType === 'kai_ticket_return') updateData.kaiTicketFileReturn = publicUrl; // Kolom baru
 
                 await supabase.from('orders').update(updateData).eq('id', currentUploadOrderId);
                 
                 const idx = orders.findIndex(o => o.id === currentUploadOrderId);
                 if(idx !== -1) {
                      if (currentUploadType === 'settlement') orders[idx].settlementProof = publicUrl;
-                     else orders[idx].kaiTicketFile = publicUrl;
+                     else if (currentUploadType === 'kai_ticket_depart') orders[idx].kaiTicketFile = publicUrl;
+                     else if (currentUploadType === 'kai_ticket_return') orders[idx].kaiTicketFileReturn = publicUrl;
                      
                      const isDetailOpen = !document.getElementById('page-detail').classList.contains('hidden');
                      if(isDetailOpen) openDetailView(currentUploadOrderId);
@@ -1065,6 +1055,7 @@ window.printReceipt = function(orderId) {
     showToast("RENDER E-TIKET...");
     setTimeout(() => { captureAndShowModal('receipt-render-area'); }, 800);
 }
+
 // --- CORE: RENDER NOTA BERDASARKAN TAB AKTIF & DATA LENGKAP ---
 function renderReceiptToDOM(order) {
     const sectionDepart = document.getElementById('rec-ticket-depart');
@@ -1074,11 +1065,9 @@ function renderReceiptToDOM(order) {
     const priceDpEl = document.getElementById('rec-price-dp');
     const priceRemainingEl = document.getElementById('rec-price-remaining');
     
-    // Reset Visibility
     sectionDepart.classList.add('hidden');
     sectionReturn.classList.add('hidden');
 
-    // --- SHARED DATA (PENUMPANG) ---
     let paxList = Array.isArray(order.passengers) ? order.passengers : (order.name ? [{name: order.name, nik: order.nik || '-', type: 'adult'}] : []);
     const mainPaxName = paxList.length > 0 ? paxList[0].name : (order.contactName || 'PENUMPANG');
     
@@ -1101,7 +1090,6 @@ function renderReceiptToDOM(order) {
             }
         }
         
-        // UPDATE: Layout Tanggal Lahir pindah ke bawah, menggunakan stack rapi (Diperbesar)
         let dobDisplayReceipt = '';
         if (dobStr) {
             dobDisplayReceipt = `
@@ -1113,7 +1101,6 @@ function renderReceiptToDOM(order) {
             `;
         }
 
-        // UPDATE: NIK & Nama disusun menurun (flex-col) 100% rapi (Ukuran Font Diperbesar Signifikan)
         paxHtml += `
             <div class="flex flex-col bg-black/40 p-4 rounded-xl mb-3 border border-white/10 shadow-inner w-full">
                 <p class="text-[18px] font-black text-white uppercase break-words leading-tight tracking-widest flex items-center">${p.name} ${paxTypeLabel}</p>
@@ -1125,9 +1112,7 @@ function renderReceiptToDOM(order) {
 
     const address = order.address || '-';
 
-    // --- TAMPILKAN BERDASARKAN TAB YANG AKTIF ---
     if (currentDetailTab === 'return' && order.tripType === 'round_trip') {
-        // === NOTA PULANG ===
         sectionReturn.classList.remove('hidden');
         
         const retOrg = (order.returnOrigin || order.dest || 'ORG').toUpperCase();
@@ -1158,7 +1143,6 @@ function renderReceiptToDOM(order) {
         priceTotalEl.innerText = formatRupiah(returnTotal);
         priceDpEl.innerText = formatRupiah(returnDp);
         priceRemainingEl.innerText = formatRupiah(returnRemaining);
-        // Glow effect based on status (Size diperbesar di HTML, ini hanya logic class-nya)
         priceRemainingEl.className = returnRemaining <= 0 ? "text-[32px] font-black text-green-400 font-mono glow-text-white drop-shadow-[0_0_10px_rgba(74,222,128,0.5)]" : "text-[32px] font-black text-[#0ea5e9] font-mono glow-text-white drop-shadow-[0_0_10px_rgba(14,165,233,0.5)]";
 
         document.getElementById('rec-id').innerText = "#" + order.id.toString().slice(-6) + "-R";
@@ -1175,7 +1159,6 @@ function renderReceiptToDOM(order) {
         document.getElementById('rec-return-pax-list').innerHTML = paxHtml;
 
     } else {
-        // === NOTA PERGI ===
         sectionDepart.classList.remove('hidden');
 
         const origin = (order.origin || 'ORG').toUpperCase();
@@ -1206,7 +1189,6 @@ function renderReceiptToDOM(order) {
         priceTotalEl.innerText = formatRupiah(departTotal);
         priceDpEl.innerText = formatRupiah(departDp);
         priceRemainingEl.innerText = formatRupiah(departRemaining);
-        // Glow effect based on status (Size diperbesar di HTML, ini hanya logic class-nya)
         priceRemainingEl.className = departRemaining <= 0 ? "text-[32px] font-black text-green-400 font-mono glow-text-white drop-shadow-[0_0_10px_rgba(74,222,128,0.5)]" : "text-[32px] font-black text-davka-orange font-mono glow-text-orange";
 
         document.getElementById('rec-id').innerText = "#" + order.id.toString().slice(-6);
@@ -1223,6 +1205,7 @@ function renderReceiptToDOM(order) {
         document.getElementById('rec-pax-list').innerHTML = paxHtml;
     }
 }
+
 function captureAndShowModal(elementId) {
     const el = document.getElementById(elementId);
     html2canvas(el, { 
@@ -1242,6 +1225,7 @@ function captureAndShowModal(elementId) {
         alert("Gagal render gambar."); 
     });
 }
+
 function renderUploadBtnHTML(id, type, file, label) {
     if(file) {
         return `<div class="relative w-full h-full rounded-lg overflow-hidden border border-white/10 group cursor-pointer bg-black/40">
@@ -1333,6 +1317,7 @@ window.resetForm = function() {
     enableSmoothInputUX();
 }
 
+// --- REVISI UTAMA: LOGIKA DETAIL PENYEMBUNYIAN TAB DAN MULTIPLE UPLOAD E-TIKET ---
 window.openDetailView = function(orderId) {
     const order = orders.find(o => o.id === orderId);
     if (!order) return;
@@ -1373,12 +1358,18 @@ window.openDetailView = function(orderId) {
     document.getElementById('detail-img-transfer-depart').innerHTML = renderProof(order.transferScreenshot, "No TF Pergi");
     document.getElementById('detail-img-chat-depart').innerHTML = renderProof(order.chatScreenshot, "No Chat Pergi");
 
+    const btnReturnTab = document.getElementById('tab-btn-return');
     const returnBadge = document.getElementById('badge-return-active');
     const returnDataContainer = document.getElementById('data-return-exist');
     const returnEmptyContainer = document.getElementById('data-return-empty');
     const containerProofReturn = document.getElementById('container-proof-return');
+    const ticketGridContainer = document.getElementById('detail-ticket-container');
+    const uploadTicketDepart = document.getElementById('detail-upload-ticket-depart');
+    const uploadTicketReturn = document.getElementById('detail-upload-ticket-return');
 
     if (order.tripType === 'round_trip') {
+        // Tampilkan Tab Pulang jika Round Trip
+        btnReturnTab.classList.remove('hidden');
         returnBadge.classList.remove('hidden');
         returnDataContainer.classList.remove('hidden');
         returnEmptyContainer.classList.add('hidden');
@@ -1391,11 +1382,27 @@ window.openDetailView = function(orderId) {
         document.getElementById('detail-img-transfer-return').innerHTML = renderProof(order.transferScreenshotReturn, "No TF Pulang");
         document.getElementById('detail-img-chat-return').innerHTML = renderProof(order.chatScreenshotReturn, "No Chat Pulang");
 
+        // Format Grid: 2 Kolom untuk E-Tiket (Pergi & Pulang)
+        ticketGridContainer.className = "grid grid-cols-2 gap-3";
+        uploadTicketDepart.innerHTML = renderUploadBtnHTML(orderId, 'kai_ticket_depart', order.kaiTicketFile, 'E-Tiket Pergi');
+        
+        uploadTicketReturn.classList.remove('hidden');
+        uploadTicketReturn.innerHTML = renderUploadBtnHTML(orderId, 'kai_ticket_return', order.kaiTicketFileReturn, 'E-Tiket Pulang');
+
     } else {
+        // Sembunyikan Tab Pulang jika One Way
+        btnReturnTab.classList.add('hidden');
         returnBadge.classList.add('hidden');
         returnDataContainer.classList.add('hidden');
         returnEmptyContainer.classList.remove('hidden');
         containerProofReturn.classList.add('hidden');
+
+        // Format Grid: 1 Kolom Full Lebar untuk E-Tiket (Hanya Pergi)
+        ticketGridContainer.className = "grid grid-cols-1 gap-3";
+        uploadTicketDepart.innerHTML = renderUploadBtnHTML(orderId, 'kai_ticket_depart', order.kaiTicketFile, 'E-Tiket KAI');
+        
+        uploadTicketReturn.classList.add('hidden');
+        uploadTicketReturn.innerHTML = '';
     }
 
     let paxListHtml = '';
@@ -1441,7 +1448,6 @@ window.openDetailView = function(orderId) {
     selectEl.onchange = function() { updateSettlement(orderId, this.value); };
 
     document.getElementById('detail-upload-settlement').innerHTML = renderUploadBtnHTML(orderId, 'settlement', order.settlementProof, 'Bukti Lunas');
-    document.getElementById('detail-upload-ticket').innerHTML = renderUploadBtnHTML(orderId, 'kai_ticket', order.kaiTicketFile, 'E-Ticket KAI');
 
     document.getElementById('btn-action-status').onclick = function() { toggleStatus(orderId); };
     document.getElementById('btn-action-edit').onclick = function() { editOrder(orderId); };
@@ -1580,7 +1586,6 @@ window.renderOrderList = function(filterText = '') {
     });
 }
 
-// --- FUNGSI UPDATE PERHITUNGAN STATISTIK ---
 function renderStats() {
     let totalOmset = 0;
     let totalTiketTerjual = 0;

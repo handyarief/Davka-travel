@@ -320,6 +320,12 @@ window.updatePassengerForms = function() {
     const adultCount = parseInt(document.getElementById('inpPaxCount').value) || 1;
     const infantCount = parseInt(document.getElementById('inpInfantCount').value) || 0;
     
+    // UPDATE: Sinkronisasi Teks Indikator Penumpang Pulang
+    const returnAdultInd = document.getElementById('returnPaxAdultCount');
+    const returnInfantInd = document.getElementById('returnPaxInfantCount');
+    if (returnAdultInd) returnAdultInd.innerText = adultCount;
+    if (returnInfantInd) returnInfantInd.innerText = infantCount;
+    
     const containerDepart = document.getElementById('passengerFormsDepart');
     const containerReturn = document.getElementById('passengerFormsReturn'); 
     
@@ -518,7 +524,6 @@ async function fetchOrdersBg() {
         }
     }
 }
-
 // --- LOGIC UPLOAD & STORAGE ---
 async function uploadToSupabaseStorage(base64Data, fileName) {
     if (!base64Data || base64Data.startsWith('http')) return base64Data; 

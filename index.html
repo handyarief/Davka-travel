@@ -173,6 +173,8 @@
             </div>
             <form id="orderForm" class="space-y-5">
                 <input type="hidden" id="editIndex" value="-1">
+                
+                <!-- DATA PEMESAN -->
                 <div class="glass p-5 rounded-3xl space-y-4">
                     <div class="flex items-center gap-2 mb-2">
                         <div class="w-8 h-8 rounded-full bg-blue-500/20 flex items-center justify-center text-blue-400">
@@ -198,48 +200,8 @@
                         </div>
                     </div>
                 </div>
-                <div class="glass p-5 rounded-3xl space-y-4">
-                    <div class="flex flex-col gap-3 border-b border-white/5 pb-3">
-                        <div class="flex items-center gap-2">
-                            <div class="w-8 h-8 rounded-full bg-green-500/20 flex items-center justify-center text-green-400">
-                                <i class="fas fa-users text-xs"></i>
-                            </div>
-                            <h3 class="text-sm font-bold text-white">Penumpang</h3>
-                        </div>
-                        
-                        <div class="grid grid-cols-2 gap-3">
-                            <div class="bg-davka-bg rounded-xl px-3 py-2 border border-davka-border flex justify-between items-center relative overflow-hidden">
-                                <div class="absolute left-0 top-0 bottom-0 w-1 bg-davka-orange"></div>
-                                <span class="text-[10px] text-gray-400 uppercase font-bold pl-2">Dewasa</span>
-                                <select id="inpPaxCount" onchange="updatePassengerForms()" class="bg-transparent text-white text-sm font-bold text-right focus:outline-none w-12 cursor-pointer appearance-none z-10">
-                                    <option value="1">1</option>
-                                    <option value="2">2</option>
-                                    <option value="3">3</option>
-                                    <option value="4">4</option>
-                                    <option value="5">5</option>
-                                    <option value="6">6</option>
-                                    <option value="7">7</option>
-                                    <option value="8">8</option>
-                                </select>
-                                <i class="fas fa-chevron-down text-[8px] text-gray-500 absolute right-0 pointer-events-none"></i>
-                            </div>
-                            
-                            <div class="bg-davka-bg rounded-xl px-3 py-2 border border-davka-border flex justify-between items-center relative overflow-hidden">
-                                <div class="absolute left-0 top-0 bottom-0 w-1 bg-pink-500"></div>
-                                <span class="text-[10px] text-gray-400 uppercase font-bold pl-2">Bayi</span>
-                                <select id="inpInfantCount" onchange="updatePassengerForms()" class="bg-transparent text-white text-sm font-bold text-right focus:outline-none w-12 cursor-pointer appearance-none z-10">
-                                    <option value="0">0</option>
-                                    <option value="1">1</option>
-                                    <option value="2">2</option>
-                                    <option value="3">3</option>
-                                    <option value="4">4</option>
-                                </select>
-                                <i class="fas fa-chevron-down text-[8px] text-gray-500 absolute right-0 pointer-events-none"></i>
-                            </div>
-                        </div>
-                    </div>
-                    <div id="passengerForms" class="space-y-4"></div>
-                </div>
+
+                <!-- DETAIL PERJALANAN (DIPINDAHKAN KE SINI) -->
                 <div class="glass p-5 rounded-3xl space-y-4">
                     <div class="flex items-center gap-2 mb-2">
                         <div class="w-8 h-8 rounded-full bg-davka-orange/20 flex items-center justify-center text-davka-orange">
@@ -311,6 +273,51 @@
                         <input type="text" id="inpReturnTrain" class="w-full bg-davka-surface border border-davka-border rounded-lg p-2.5 text-xs text-white focus:border-blue-500 outline-none ml-2 w-[98%]" placeholder="Nama Kereta (Cth: Argo Lawu)" autocapitalize="characters">
                     </div>
                 </div>
+                <!-- PENUMPANG (DIPINDAHKAN KE BAWAH DETAIL PERJALANAN) -->
+                <div class="glass p-5 rounded-3xl space-y-4">
+                    <div class="flex flex-col gap-3 border-b border-white/5 pb-3">
+                        <div class="flex items-center gap-2">
+                            <div class="w-8 h-8 rounded-full bg-green-500/20 flex items-center justify-center text-green-400">
+                                <i class="fas fa-users text-xs"></i>
+                            </div>
+                            <h3 class="text-sm font-bold text-white">Penumpang</h3>
+                        </div>
+                        
+                        <div class="grid grid-cols-2 gap-3">
+                            <div class="bg-davka-bg rounded-xl px-3 py-2 border border-davka-border flex justify-between items-center relative overflow-hidden">
+                                <div class="absolute left-0 top-0 bottom-0 w-1 bg-davka-orange"></div>
+                                <span class="text-[10px] text-gray-400 uppercase font-bold pl-2">Dewasa</span>
+                                <select id="inpPaxCount" onchange="updatePassengerForms()" class="bg-transparent text-white text-sm font-bold text-right focus:outline-none w-12 cursor-pointer appearance-none z-10">
+                                    <option value="1">1</option>
+                                    <option value="2">2</option>
+                                    <option value="3">3</option>
+                                    <option value="4">4</option>
+                                    <option value="5">5</option>
+                                    <option value="6">6</option>
+                                    <option value="7">7</option>
+                                    <option value="8">8</option>
+                                </select>
+                                <i class="fas fa-chevron-down text-[8px] text-gray-500 absolute right-0 pointer-events-none"></i>
+                            </div>
+                            
+                            <div class="bg-davka-bg rounded-xl px-3 py-2 border border-davka-border flex justify-between items-center relative overflow-hidden">
+                                <div class="absolute left-0 top-0 bottom-0 w-1 bg-pink-500"></div>
+                                <span class="text-[10px] text-gray-400 uppercase font-bold pl-2">Bayi</span>
+                                <select id="inpInfantCount" onchange="updatePassengerForms()" class="bg-transparent text-white text-sm font-bold text-right focus:outline-none w-12 cursor-pointer appearance-none z-10">
+                                    <option value="0">0</option>
+                                    <option value="1">1</option>
+                                    <option value="2">2</option>
+                                    <option value="3">3</option>
+                                    <option value="4">4</option>
+                                </select>
+                                <i class="fas fa-chevron-down text-[8px] text-gray-500 absolute right-0 pointer-events-none"></i>
+                            </div>
+                        </div>
+                    </div>
+                    <div id="passengerForms" class="space-y-4"></div>
+                </div>
+
+                <!-- UPLOAD BUKTI -->
                 <div class="glass p-5 rounded-3xl space-y-4">
                     <div class="flex items-center gap-2 mb-2">
                         <div class="w-8 h-8 rounded-full bg-purple-500/20 flex items-center justify-center text-purple-400">
@@ -439,6 +446,7 @@
                         </div>
                     </div>
                 </div>
+                
                 <div class="glass p-5 rounded-3xl space-y-4 border-t-4 border-davka-orange">
                     <h3 class="text-sm font-bold text-davka-orange uppercase tracking-widest text-center">Rincian Pembayaran</h3>
                     
@@ -525,6 +533,7 @@
                 </div>
             </form>
         </section>
+        
         <section id="page-list" class="hidden fade-in space-y-4">
             <div class="pt-16 pb-2">
                 <div class="mb-4">
@@ -623,7 +632,7 @@
                             </div>
                         </div>
                         
-                        <!-- REVISI: E-TIKET PERGI DIPINDAHKAN KE DALAM TAB PERGI -->
+                        <!-- E-TIKET PERGI -->
                         <div id="detail-upload-ticket-depart" class="h-32"></div>
                     </div>
 
@@ -660,7 +669,7 @@
                             </div>
                         </div>
 
-                        <!-- REVISI: E-TIKET PULANG DIPINDAHKAN KE DALAM TAB PULANG -->
+                        <!-- E-TIKET PULANG -->
                         <div id="detail-upload-ticket-return" class="h-32"></div>
                     </div>
                 </div>
@@ -693,10 +702,8 @@
                         </select>
                      </div>
 
-                     <!-- REVISI: Kontainer Bukti Lunas -->
                      <div class="space-y-3 mb-4">
                         <div id="detail-upload-settlement" class="h-24"></div> 
-                        <!-- Grid container lama untuk tiket dikosongkan/disembunyikan karena tiket sudah pindah ke tab -->
                         <div id="detail-ticket-container" class="hidden"></div>
                      </div>
 

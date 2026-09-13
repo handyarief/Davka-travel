@@ -101,7 +101,7 @@ function initializeAppLogic() {
     // UX ENHANCEMENT: Inisialisasi Smooth Scroll & Enter Key
     enableSmoothInputUX();
     
-    // UX ENHANCEMENT: Hide menu saat keyboard muncul
+    // UX ENHANCEMENT: Hide menu saat keyboard muncul (Revisi Anti-Halusinasi)
     setupKeyboardListener();
 }
 
@@ -109,14 +109,35 @@ function setupKeyboardListener() {
     const nav = document.querySelector('nav');
     if (!nav) return;
     
+    // METODE 1: Deteksi dinamis form focus (Solusi teraman untuk Android & iOS)
+    document.addEventListener('focusin', (e) => {
+        const targetTag = e.target.tagName ? e.target.tagName.toLowerCase() : '';
+        if (targetTag === 'input' || targetTag === 'select' || targetTag === 'textarea') {
+            nav.classList.add('nav-hidden-keyboard');
+        }
+    });
+
+    document.addEventListener('focusout', (e) => {
+        // Jeda waktu untuk mencegah nav berkedip jika user hanya berpindah dari input 1 ke input 2
+        setTimeout(() => {
+            const activeTag = document.activeElement && document.activeElement.tagName ? document.activeElement.tagName.toLowerCase() : '';
+            if (activeTag !== 'input' && activeTag !== 'select' && activeTag !== 'textarea') {
+                nav.classList.remove('nav-hidden-keyboard');
+            }
+        }, 100);
+    });
+
+    // METODE 2: Fallback Event Resize untuk browser tertentu
     const initialHeight = window.innerHeight;
-    
     window.addEventListener('resize', () => {
-        // Jika tinggi window menyusut drastis (> 150px), asumsikan keyboard muncul
         if (window.innerHeight < initialHeight - 150) {
-            nav.style.display = 'none';
+            nav.classList.add('nav-hidden-keyboard');
         } else {
-            nav.style.display = ''; // Kembalikan ke style bawaan
+            // Pastikan tidak ada input yang tertinggal fokusnya
+            const activeTag = document.activeElement && document.activeElement.tagName ? document.activeElement.tagName.toLowerCase() : '';
+            if (activeTag !== 'input' && activeTag !== 'select' && activeTag !== 'textarea') {
+                nav.classList.remove('nav-hidden-keyboard');
+            }
         }
     });
 }
@@ -292,7 +313,6 @@ window.switchUploadTab = function(tabName) {
         containerReturn.classList.remove('hidden');
     }
 }
-
 // --- UX ENGINE: SMOOTH SCROLL & ENTER KEY NAVIGATION ---
 function enableSmoothInputUX() {
     const formElements = document.querySelectorAll('input, select, textarea');

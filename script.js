@@ -11,17 +11,15 @@ let currentUploadOrderId = null;
 let currentUploadType = null;   
 let loaderTimeout = null; 
 let activeUploadZone = null;
-let currentDetailOrder = null; // Menyimpan order yang sedang dibuka detailnya
-let currentDetailTab = 'depart'; // Melacak tab aktif (depart/return) untuk logika Nota
+let currentDetailOrder = null; 
+let currentDetailTab = 'depart'; 
 
 // --- INIT SYSTEM ---
 document.addEventListener('DOMContentLoaded', async () => {
-    // Logic Video Intro & Loading Bar
     const splash = document.getElementById('splash-screen');
     const video = document.getElementById('intro-video');
     const skipBtn = document.getElementById('btn-skip-intro');
     
-    // Langsung jalankan init logic di background
     initializeAppLogic();
 
     const enterApp = () => {
@@ -31,7 +29,6 @@ document.addEventListener('DOMContentLoaded', async () => {
         }
     };
 
-    // LOGIC: Jalankan loading bar 4 detik setelah video selesai
     const startLoaderSequence = () => {
         const loaderWrapper = document.getElementById('post-video-loader');
         const loaderFill = document.getElementById('post-video-fill');
@@ -41,13 +38,8 @@ document.addEventListener('DOMContentLoaded', async () => {
             loaderWrapper.style.opacity = '1';
             if(videoOverlay) videoOverlay.style.opacity = '1';
 
-            setTimeout(() => {
-                loaderFill.style.width = '100%';
-            }, 100);
-
-            setTimeout(() => {
-                enterApp();
-            }, 4100); 
+            setTimeout(() => { loaderFill.style.width = '100%'; }, 100);
+            setTimeout(() => { enterApp(); }, 4100); 
         } else {
             enterApp();
         }
@@ -55,12 +47,8 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     if (video) {
         setTimeout(() => { if(skipBtn) skipBtn.classList.remove('hidden'); }, 1000);
-        
         video.addEventListener('ended', startLoaderSequence);
-        
-        setTimeout(() => {
-            if(document.getElementById('splash-screen')) enterApp();
-        }, 15000); 
+        setTimeout(() => { if(document.getElementById('splash-screen')) enterApp(); }, 15000); 
     } else {
         enterApp();
     }
@@ -74,9 +62,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     }
 
     document.addEventListener('click', (e) => {
-        if (!e.target.closest('.upload-zone-base')) {
-            resetUploadZones();
-        }
+        if (!e.target.closest('.upload-zone-base')) resetUploadZones();
     });
 });
 
@@ -88,20 +74,13 @@ function initializeAppLogic() {
     
     updatePassengerForms(); 
     
-    // Setup Uploader Asli (Pergi)
     setupImageUploader('inpFileTransfer', 'inpTransferData', 'imgTransfer', 'previewTransfer');
     setupImageUploader('inpFileChat', 'inpChatData', 'imgChat', 'previewChat');
-    
-    // Setup Uploader Baru (Pulang)
     setupImageUploader('inpFileTransferReturn', 'inpTransferDataReturn', 'imgTransferReturn', 'previewTransferReturn');
     setupImageUploader('inpFileChatReturn', 'inpChatDataReturn', 'imgChatReturn', 'previewChatReturn');
 
     setupHistoryUploader();
-    
-    // UX ENHANCEMENT: Inisialisasi Smooth Scroll & Enter Key
     enableSmoothInputUX();
-    
-    // UX ENHANCEMENT: Hide menu saat keyboard muncul
     setupKeyboardListener();
 }
 
@@ -230,10 +209,7 @@ function renderDetailFinancials(mode) {
     }
 
     remaining = price - dp;
-
-    if (order.status === 'success') {
-        remaining = 0;
-    }
+    if (order.status === 'success') remaining = 0;
 
     const html = `
     <div class="bg-davka-bg border ${themeBorder} rounded-xl p-3 mb-2 animate-scale-up">
@@ -309,18 +285,12 @@ function enableSmoothInputUX() {
 }
 function handleInputFocus(e) {
     setTimeout(() => {
-        e.target.scrollIntoView({ 
-            behavior: 'smooth', 
-            block: 'center', 
-            inline: 'nearest' 
-        });
+        e.target.scrollIntoView({ behavior: 'smooth', block: 'center', inline: 'nearest' });
     }, 300);
 }
-
 function handleInputEnter(e, currentIndex, allElements) {
     if (e.key === 'Enter') {
         e.preventDefault(); 
-        
         let nextIndex = currentIndex + 1;
         while (nextIndex < allElements.length) {
             const nextEl = allElements[nextIndex];
@@ -330,102 +300,144 @@ function handleInputEnter(e, currentIndex, allElements) {
             }
             nextIndex++;
         }
-        
-        if (nextIndex >= allElements.length) {
-            e.target.blur();
-        }
+        if (nextIndex >= allElements.length) e.target.blur();
     }
 }
-// --- LOGIC PENUMPANG (DEWASA & BAYI) ---
+
+// --- NEW REVISION: TAB PENUMPANG SAMA / BEDA ---
+window.togglePaxSame = function() {
+    const isSame = document.getElementById('inpPaxSame').checked;
+    const returnWrapper = document.getElementById('passengerFormsReturnWrapper');
+    if (isSame) {
+        returnWrapper.classList.add('hidden');
+    } else {
+        returnWrapper.classList.remove('hidden');
+    }
+    updatePassengerForms();
+}
+
 window.updatePassengerForms = function() {
     const adultCount = parseInt(document.getElementById('inpPaxCount').value) || 1;
     const infantCount = parseInt(document.getElementById('inpInfantCount').value) || 0;
-    const container = document.getElementById('passengerForms'); 
     
-    const existingItems = document.querySelectorAll('.passenger-item');
-    let storedAdults = [];
-    let storedInfants = [];
+    const containerDepart = document.getElementById('passengerFormsDepart');
+    const containerReturn = document.getElementById('passengerFormsReturn'); 
+    
+    const isPP = document.getElementById('inpTripType').value === 'round_trip';
+    const isSame = document.getElementById('inpPaxSame').checked;
 
-    existingItems.forEach(el => {
-        const type = el.getAttribute('data-type');
-        const name = el.querySelector('.pax-name').value;
-        const nik = el.querySelector('.pax-nik').value;
-        const dobInput = el.querySelector('.pax-dob');
-        const dob = dobInput ? dobInput.value : '';
+    const extractStored = (containerId) => {
+        let storedAdults = [];
+        let storedInfants = [];
+        document.querySelectorAll(`#${containerId} .passenger-item`).forEach(el => {
+            const type = el.getAttribute('data-type');
+            const name = el.querySelector('.pax-name').value;
+            const nik = el.querySelector('.pax-nik').value;
+            const dobInput = el.querySelector('.pax-dob');
+            const dob = dobInput ? dobInput.value : '';
+            if(type === 'infant') storedInfants.push({name, nik, dob});
+            else storedAdults.push({name, nik, dob});
+        });
+        return { storedAdults, storedInfants };
+    };
 
-        if(type === 'infant') {
-            storedInfants.push({name, nik, dob});
-        } else {
-            storedAdults.push({name, nik, dob});
+    const buildHtml = (storedAdults, storedInfants, directionStr) => {
+        let html = '';
+        const themeColorClass = directionStr === 'depart' ? 'davka-orange' : 'blue-500';
+        const bgThemeClass = directionStr === 'depart' ? 'bg-white/5' : 'bg-blue-500/5';
+        const borderThemeClass = directionStr === 'depart' ? 'border-white/10 hover:border-davka-orange/50' : 'border-blue-500/30 hover:border-blue-500/50';
+
+        for(let i = 1; i <= adultCount; i++) {
+            const valName = storedAdults[i-1] ? storedAdults[i-1].name : '';
+            const valNik = storedAdults[i-1] ? storedAdults[i-1].nik : '';
+            const valDob = storedAdults[i-1] ? storedAdults[i-1].dob : ''; 
+            
+            html += `
+            <div class="passenger-item border ${borderThemeClass} rounded-xl p-3 ${bgThemeClass} relative group transition-colors" data-type="adult" data-direction="${directionStr}">
+                <div class="absolute -left-1 top-3 w-1 h-6 bg-${themeColorClass} rounded-r"></div>
+                <p class="text-[10px] font-bold text-${themeColorClass} mb-2 uppercase tracking-wider pl-2">
+                    <i class="fas fa-user mr-1"></i> Dewasa ${i} ${directionStr === 'return' ? '(Pulang)' : ''}
+                </p>
+                <div class="space-y-2 pl-2">
+                    <input type="text" value="${valName}" class="pax-name w-full bg-davka-bg border border-davka-border rounded-lg p-2 text-sm text-white focus:border-${themeColorClass} focus:outline-none placeholder-gray-600" placeholder="Nama Lengkap (Sesuai KTP)" autocapitalize="characters">
+                    <div class="grid grid-cols-2 gap-2">
+                        <input type="number" value="${valNik}" class="pax-nik w-full bg-davka-bg border border-davka-border rounded-lg p-2 text-sm text-white focus:border-${themeColorClass} focus:outline-none placeholder-gray-600" placeholder="NIK / Paspor">
+                        <input type="text" onfocus="(this.type='date')" onblur="(this.type='text')" value="${valDob}" class="pax-dob w-full bg-davka-bg border border-davka-border rounded-lg p-2 text-sm text-white focus:border-${themeColorClass} focus:outline-none placeholder-gray-600" placeholder="Tanggal Lahir">
+                    </div>
+                </div>
+            </div>`;
         }
-    });
 
-    let html = '';
-
-    for(let i = 1; i <= adultCount; i++) {
-        const valName = storedAdults[i-1] ? storedAdults[i-1].name : '';
-        const valNik = storedAdults[i-1] ? storedAdults[i-1].nik : '';
-        const valDob = storedAdults[i-1] ? storedAdults[i-1].dob : ''; 
-        
-        html += `
-        <div class="passenger-item border border-white/10 rounded-xl p-3 bg-white/5 relative group hover:border-davka-orange/50 transition-colors" data-type="adult">
-            <div class="absolute -left-1 top-3 w-1 h-6 bg-davka-orange rounded-r"></div>
-            <p class="text-[10px] font-bold text-davka-orange mb-2 uppercase tracking-wider pl-2">
-                <i class="fas fa-user mr-1"></i> Dewasa ${i}
-            </p>
-            <div class="space-y-2 pl-2">
-                <input type="text" value="${valName}" class="pax-name w-full bg-davka-bg border border-davka-border rounded-lg p-2 text-sm text-white focus:border-davka-orange focus:outline-none placeholder-gray-600" placeholder="Nama Lengkap (Sesuai KTP)" autocapitalize="characters">
-                <div class="grid grid-cols-2 gap-2">
-                    <input type="number" value="${valNik}" class="pax-nik w-full bg-davka-bg border border-davka-border rounded-lg p-2 text-sm text-white focus:border-davka-orange focus:outline-none placeholder-gray-600" placeholder="NIK / Paspor">
-                    <input type="text" onfocus="(this.type='date')" onblur="(this.type='text')" value="${valDob}" class="pax-dob w-full bg-davka-bg border border-davka-border rounded-lg p-2 text-sm text-white focus:border-davka-orange focus:outline-none placeholder-gray-600" placeholder="Tanggal Lahir">
+        for(let i = 1; i <= infantCount; i++) {
+            const valName = storedInfants[i-1] ? storedInfants[i-1].name : '';
+            const valNik = storedInfants[i-1] ? storedInfants[i-1].nik : '';
+            const valDob = storedInfants[i-1] ? storedInfants[i-1].dob : ''; 
+            
+            html += `
+            <div class="passenger-item border border-pink-500/30 rounded-xl p-3 bg-pink-500/5 relative group hover:border-pink-500 transition-colors" data-type="infant" data-direction="${directionStr}">
+                <div class="absolute -left-1 top-3 w-1 h-6 bg-pink-500 rounded-r"></div>
+                <p class="text-[10px] font-bold text-pink-400 mb-2 uppercase tracking-wider pl-2">
+                    <i class="fas fa-baby mr-1"></i> Bayi ${i} ${directionStr === 'return' ? '(Pulang)' : ''}
+                </p>
+                <div class="space-y-2 pl-2">
+                    <input type="text" value="${valName}" class="pax-name w-full bg-davka-bg border border-davka-border rounded-lg p-2 text-sm text-white focus:border-pink-500 focus:outline-none placeholder-gray-600" placeholder="Nama Bayi" autocapitalize="characters">
+                    <div class="grid grid-cols-2 gap-2">
+                        <input type="number" value="${valNik}" class="pax-nik w-full bg-davka-bg border border-davka-border rounded-lg p-2 text-sm text-white focus:border-pink-500 focus:outline-none placeholder-gray-600" placeholder="NIK / KIA">
+                        <input type="text" onfocus="(this.type='date')" onblur="(this.type='text')" value="${valDob}" class="pax-dob w-full bg-davka-bg border border-davka-border rounded-lg p-2 text-sm text-white focus:border-pink-500 focus:outline-none placeholder-gray-600" placeholder="Tanggal Lahir">
+                    </div>
                 </div>
-            </div>
-        </div>`;
+            </div>`;
+        }
+        return html;
+    };
+
+    // Render Depart Forms
+    const departData = extractStored('passengerFormsDepart');
+    containerDepart.innerHTML = buildHtml(departData.storedAdults, departData.storedInfants, 'depart');
+
+    // Render Return Forms
+    if(isPP && !isSame) {
+        const returnData = extractStored('passengerFormsReturn');
+        containerReturn.innerHTML = buildHtml(returnData.storedAdults, returnData.storedInfants, 'return');
+    } else {
+        containerReturn.innerHTML = '';
     }
 
-    for(let i = 1; i <= infantCount; i++) {
-        const valName = storedInfants[i-1] ? storedInfants[i-1].name : '';
-        const valNik = storedInfants[i-1] ? storedInfants[i-1].nik : '';
-        const valDob = storedInfants[i-1] ? storedInfants[i-1].dob : ''; 
-        
-        html += `
-        <div class="passenger-item border border-pink-500/30 rounded-xl p-3 bg-pink-500/5 relative group hover:border-pink-500 transition-colors" data-type="infant">
-            <div class="absolute -left-1 top-3 w-1 h-6 bg-pink-500 rounded-r"></div>
-            <p class="text-[10px] font-bold text-pink-400 mb-2 uppercase tracking-wider pl-2">
-                <i class="fas fa-baby mr-1"></i> Bayi ${i}
-            </p>
-            <div class="space-y-2 pl-2">
-                <input type="text" value="${valName}" class="pax-name w-full bg-davka-bg border border-davka-border rounded-lg p-2 text-sm text-white focus:border-pink-500 focus:outline-none placeholder-gray-600" placeholder="Nama Bayi" autocapitalize="characters">
-                <div class="grid grid-cols-2 gap-2">
-                    <input type="number" value="${valNik}" class="pax-nik w-full bg-davka-bg border border-davka-border rounded-lg p-2 text-sm text-white focus:border-pink-500 focus:outline-none placeholder-gray-600" placeholder="NIK / KIA">
-                    <input type="text" onfocus="(this.type='date')" onblur="(this.type='text')" value="${valDob}" class="pax-dob w-full bg-davka-bg border border-davka-border rounded-lg p-2 text-sm text-white focus:border-pink-500 focus:outline-none placeholder-gray-600" placeholder="Tanggal Lahir">
-                </div>
-            </div>
-        </div>`;
-    }
-
-    container.innerHTML = html;
     calcTotalFromPax();
     setTimeout(enableSmoothInputUX, 100);
 }
 
 window.getPassengersFromForm = function() {
-    const items = document.querySelectorAll('.passenger-item');
     let paxList = [];
+    const isPP = document.getElementById('inpTripType').value === 'round_trip';
+    const isSame = document.getElementById('inpPaxSame').checked;
     
-    items.forEach(el => {
+    const extract = (el, direction) => {
         const nameInput = el.querySelector('.pax-name');
         const nikInput = el.querySelector('.pax-nik');
         const dobInput = el.querySelector('.pax-dob'); 
         const type = el.getAttribute('data-type'); 
         
-        paxList.push({
+        return {
             name: nameInput.value.toUpperCase() || (type === 'infant' ? 'BAYI' : 'PENUMPANG'),
             nik: nikInput.value || '-',
             dob: dobInput ? dobInput.value : '', 
-            type: type 
-        });
-    });
+            type: type,
+            direction: direction
+        };
+    };
+
+    const departItems = document.querySelectorAll('#passengerFormsDepart .passenger-item');
+    departItems.forEach(el => paxList.push(extract(el, 'depart')));
+    
+    if (isPP) {
+        if (isSame) {
+            departItems.forEach(el => paxList.push(extract(el, 'return')));
+        } else {
+            const returnItems = document.querySelectorAll('#passengerFormsReturn .passenger-item');
+            returnItems.forEach(el => paxList.push(extract(el, 'return')));
+        }
+    }
     
     return paxList;
 }
@@ -435,19 +447,14 @@ window.calcTotalFromPax = function() {
     const adultCount = parseInt(document.getElementById('inpPaxCount').value) || 1;
 
     const pricePerPax = parseFloat(document.getElementById('inpPricePerPax').value) || 0;
-    if (pricePerPax > 0) {
-        document.getElementById('inpPrice').value = pricePerPax * adultCount;
-    }
+    if (pricePerPax > 0) document.getElementById('inpPrice').value = pricePerPax * adultCount;
 
     const returnPricePerPax = parseFloat(document.getElementById('inpReturnPricePerPax').value) || 0;
-    if (returnPricePerPax > 0) {
-        document.getElementById('inpReturnPrice').value = returnPricePerPax * adultCount;
-    }
+    if (returnPricePerPax > 0) document.getElementById('inpReturnPrice').value = returnPricePerPax * adultCount;
 
     calcRemaining(); 
 }
 
-// --- CALCULATE REMAINING SEPARATED (PERGI & PULANG) ---
 window.calcRemaining = function() {
     const priceDepart = parseFloat(document.getElementById('inpPrice').value) || 0;
     const dpDepart = parseFloat(document.getElementById('inpFeeDepart').value) || 0;
@@ -464,12 +471,13 @@ window.calcRemaining = function() {
     const remainingReturn = priceReturn - dpReturn;
 
     const fieldReturn = document.getElementById('inpRemainingReturn');
-    fieldReturn.value = formatRupiah(remainingReturn);
-    fieldReturn.className = remainingReturn <= 0 
-        ? "bg-transparent text-right text-green-500 font-black text-lg outline-none w-40 cursor-default" 
-        : "bg-transparent text-right text-red-500 font-black text-lg outline-none w-40 cursor-default";
+    if(fieldReturn) {
+        fieldReturn.value = formatRupiah(remainingReturn);
+        fieldReturn.className = remainingReturn <= 0 
+            ? "bg-transparent text-right text-green-500 font-black text-lg outline-none w-40 cursor-default" 
+            : "bg-transparent text-right text-red-500 font-black text-lg outline-none w-40 cursor-default";
+    }
 }
-
 // --- FETCH & REALTIME ---
 async function fetchOrders() {
     const { data, error } = await supabase
@@ -482,7 +490,6 @@ async function fetchOrders() {
         console.error("Error fetching:", error);
         return;
     }
-
     orders = data || [];
     renderStats();
     
@@ -495,22 +502,16 @@ function setupRealtime() {
     supabase.channel('public:orders')
         .on('postgres_changes', { event: '*', schema: 'public', table: 'orders' }, (payload) => {
             fetchOrdersBg(); 
-        })
-        .subscribe();
+        }).subscribe();
 }
 
 async function fetchOrdersBg() {
-    const { data } = await supabase.from('orders')
-        .select('*')
-        .order('created_at', { ascending: true }) 
-        .limit(50);
-        
+    const { data } = await supabase.from('orders').select('*').order('created_at', { ascending: true }).limit(50);
     if(data) {
         orders = data;
         renderStats();
-        if (document.getElementById('searchInput').value === '') {
-             renderOrderList('');
-        }
+        if (document.getElementById('searchInput').value === '') renderOrderList('');
+        
         if(currentDetailOrder && !document.getElementById('page-detail').classList.contains('hidden')) {
             const updatedOrder = orders.find(o => o.id === currentDetailOrder.id);
             if(updatedOrder) openDetailView(updatedOrder.id);
@@ -521,29 +522,22 @@ async function fetchOrdersBg() {
 // --- LOGIC UPLOAD & STORAGE ---
 async function uploadToSupabaseStorage(base64Data, fileName) {
     if (!base64Data || base64Data.startsWith('http')) return base64Data; 
-
     try {
         const res = await fetch(base64Data);
         const blob = await res.blob();
         const cleanFileName = fileName.replace(/[^a-zA-Z0-9]/g, '_'); 
         const filePath = `uploads/${cleanFileName}.jpg`;
 
-        const { data, error } = await supabase.storage
-            .from('davka-files')
-            .upload(filePath, blob, { contentType: 'image/jpeg', upsert: true });
-
+        const { data, error } = await supabase.storage.from('davka-files').upload(filePath, blob, { contentType: 'image/jpeg', upsert: true });
         if (error) throw error;
-
-        const { data: publicData } = supabase.storage
-            .from('davka-files')
-            .getPublicUrl(filePath);
-
+        const { data: publicData } = supabase.storage.from('davka-files').getPublicUrl(filePath);
         return publicData.publicUrl;
     } catch (err) {
         console.error("Upload Error:", err);
         return null; 
     }
 }
+
 // --- FORM HANDLING (SAVE & UPDATE) ---
 const orderForm = document.getElementById('orderForm');
 
@@ -587,8 +581,6 @@ orderForm.addEventListener('submit', async (e) => {
 
         const passengerData = getPassengersFromForm();
         const tripType = document.getElementById('inpTripType').value;
-
-        // SANITASI TANGGAL
         const getValidDate = (val) => val ? val : null;
 
         const newOrder = {
@@ -623,16 +615,13 @@ orderForm.addEventListener('submit', async (e) => {
             
             returnPrice: parseFloat(document.getElementById('inpReturnPrice').value) || 0,
             feeReturn: parseFloat(document.getElementById('inpFeeReturn').value) || 0,
-
             fee: (parseFloat(document.getElementById('inpFeeDepart').value) || 0) + (parseFloat(document.getElementById('inpFeeReturn').value) || 0),
             
             settlementMethod: existingOrder ? (existingOrder.settlementMethod || '-') : '-',
-            
             transferScreenshot: transferUrl, 
             chatScreenshot: chatUrl,
             transferScreenshotReturn: transferReturnUrl,
             chatScreenshotReturn: chatReturnUrl,
-
             settlementProof: existingOrder ? existingOrder.settlementProof : null,
             kaiTicketFile: existingOrder ? existingOrder.kaiTicketFile : null,
             kaiTicketFileReturn: existingOrder ? existingOrder.kaiTicketFileReturn : null,
@@ -644,26 +633,17 @@ orderForm.addEventListener('submit', async (e) => {
             : await supabase.from('orders').insert([newOrder]);
 
         if(error) throw error;
-
-        if (existingOrder) {
-            orders[editIndex] = newOrder;
-        } else {
-            orders.push(newOrder); 
-        }
+        existingOrder ? (orders[editIndex] = newOrder) : orders.push(newOrder); 
         
         renderStats();
         document.getElementById('searchInput').value = ''; 
         renderOrderList(''); 
-        
         showToast("Data Tersimpan!");
         resetForm();
-
     } catch (err) {
         console.error("Save Failed:", err);
-        alert(`Gagal simpan ke server: ${err.message || "Cek koneksi internet Anda"}. Data belum dihapus dari form.`);
-    } finally {
-        toggleLoader(false); 
-    }
+        alert(`Gagal simpan: ${err.message || "Cek koneksi internet"}`);
+    } finally { toggleLoader(false); }
 });
 
 window.deleteOrder = async function(id) {
@@ -671,9 +651,7 @@ window.deleteOrder = async function(id) {
         toggleLoader(true);
         orders = orders.filter(o => o.id !== id);
         
-        const isDetailOpen = !document.getElementById('page-detail').classList.contains('hidden');
-        if(isDetailOpen) closeDetailView();
-        
+        if(!document.getElementById('page-detail').classList.contains('hidden')) closeDetailView();
         renderOrderList(document.getElementById('searchInput').value);
         renderStats();
         showToast("Dihapus dari layar...");
@@ -681,35 +659,25 @@ window.deleteOrder = async function(id) {
         try {
             await supabase.from('orders').delete().eq('id', id);
             showToast("Terhapus dari server.");
-        } catch (err) {
-            console.error(err);
-            alert("Gagal hapus server.");
-        } finally {
-            toggleLoader(false);
-        }
+        } catch (err) { alert("Gagal hapus server."); } 
+        finally { toggleLoader(false); }
     }
 }
+
 window.toggleStatus = async function(id) {
     const index = orders.findIndex(o => o.id === id);
     if(index === -1) return;
 
     const current = orders[index].status;
     const next = current === 'pending' ? 'success' : (current === 'success' ? 'cancel' : 'pending');
-    
     orders[index].status = next;
     
     renderOrderList(document.getElementById('searchInput').value);
-    
-    const isDetailOpen = !document.getElementById('page-detail').classList.contains('hidden');
-    if(isDetailOpen) openDetailView(id);
-
+    if(!document.getElementById('page-detail').classList.contains('hidden')) openDetailView(id);
     renderStats();
 
-    try {
-        await supabase.from('orders').update({ status: next }).eq('id', id);
-    } catch(e) {
-        console.error(e);
-    }
+    try { await supabase.from('orders').update({ status: next }).eq('id', id); } 
+    catch(e) { console.error(e); }
 }
 
 window.navTo = function(pageId) {
@@ -717,9 +685,7 @@ window.navTo = function(pageId) {
     currentPages.forEach(page => { page.classList.add('fade-out'); page.classList.remove('fade-in'); });
 
     setTimeout(() => {
-        document.querySelectorAll('main > section').forEach(el => {
-            el.classList.add('hidden'); el.classList.remove('fade-out');
-        });
+        document.querySelectorAll('main > section').forEach(el => { el.classList.add('hidden'); el.classList.remove('fade-out'); });
         const target = document.getElementById(`page-${pageId}`);
         target.classList.remove('hidden'); target.classList.add('fade-in');
 
@@ -744,44 +710,59 @@ window.editOrder = function(id) {
     document.getElementById('inpContactPhone').value = data.contactPhone || data.phone || '';
     document.getElementById('inpAddress').value = data.address || '';
     
-    let paxList = [];
-    if (Array.isArray(data.passengers)) {
-        paxList = data.passengers;
-    } else if (data.name) {
-        paxList = [{name: data.name, nik: data.nik || '-', dob: '', type: 'adult'}];
-    }
+    let paxList = Array.isArray(data.passengers) ? data.passengers : (data.name ? [{name: data.name, nik: data.nik || '-', dob: '', type: 'adult'}] : []);
     
-    const adults = paxList.filter(p => !p.type || p.type === 'adult'); 
-    const infants = paxList.filter(p => p.type === 'infant');
+    let departPax = paxList.filter(p => !p.direction || p.direction === 'depart');
+    let returnPax = paxList.filter(p => p.direction === 'return');
+    
+    const isPP = data.tripType === 'round_trip';
+    let isSame = true;
+    
+    // Check if return differs from depart
+    if(isPP && returnPax.length > 0) {
+        if(departPax.length !== returnPax.length) { isSame = false; }
+        else {
+            for(let i=0; i<departPax.length; i++) {
+                if(departPax[i].name !== returnPax[i].name || departPax[i].nik !== returnPax[i].nik) {
+                    isSame = false; break;
+                }
+            }
+        }
+    }
+    document.getElementById('inpPaxSame').checked = isSame;
+
+    const adults = departPax.filter(p => !p.type || p.type === 'adult'); 
+    const infants = departPax.filter(p => p.type === 'infant');
 
     document.getElementById('inpPaxCount').value = adults.length || 1;
     document.getElementById('inpInfantCount').value = infants.length || 0;
     
-    updatePassengerForms(); 
+    document.getElementById('inpTripType').value = data.tripType || 'one_way';
+    toggleTripType();
     
+    // Force DOM update to render both containers before populating
     setTimeout(() => {
-        const itemWrappers = document.querySelectorAll('.passenger-item');
-        let adultIdx = 0;
-        let infantIdx = 0;
+        const populateContainer = (containerId, sourceArr, isAdult) => {
+            let idx = 0;
+            document.querySelectorAll(`#${containerId} .passenger-item[data-type="${isAdult ? 'adult' : 'infant'}"]`).forEach(el => {
+                if(sourceArr[idx]) {
+                    el.querySelector('.pax-name').value = sourceArr[idx].name;
+                    el.querySelector('.pax-nik').value = sourceArr[idx].nik;
+                    if(el.querySelector('.pax-dob')) el.querySelector('.pax-dob').value = sourceArr[idx].dob || '';
+                    idx++;
+                }
+            });
+        };
 
-        itemWrappers.forEach(el => {
-            const type = el.getAttribute('data-type');
-            const nameInput = el.querySelector('.pax-name');
-            const nikInput = el.querySelector('.pax-nik');
-            const dobInput = el.querySelector('.pax-dob');
+        populateContainer('passengerFormsDepart', adults, true);
+        populateContainer('passengerFormsDepart', infants, false);
 
-            if (type === 'adult' && adults[adultIdx]) {
-                nameInput.value = adults[adultIdx].name;
-                nikInput.value = adults[adultIdx].nik;
-                if(dobInput) dobInput.value = adults[adultIdx].dob || '';
-                adultIdx++;
-            } else if (type === 'infant' && infants[infantIdx]) {
-                nameInput.value = infants[infantIdx].name;
-                nikInput.value = infants[infantIdx].nik;
-                if(dobInput) dobInput.value = infants[infantIdx].dob || '';
-                infantIdx++;
-            }
-        });
+        if(!isSame && isPP) {
+            const retAdults = returnPax.filter(p => !p.type || p.type === 'adult');
+            const retInfants = returnPax.filter(p => p.type === 'infant');
+            populateContainer('passengerFormsReturn', retAdults, true);
+            populateContainer('passengerFormsReturn', retInfants, false);
+        }
     }, 50);
 
     document.getElementById('inpOrigin').value = data.origin || '';
@@ -789,11 +770,8 @@ window.editOrder = function(id) {
     document.getElementById('inpDate').value = data.date || '';
     document.getElementById('inpWarDate').value = data.warDate || ''; 
     document.getElementById('inpTrain').value = data.train || '';
-    document.getElementById('inpTripType').value = data.tripType || 'one_way';
     
-    toggleTripType();
-    
-    if(data.tripType === 'round_trip') {
+    if(isPP) {
         document.getElementById('inpReturnOrigin').value = data.returnOrigin || '';
         document.getElementById('inpReturnDest').value = data.returnDest || '';
         document.getElementById('inpReturnDate').value = data.returnDate || '';
@@ -805,48 +783,34 @@ window.editOrder = function(id) {
     document.getElementById('inpPaymentMethodReturn').value = data.paymentMethodReturn || 'Tunai';
     
     const adultCount = adults.length || 1;
-    
     const priceDepart = data.price || 0;
     document.getElementById('inpPrice').value = priceDepart;
     document.getElementById('inpPricePerPax').value = priceDepart > 0 ? Math.round(priceDepart / adultCount) : 0;
-    
-    const feeDepart = (data.feeDepart !== undefined) ? data.feeDepart : (data.fee || 0);
-    document.getElementById('inpFeeDepart').value = feeDepart;
+    document.getElementById('inpFeeDepart').value = (data.feeDepart !== undefined) ? data.feeDepart : (data.fee || 0);
     
     const priceReturn = data.returnPrice || 0;
     document.getElementById('inpReturnPrice').value = priceReturn;
     document.getElementById('inpReturnPricePerPax').value = priceReturn > 0 ? Math.round(priceReturn / adultCount) : 0;
-    
-    const feeReturn = data.feeReturn || 0;
-    document.getElementById('inpFeeReturn').value = feeReturn;
+    document.getElementById('inpFeeReturn').value = data.feeReturn || 0;
 
     calcRemaining();
 
-    if(data.transferScreenshot) {
-        document.getElementById('inpTransferData').value = data.transferScreenshot;
-        document.getElementById('imgTransfer').src = data.transferScreenshot;
-        document.getElementById('previewTransfer').classList.remove('hidden');
-    }
-    if(data.chatScreenshot) {
-        document.getElementById('inpChatData').value = data.chatScreenshot;
-        document.getElementById('imgChat').src = data.chatScreenshot;
-        document.getElementById('previewChat').classList.remove('hidden');
-    }
-    if(data.transferScreenshotReturn) {
-        document.getElementById('inpTransferDataReturn').value = data.transferScreenshotReturn;
-        document.getElementById('imgTransferReturn').src = data.transferScreenshotReturn;
-        document.getElementById('previewTransferReturn').classList.remove('hidden');
-    }
-    if(data.chatScreenshotReturn) {
-        document.getElementById('inpChatDataReturn').value = data.chatScreenshotReturn;
-        document.getElementById('imgChatReturn').src = data.chatScreenshotReturn;
-        document.getElementById('previewChatReturn').classList.remove('hidden');
-    }
+    const setPreview = (url, inpDataId, imgId, previewId) => {
+        if(url) {
+            document.getElementById(inpDataId).value = url;
+            document.getElementById(imgId).src = url;
+            document.getElementById(previewId).classList.remove('hidden');
+        }
+    };
+    
+    setPreview(data.transferScreenshot, 'inpTransferData', 'imgTransfer', 'previewTransfer');
+    setPreview(data.chatScreenshot, 'inpChatData', 'imgChat', 'previewChat');
+    setPreview(data.transferScreenshotReturn, 'inpTransferDataReturn', 'imgTransferReturn', 'previewTransferReturn');
+    setPreview(data.chatScreenshotReturn, 'inpChatDataReturn', 'imgChatReturn', 'previewChatReturn');
 
     document.getElementById('btnSaveText').innerText = "UPDATE DATA";
     navTo('input');
 }
-
 window.updateSettlement = async function(id, newVal) {
     toggleLoader(true);
     const index = orders.findIndex(o => o.id === id);
@@ -856,9 +820,7 @@ window.updateSettlement = async function(id, newVal) {
         orders[index].status = nextStatus;
         
         renderOrderList(document.getElementById('searchInput').value);
-        
-        const isDetailOpen = !document.getElementById('page-detail').classList.contains('hidden');
-        if(isDetailOpen) openDetailView(id); 
+        if(!document.getElementById('page-detail').classList.contains('hidden')) openDetailView(id); 
 
         renderStats(); 
         try {
@@ -889,20 +851,16 @@ window.handleUploadZoneClick = function(zoneId, inputId) {
         activeUploadZone = zoneId;
         zone.classList.add('upload-zone-active');
         if(hint) hint.classList.remove('hidden');
-        
-        setTimeout(() => { 
-            zone.scrollIntoView({ behavior: "smooth", block: "start", inline: "nearest" }); 
-        }, 300);
+        setTimeout(() => { zone.scrollIntoView({ behavior: "smooth", block: "start", inline: "nearest" }); }, 300);
     }
 }
 
 function resetUploadZones() {
     activeUploadZone = null;
     document.querySelectorAll('.upload-zone-base').forEach(el => el.classList.remove('upload-zone-active'));
-    const h1 = document.getElementById('hintTransfer'); if(h1) h1.classList.add('hidden');
-    const h2 = document.getElementById('hintChat'); if(h2) h2.classList.add('hidden');
-    const h3 = document.getElementById('hintTransferReturn'); if(h3) h3.classList.add('hidden');
-    const h4 = document.getElementById('hintChatReturn'); if(h4) h4.classList.add('hidden');
+    ['hintTransfer', 'hintChat', 'hintTransferReturn', 'hintChatReturn'].forEach(id => {
+        const h = document.getElementById(id); if(h) h.classList.add('hidden');
+    });
 }
 
 function setupImageUploader(inputId, hiddenDataId, imgId, containerId) {
@@ -942,7 +900,6 @@ function processFile(file, callback) {
     reader.readAsDataURL(file);
 }
 
-// --- SETUP HISTORY UPLOADER (MENDUKUNG E-TIKET PULANG) ---
 function setupHistoryUploader() {
     const historyInput = document.getElementById('inpHistoryUpload');
     historyInput.addEventListener('change', function(e) {
@@ -959,7 +916,7 @@ function setupHistoryUploader() {
                 
                 if (currentUploadType === 'settlement') updateData.settlementProof = publicUrl;
                 else if (currentUploadType === 'kai_ticket_depart') updateData.kaiTicketFile = publicUrl;
-                else if (currentUploadType === 'kai_ticket_return') updateData.kaiTicketFileReturn = publicUrl; // Kolom baru
+                else if (currentUploadType === 'kai_ticket_return') updateData.kaiTicketFileReturn = publicUrl;
 
                 await supabase.from('orders').update(updateData).eq('id', currentUploadOrderId);
                 
@@ -969,22 +926,24 @@ function setupHistoryUploader() {
                      else if (currentUploadType === 'kai_ticket_depart') orders[idx].kaiTicketFile = publicUrl;
                      else if (currentUploadType === 'kai_ticket_return') orders[idx].kaiTicketFileReturn = publicUrl;
                      
-                     const isDetailOpen = !document.getElementById('page-detail').classList.contains('hidden');
-                     if(isDetailOpen) openDetailView(currentUploadOrderId);
+                     if(!document.getElementById('page-detail').classList.contains('hidden')) openDetailView(currentUploadOrderId);
                 }
                 showToast("Tersimpan!");
-            } catch(e) { console.error(e); alert("Gagal simpan."); } finally {
+            } catch(e) { console.error(e); alert("Gagal simpan."); } 
+            finally {
                 currentUploadOrderId = null; currentUploadType = null;
                 historyInput.value = ''; toggleLoader(false);
             }
         });
     });
 }
+
 window.toggleTripType = function() {
     const type = document.getElementById('inpTripType').value;
     const fields = document.getElementById('returnTripFields');
     const uploadTabContainer = document.getElementById('uploadTabContainer');
     const payReturnSection = document.getElementById('paymentReturnSection'); 
+    const togglePax = document.getElementById('togglePaxReturnContainer');
     
     const inpRetDate = document.getElementById('inpReturnDate');
     const inpRetTrain = document.getElementById('inpReturnTrain');
@@ -995,6 +954,7 @@ window.toggleTripType = function() {
         fields.classList.remove('hidden'); fields.classList.add('fade-in');
         uploadTabContainer.classList.remove('hidden');
         payReturnSection.classList.remove('hidden'); 
+        togglePax.classList.remove('hidden');
         
         inpRetDate.required = true;
         inpRetTrain.required = true;
@@ -1004,13 +964,15 @@ window.toggleTripType = function() {
         document.getElementById('lblUploadDepart').classList.remove('hidden');
         document.getElementById('labelTransfer').innerText = "Bukti Transfer (Pergi)";
         document.getElementById('labelChat').innerText = "Chat WA (Pergi)";
-        
     } else {
         fields.classList.add('hidden'); fields.classList.remove('fade-in');
         uploadTabContainer.classList.add('hidden'); 
         payReturnSection.classList.add('hidden'); 
+        togglePax.classList.add('hidden');
         
         switchUploadTab('depart');
+        document.getElementById('inpPaxSame').checked = true;
+        togglePaxSame();
         
         inpRetDate.required = false;
         inpRetTrain.required = false;
@@ -1048,181 +1010,127 @@ window.printReceipt = function(orderId) {
     const order = orders.find(o => o.id === orderId);
     if (!order) return;
     toggleLoader(true);
-    
     renderReceiptToDOM(order);
-    
     showToast("RENDER E-TIKET...");
     setTimeout(() => { captureAndShowModal('receipt-render-area'); }, 800);
 }
 
-// --- CORE: RENDER NOTA BERDASARKAN TAB AKTIF & DATA LENGKAP ---
 function renderReceiptToDOM(order) {
     const sectionDepart = document.getElementById('rec-ticket-depart');
     const sectionReturn = document.getElementById('rec-ticket-return');
     
-    const priceTotalEl = document.getElementById('rec-price-total');
-    const priceDpEl = document.getElementById('rec-price-dp');
-    const priceRemainingEl = document.getElementById('rec-price-remaining');
-    
     sectionDepart.classList.add('hidden');
     sectionReturn.classList.add('hidden');
 
-    let paxList = Array.isArray(order.passengers) ? order.passengers : (order.name ? [{name: order.name, nik: order.nik || '-', type: 'adult'}] : []);
-    const mainPaxName = paxList.length > 0 ? paxList[0].name : (order.contactName || 'PENUMPANG');
+    let allPax = Array.isArray(order.passengers) ? order.passengers : (order.name ? [{name: order.name, nik: order.nik || '-', type: 'adult', direction: 'depart'}] : []);
     
-    const adults = paxList.filter(p => !p.type || p.type === 'adult').length;
-    const infants = paxList.filter(p => p.type === 'infant').length;
+    const departPax = allPax.filter(p => !p.direction || p.direction === 'depart');
+    const returnPax = allPax.filter(p => p.direction === 'return');
     
-    let paxCountStr = `${adults} Dewasa`;
-    if(infants > 0) paxCountStr += `, ${infants} Bayi`;
-
-    let paxHtml = '';
-    paxList.forEach(p => {
-        const isInfant = p.type === 'infant';
-        const paxTypeLabel = isInfant ? '<span class="text-[10px] bg-pink-500/20 border border-pink-500/30 px-2 py-0.5 rounded ml-2 text-pink-400 align-middle tracking-widest">BAYI</span>' : '';
+    const buildPaxHtml = (paxArr) => {
+        let html = '';
+        let adults = 0; let infants = 0;
         
-        let dobStr = '';
-        if (p.dob) {
-            const dObj = new Date(p.dob);
-            if(!isNaN(dObj)) {
-                dobStr = dObj.toLocaleDateString('id-ID', { day: '2-digit', month: 'short', year: 'numeric' }).toUpperCase();
+        paxArr.forEach(p => {
+            if(p.type === 'infant') infants++; else adults++;
+            const isInfant = p.type === 'infant';
+            const paxTypeLabel = isInfant ? '<span class="text-[10px] bg-pink-500/20 border border-pink-500/30 px-2 py-0.5 rounded ml-2 text-pink-400 align-middle tracking-widest">BAYI</span>' : '';
+            
+            let dobDisplayReceipt = '';
+            if (p.dob) {
+                const dObj = new Date(p.dob);
+                if(!isNaN(dObj)) {
+                    const dobStr = dObj.toLocaleDateString('id-ID', { day: '2-digit', month: 'short', year: 'numeric' }).toUpperCase();
+                    dobDisplayReceipt = `<div class="mt-2 pt-2 border-t border-dashed border-white/10 flex items-center gap-2"><i class="fas fa-calendar-alt text-davka-orange text-[12px] opacity-80"></i><span class="text-[12px] text-gray-400 uppercase tracking-widest">Lahir:</span><span class="text-[14px] text-white font-bold font-mono tracking-widest">${dobStr}</span></div>`;
+                }
             }
-        }
+            html += `<div class="flex flex-col bg-black/40 p-4 rounded-xl mb-3 border border-white/10 shadow-inner w-full"><p class="text-[18px] font-black text-white uppercase break-words leading-tight tracking-widest flex items-center">${p.name} ${paxTypeLabel}</p><p class="text-[18px] text-gray-200 font-bold font-mono mt-2 tracking-widest"><i class="fas fa-id-card text-gray-500 mr-2 text-[14px]"></i>ID: ${p.nik || '-'}</p>${dobDisplayReceipt}</div>`;
+        });
         
-        let dobDisplayReceipt = '';
-        if (dobStr) {
-            dobDisplayReceipt = `
-                <div class="mt-2 pt-2 border-t border-dashed border-white/10 flex items-center gap-2">
-                    <i class="fas fa-calendar-alt text-davka-orange text-[12px] opacity-80"></i>
-                    <span class="text-[12px] text-gray-400 uppercase tracking-widest">Lahir:</span>
-                    <span class="text-[14px] text-white font-bold font-mono tracking-widest">${dobStr}</span>
-                </div>
-            `;
-        }
+        let countStr = `${adults} Dewasa`;
+        if(infants > 0) countStr += `, ${infants} Bayi`;
+        return { html, countStr };
+    };
 
-        paxHtml += `
-            <div class="flex flex-col bg-black/40 p-4 rounded-xl mb-3 border border-white/10 shadow-inner w-full">
-                <p class="text-[18px] font-black text-white uppercase break-words leading-tight tracking-widest flex items-center">${p.name} ${paxTypeLabel}</p>
-                <p class="text-[18px] text-gray-200 font-bold font-mono mt-2 tracking-widest"><i class="fas fa-id-card text-gray-500 mr-2 text-[14px]"></i>ID: ${p.nik || '-'}</p>
-                ${dobDisplayReceipt}
-            </div>
-        `;
-    });
-
+    const mainPaxName = departPax.length > 0 ? departPax[0].name : (order.contactName || 'PENUMPANG');
     const address = order.address || '-';
 
     if (currentDetailTab === 'return' && order.tripType === 'round_trip') {
         sectionReturn.classList.remove('hidden');
         
-        const retOrg = (order.returnOrigin || order.dest || 'ORG').toUpperCase();
-        const retDes = (order.returnDest || order.origin || 'DES').toUpperCase();
-        
-        document.getElementById('rec-return-origin-code').innerText = retOrg;
-        document.getElementById('rec-return-dest-code').innerText = retDes;
-        
+        document.getElementById('rec-return-origin-code').innerText = (order.returnOrigin || order.dest || 'ORG').toUpperCase();
+        document.getElementById('rec-return-dest-code').innerText = (order.returnDest || order.origin || 'DES').toUpperCase();
         document.getElementById('rec-return-train-name').innerText = (order.returnTrain || 'KERETA').toUpperCase();
         
-        const retDateObj = new Date(order.returnDate);
-        const retDateStr = order.returnDate ? retDateObj.toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' }) : '-';
-        document.getElementById('rec-return-date-depart').innerText = retDateStr.toUpperCase();
-
-        const retWarDateObj = new Date(order.returnWarDate);
-        const retWarDateStr = order.returnWarDate ? retWarDateObj.toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' }) : '-';
-        document.getElementById('rec-return-war-date').innerText = retWarDateStr.toUpperCase();
+        document.getElementById('rec-return-date-depart').innerText = order.returnDate ? new Date(order.returnDate).toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' }).toUpperCase() : '-';
+        document.getElementById('rec-return-war-date').innerText = order.returnWarDate ? new Date(order.returnWarDate).toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' }).toUpperCase() : '-';
         
         const stampElReturn = document.getElementById('rec-stamp-return');
-        if (order.status === 'success') stampElReturn.classList.add('visible');
-        else stampElReturn.classList.remove('visible');
+        if (order.status === 'success') stampElReturn.classList.add('visible'); else stampElReturn.classList.remove('visible');
 
         const returnTotal = order.returnPrice || 0;
         const returnDp = order.feeReturn || 0;
-        let returnRemaining = returnTotal - returnDp;
-        if(order.status === 'success') returnRemaining = 0;
+        let returnRemaining = order.status === 'success' ? 0 : returnTotal - returnDp;
 
-        priceTotalEl.innerText = formatRupiah(returnTotal);
-        priceDpEl.innerText = formatRupiah(returnDp);
-        priceRemainingEl.innerText = formatRupiah(returnRemaining);
-        priceRemainingEl.className = returnRemaining <= 0 ? "text-[32px] font-black text-green-400 font-mono glow-text-white drop-shadow-[0_0_10px_rgba(74,222,128,0.5)]" : "text-[32px] font-black text-[#0ea5e9] font-mono glow-text-white drop-shadow-[0_0_10px_rgba(14,165,233,0.5)]";
+        document.getElementById('rec-price-total').innerText = formatRupiah(returnTotal);
+        document.getElementById('rec-price-dp').innerText = formatRupiah(returnDp);
+        const remEl = document.getElementById('rec-price-remaining');
+        remEl.innerText = formatRupiah(returnRemaining);
+        remEl.className = returnRemaining <= 0 ? "text-[32px] font-black text-green-400 font-mono glow-text-white drop-shadow-[0_0_10px_rgba(74,222,128,0.5)]" : "text-[32px] font-black text-[#0ea5e9] font-mono glow-text-white drop-shadow-[0_0_10px_rgba(14,165,233,0.5)]";
 
         document.getElementById('rec-id').innerText = "#" + order.id.toString().slice(-6) + "-R";
-
         document.getElementById('rec-return-contact-name').innerText = (order.contactName || mainPaxName).toUpperCase();
-        
-        const phoneElReturn = document.getElementById('rec-return-contact-phone');
-        phoneElReturn.innerText = order.contactPhone || '-';
-        
+        document.getElementById('rec-return-contact-phone').innerText = order.contactPhone || '-';
         document.getElementById('rec-return-address').innerText = address.toUpperCase();
-        
         document.getElementById('rec-return-payment-method').innerText = (order.paymentMethodReturn || order.paymentMethod || 'TUNAI').toUpperCase();
-        document.getElementById('rec-return-pax-count').innerText = paxCountStr;
-        document.getElementById('rec-return-pax-list').innerHTML = paxHtml;
+        
+        const activeReturnPax = returnPax.length > 0 ? returnPax : departPax;
+        const retRender = buildPaxHtml(activeReturnPax);
+        document.getElementById('rec-return-pax-count').innerText = retRender.countStr;
+        document.getElementById('rec-return-pax-list').innerHTML = retRender.html;
 
     } else {
         sectionDepart.classList.remove('hidden');
-
-        const origin = (order.origin || 'ORG').toUpperCase();
-        const dest = (order.dest || 'DES').toUpperCase();
-
-        document.getElementById('rec-origin-code').innerText = origin;
-        document.getElementById('rec-dest-code').innerText = dest;
-        
+        document.getElementById('rec-origin-code').innerText = (order.origin || 'ORG').toUpperCase();
+        document.getElementById('rec-dest-code').innerText = (order.dest || 'DES').toUpperCase();
         document.getElementById('rec-train-name').innerText = (order.train || 'KERETA').toUpperCase();
 
-        const dateObj = new Date(order.date);
-        const dateStr = order.date ? dateObj.toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' }) : '-';
-        document.getElementById('rec-date-depart').innerText = dateStr.toUpperCase();
-
-        const warDateObj = new Date(order.warDate);
-        const warDateStr = order.warDate ? warDateObj.toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' }) : '-';
-        document.getElementById('rec-war-date').innerText = warDateStr.toUpperCase();
+        document.getElementById('rec-date-depart').innerText = order.date ? new Date(order.date).toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' }).toUpperCase() : '-';
+        document.getElementById('rec-war-date').innerText = order.warDate ? new Date(order.warDate).toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' }).toUpperCase() : '-';
         
         const stampElDepart = document.getElementById('rec-stamp-depart');
-        if (order.status === 'success') stampElDepart.classList.add('visible');
-        else stampElDepart.classList.remove('visible');
+        if (order.status === 'success') stampElDepart.classList.add('visible'); else stampElDepart.classList.remove('visible');
 
         const departTotal = order.price || 0;
         const departDp = (order.feeDepart !== undefined) ? order.feeDepart : (order.fee || 0);
-        let departRemaining = departTotal - departDp;
-        if(order.status === 'success') departRemaining = 0;
+        let departRemaining = order.status === 'success' ? 0 : departTotal - departDp;
 
-        priceTotalEl.innerText = formatRupiah(departTotal);
-        priceDpEl.innerText = formatRupiah(departDp);
-        priceRemainingEl.innerText = formatRupiah(departRemaining);
-        priceRemainingEl.className = departRemaining <= 0 ? "text-[32px] font-black text-green-400 font-mono glow-text-white drop-shadow-[0_0_10px_rgba(74,222,128,0.5)]" : "text-[32px] font-black text-davka-orange font-mono glow-text-orange";
+        document.getElementById('rec-price-total').innerText = formatRupiah(departTotal);
+        document.getElementById('rec-price-dp').innerText = formatRupiah(departDp);
+        const remEl = document.getElementById('rec-price-remaining');
+        remEl.innerText = formatRupiah(departRemaining);
+        remEl.className = departRemaining <= 0 ? "text-[32px] font-black text-green-400 font-mono glow-text-white drop-shadow-[0_0_10px_rgba(74,222,128,0.5)]" : "text-[32px] font-black text-davka-orange font-mono glow-text-orange";
 
         document.getElementById('rec-id').innerText = "#" + order.id.toString().slice(-6);
-
         document.getElementById('rec-contact-name').innerText = (order.contactName || mainPaxName).toUpperCase();
-        
-        const phoneElDepart = document.getElementById('rec-contact-phone');
-        phoneElDepart.innerText = order.contactPhone || '-';
-        
+        document.getElementById('rec-contact-phone').innerText = order.contactPhone || '-';
         document.getElementById('rec-address').innerText = address.toUpperCase();
-        
         document.getElementById('rec-payment-method').innerText = (order.paymentMethod || 'TUNAI').toUpperCase();
-        document.getElementById('rec-pax-count').innerText = paxCountStr;
-        document.getElementById('rec-pax-list').innerHTML = paxHtml;
+        
+        const depRender = buildPaxHtml(departPax);
+        document.getElementById('rec-pax-count').innerText = depRender.countStr;
+        document.getElementById('rec-pax-list').innerHTML = depRender.html;
     }
 }
 
 function captureAndShowModal(elementId) {
     const el = document.getElementById(elementId);
-    html2canvas(el, { 
-        scale: 3, 
-        useCORS: true, 
-        allowTaint: true, 
-        backgroundColor: null,
-        windowHeight: el.scrollHeight 
-    }) 
+    html2canvas(el, { scale: 3, useCORS: true, allowTaint: true, backgroundColor: null, windowHeight: el.scrollHeight }) 
     .then(canvas => { 
         showImageModal(canvas.toDataURL("image/jpeg", 0.95), true); 
         toggleLoader(false); 
     })
-    .catch(err => { 
-        console.error("Render Error:", err); 
-        toggleLoader(false); 
-        alert("Gagal render gambar."); 
-    });
+    .catch(err => { console.error("Render Error:", err); toggleLoader(false); alert("Gagal render."); });
 }
 
 function renderUploadBtnHTML(id, type, file, label) {
@@ -1245,18 +1153,15 @@ window.triggerHistoryUpload = function(orderId, type) {
 }
 
 window.clearImage = function(type) {
-    if(type === 'transfer') {
-        document.getElementById('inpFileTransfer').value = ''; document.getElementById('inpTransferData').value = '';
-        document.getElementById('imgTransfer').src = ''; document.getElementById('previewTransfer').classList.add('hidden');
-    } else if (type === 'chat') {
-        document.getElementById('inpFileChat').value = ''; document.getElementById('inpChatData').value = '';
-        document.getElementById('imgChat').src = ''; document.getElementById('previewChat').classList.add('hidden');
-    } else if (type === 'transferReturn') {
-        document.getElementById('inpFileTransferReturn').value = ''; document.getElementById('inpTransferDataReturn').value = '';
-        document.getElementById('imgTransferReturn').src = ''; document.getElementById('previewTransferReturn').classList.add('hidden');
-    } else if (type === 'chatReturn') {
-        document.getElementById('inpFileChatReturn').value = ''; document.getElementById('inpChatDataReturn').value = '';
-        document.getElementById('imgChatReturn').src = ''; document.getElementById('previewChatReturn').classList.add('hidden');
+    const maps = {
+        'transfer': ['inpFileTransfer', 'inpTransferData', 'imgTransfer', 'previewTransfer'],
+        'chat': ['inpFileChat', 'inpChatData', 'imgChat', 'previewChat'],
+        'transferReturn': ['inpFileTransferReturn', 'inpTransferDataReturn', 'imgTransferReturn', 'previewTransferReturn'],
+        'chatReturn': ['inpFileChatReturn', 'inpChatDataReturn', 'imgChatReturn', 'previewChatReturn']
+    };
+    if(maps[type]) {
+        document.getElementById(maps[type][0]).value = ''; document.getElementById(maps[type][1]).value = '';
+        document.getElementById(maps[type][2]).src = ''; document.getElementById(maps[type][3]).classList.add('hidden');
     }
     resetUploadZones(); 
 }
@@ -1306,6 +1211,8 @@ window.resetForm = function() {
     document.getElementById('inpPaymentMethod').value = 'Tunai';
     if(document.getElementById('inpPaymentMethodReturn')) document.getElementById('inpPaymentMethodReturn').value = 'Tunai';
 
+    document.getElementById('inpPaxSame').checked = true;
+
     toggleTripType(); 
     clearImage('transfer'); clearImage('chat');
     clearImage('transferReturn'); clearImage('chatReturn');
@@ -1316,7 +1223,6 @@ window.resetForm = function() {
     enableSmoothInputUX();
 }
 
-// --- REVISI UTAMA: DETAIL PESANAN ---
 window.openDetailView = function(orderId) {
     const order = orders.find(o => o.id === orderId);
     if (!order) return;
@@ -1336,17 +1242,13 @@ window.openDetailView = function(orderId) {
     const badge = document.getElementById('detail-status-badge');
     badge.className = "px-3 py-1 rounded-full text-[10px] font-bold uppercase border ";
     if (order.status === 'success') {
-        badge.innerText = "LUNAS";
-        badge.classList.add('bg-green-500/10', 'border-green-500/30', 'text-green-400');
+        badge.innerText = "LUNAS"; badge.classList.add('bg-green-500/10', 'border-green-500/30', 'text-green-400');
     } else if (order.status === 'cancel') {
-        badge.innerText = "BATAL";
-        badge.classList.add('bg-red-500/10', 'border-red-500/30', 'text-red-400');
+        badge.innerText = "BATAL"; badge.classList.add('bg-red-500/10', 'border-red-500/30', 'text-red-400');
     } else {
-        badge.innerText = "PENDING";
-        badge.classList.add('bg-orange-500/10', 'border-orange-500/30', 'text-orange-400');
+        badge.innerText = "PENDING"; badge.classList.add('bg-orange-500/10', 'border-orange-500/30', 'text-orange-400');
     }
 
-    // Mengisi Rincian Tab Keberangkatan (Pergi)
     document.getElementById('detail-train').innerText = order.train || '-';
     document.getElementById('detail-date').innerText = order.date ? new Date(order.date).toLocaleDateString('id-ID', {day: 'numeric', month: 'short', year: 'numeric'}) : '-';
     document.getElementById('detail-war-date').innerText = order.warDate ? new Date(order.warDate).toLocaleDateString('id-ID', {day: 'numeric', month: 'short'}) : '-';
@@ -1358,14 +1260,12 @@ window.openDetailView = function(orderId) {
     document.getElementById('detail-img-transfer-depart').innerHTML = renderProof(order.transferScreenshot, "No TF Pergi");
     document.getElementById('detail-img-chat-depart').innerHTML = renderProof(order.chatScreenshot, "No Chat Pergi");
 
-    // Identifikasi elemen Tab Pulang
     const btnReturnTab = document.getElementById('tab-btn-return');
     const returnBadge = document.getElementById('badge-return-active');
     const returnDataContainer = document.getElementById('data-return-exist');
     const returnEmptyContainer = document.getElementById('data-return-empty');
     const containerProofReturn = document.getElementById('container-proof-return');
     
-    // Identifikasi kontainer E-Tiket yang sudah dipisah ke masing-masing Tab
     const uploadTicketDepart = document.getElementById('detail-upload-ticket-depart');
     const uploadTicketReturn = document.getElementById('detail-upload-ticket-return');
 
@@ -1376,7 +1276,6 @@ window.openDetailView = function(orderId) {
         returnEmptyContainer.classList.add('hidden');
         containerProofReturn.classList.remove('hidden');
 
-        // Mengisi Rincian Tab Kepulangan (Pulang)
         document.getElementById('detail-return-train').innerText = order.returnTrain || '-';
         document.getElementById('detail-return-date').innerText = order.returnDate ? new Date(order.returnDate).toLocaleDateString('id-ID', {day: 'numeric', month: 'short', year: 'numeric'}) : '-';
         document.getElementById('detail-return-war-date').innerText = order.returnWarDate ? new Date(order.returnWarDate).toLocaleDateString('id-ID', {day: 'numeric', month: 'short'}) : '-';
@@ -1384,59 +1283,55 @@ window.openDetailView = function(orderId) {
         document.getElementById('detail-img-transfer-return').innerHTML = renderProof(order.transferScreenshotReturn, "No TF Pulang");
         document.getElementById('detail-img-chat-return').innerHTML = renderProof(order.chatScreenshotReturn, "No Chat Pulang");
 
-        // Set tombol E-Tiket (Masing-masing terisolasi di tabnya)
         uploadTicketDepart.innerHTML = renderUploadBtnHTML(orderId, 'kai_ticket_depart', order.kaiTicketFile, 'E-Tiket Pergi');
         uploadTicketReturn.innerHTML = renderUploadBtnHTML(orderId, 'kai_ticket_return', order.kaiTicketFileReturn, 'E-Tiket Pulang');
-
     } else {
-        // Logika Sekali Jalan (Sembunyikan dan kosongkan semua data Pulang)
         btnReturnTab.classList.add('hidden');
         returnBadge.classList.add('hidden');
         returnDataContainer.classList.add('hidden');
         returnEmptyContainer.classList.remove('hidden');
         containerProofReturn.classList.add('hidden');
 
-        // Hanya E-Tiket Pergi yang dirender
         uploadTicketDepart.innerHTML = renderUploadBtnHTML(orderId, 'kai_ticket_depart', order.kaiTicketFile, 'E-Tiket KAI');
         uploadTicketReturn.innerHTML = '';
     }
 
-    let paxListHtml = '';
-    let paxArray = Array.isArray(order.passengers) ? order.passengers : (order.name ? [{name: order.name, nik: order.nik || '-', dob: '', type: 'adult'}] : []);
+    let allPax = Array.isArray(order.passengers) ? order.passengers : (order.name ? [{name: order.name, nik: order.nik || '-', dob: '', type: 'adult', direction: 'depart'}] : []);
     
-    paxArray.forEach((p, idx) => {
-        const isInfant = p.type === 'infant';
-        const iconColor = isInfant ? 'text-pink-400 bg-pink-500/10' : 'text-gray-300 bg-white/10';
-        const icon = isInfant ? 'fa-baby' : 'fa-user';
-        const label = isInfant ? '<span class="text-[8px] ml-2 px-1.5 py-0.5 rounded bg-pink-500/20 text-pink-400 border border-pink-500/30">BAYI</span>' : '';
-        
-        let dobBadge = '';
-        if (p.dob) {
-            const d = new Date(p.dob);
-            const dobFormat = !isNaN(d) ? d.toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' }).toUpperCase() : p.dob;
-            dobBadge = `<span class="flex items-center gap-1 text-gray-300 text-xs font-bold whitespace-nowrap"><i class="fas fa-calendar-alt opacity-70"></i> ${dobFormat}</span>`;
-        }
+    const buildPaxBlock = (paxArr) => {
+        let h = '';
+        paxArr.forEach(p => {
+            const isInfant = p.type === 'infant';
+            const iconColor = isInfant ? 'text-pink-400 bg-pink-500/10' : 'text-gray-300 bg-white/10';
+            const icon = isInfant ? 'fa-baby' : 'fa-user';
+            const label = isInfant ? '<span class="text-[8px] ml-2 px-1.5 py-0.5 rounded bg-pink-500/20 text-pink-400 border border-pink-500/30">BAYI</span>' : '';
+            
+            let dobBadge = '';
+            if (p.dob) {
+                const d = new Date(p.dob);
+                const dobFormat = !isNaN(d) ? d.toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' }).toUpperCase() : p.dob;
+                dobBadge = `<span class="flex items-center gap-1 text-gray-300 text-xs font-bold whitespace-nowrap"><i class="fas fa-calendar-alt opacity-70"></i> ${dobFormat}</span>`;
+            }
 
-        paxListHtml += `
-            <div class="flex items-start gap-3 border-b border-white/5 pb-3 pt-1 last:border-0 last:pb-0">
-                <div class="w-6 h-6 rounded-full ${iconColor} flex items-center justify-center text-[10px] font-bold shrink-0 mt-0.5">
-                    <i class="fas ${icon}"></i>
-                </div>
-                <div class="flex-1 min-w-0">
-                    <p class="text-xs font-bold text-white uppercase flex flex-wrap items-center gap-1">${p.name} ${label}</p>
-                    <div class="flex flex-col gap-1 mt-1.5">
-                        <p class="text-xs text-gray-300 font-bold whitespace-nowrap">NIK: ${p.nik}</p>
-                        ${dobBadge}
-                    </div>
-                </div>
-            </div>
-        `;
-    });
-    document.getElementById('detail-pax-list').innerHTML = paxListHtml;
+            h += `<div class="flex items-start gap-3 border-b border-white/5 pb-3 pt-1 last:border-0 last:pb-0"><div class="w-6 h-6 rounded-full ${iconColor} flex items-center justify-center text-[10px] font-bold shrink-0 mt-0.5"><i class="fas ${icon}"></i></div><div class="flex-1 min-w-0"><p class="text-xs font-bold text-white uppercase flex flex-wrap items-center gap-1">${p.name} ${label}</p><div class="flex flex-col gap-1 mt-1.5"><p class="text-xs text-gray-300 font-bold whitespace-nowrap">NIK: ${p.nik}</p>${dobBadge}</div></div></div>`;
+        });
+        return h;
+    };
+
+    const departPax = allPax.filter(p => !p.direction || p.direction === 'depart');
+    const returnPax = allPax.filter(p => p.direction === 'return');
+    
+    document.getElementById('detail-pax-list').innerHTML = buildPaxBlock(departPax);
+    
+    const returnPaxContainer = document.getElementById('detail-pax-list-return-container');
+    if (order.tripType === 'round_trip' && returnPax.length > 0) {
+        returnPaxContainer.classList.remove('hidden');
+        document.getElementById('detail-pax-list-return').innerHTML = buildPaxBlock(returnPax);
+    } else {
+        returnPaxContainer.classList.add('hidden');
+    }
 
     document.getElementById('detail-cost-breakdown').innerHTML = '';
-    
-    // Pastikan UI pertama kali merender data Pergi (tab aktif default)
     switchTab('depart');
 
     const settlementOptions = ["-", "Tunai", "Transfer CIMB Niaga", "Transfer Seabank", "Dana", "Gopay", "Ovo", "ShopeePay"];
@@ -1457,7 +1352,6 @@ window.closeDetailView = function() {
     document.getElementById('page-detail').classList.remove('fade-in');
     document.getElementById('page-list').classList.remove('hidden');
     document.getElementById('page-list').classList.add('fade-in');
-    
     currentDetailOrder = null;
     renderOrderList(document.getElementById('searchInput').value);
 }
@@ -1467,149 +1361,64 @@ window.renderOrderList = function(filterText = '') {
     container.innerHTML = '';
     if(!orders) return;
     
-    const sortedOrders = [...orders].sort((a, b) => {
-        return new Date(a.created_at || a.id) - new Date(b.created_at || b.id);
-    });
-    
+    const sortedOrders = [...orders].sort((a, b) => new Date(a.created_at || a.id) - new Date(b.created_at || b.id));
     const filtered = sortedOrders.filter(o => {
         const name = o.contactName || o.name || '';
         return name.toLowerCase().includes(filterText.toLowerCase());
     });
 
-    if(filtered.length === 0) { 
-        document.getElementById('emptyState').classList.remove('hidden'); 
-        return; 
-    } else {
-        document.getElementById('emptyState').classList.add('hidden');
-    }
+    if(filtered.length === 0) { document.getElementById('emptyState').classList.remove('hidden'); return; } 
+    else { document.getElementById('emptyState').classList.add('hidden'); }
 
     filtered.forEach((order, index) => {
-        let statusColorClass = '';
-        let indicatorColor = '';
-        
-        if (order.status === 'success') {
-            statusColorClass = 'bg-green-500/10 border-green-500/30 text-green-400';
-            indicatorColor = 'bg-green-500';
-        } else if (order.status === 'cancel') {
-            statusColorClass = 'bg-red-500/10 border-red-500/30 text-red-400';
-            indicatorColor = 'bg-red-500';
-        } else {
-            statusColorClass = 'bg-orange-500/10 border-orange-500/30 text-orange-400';
-            indicatorColor = 'bg-orange-500';
-        }
+        let statusColorClass = ''; let indicatorColor = '';
+        if (order.status === 'success') { statusColorClass = 'bg-green-500/10 border-green-500/30 text-green-400'; indicatorColor = 'bg-green-500'; } 
+        else if (order.status === 'cancel') { statusColorClass = 'bg-red-500/10 border-red-500/30 text-red-400'; indicatorColor = 'bg-red-500'; } 
+        else { statusColorClass = 'bg-orange-500/10 border-orange-500/30 text-orange-400'; indicatorColor = 'bg-orange-500'; }
 
         const displayName = (order.contactName || order.name || 'No Name').toUpperCase();
         const displayNo = index + 1; 
-
-        const dateObj = new Date(order.date);
-        const dateStr = order.date ? dateObj.toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' }) : '-';
+        const dateStr = order.date ? new Date(order.date).toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' }) : '-';
         
-        let routeHtml = `
-            <div class="mt-1">
-                <p class="text-[10px] text-gray-300 font-bold flex items-center">
-                    <i class="fas fa-train text-davka-orange mr-1.5 text-[10px]"></i> 
-                    ${order.origin || '?'} 
-                    <i class="fas fa-chevron-right text-[8px] mx-1 opacity-50"></i> 
-                    ${order.dest || '?'}
-                </p>
-                <p class="text-[10px] text-gray-500 pl-4 font-mono">${dateStr}</p>
-            </div>
-        `;
+        let routeHtml = `<div class="mt-1"><p class="text-[10px] text-gray-300 font-bold flex items-center"><i class="fas fa-train text-davka-orange mr-1.5 text-[10px]"></i> ${order.origin || '?'} <i class="fas fa-chevron-right text-[8px] mx-1 opacity-50"></i> ${order.dest || '?'}</p><p class="text-[10px] text-gray-500 pl-4 font-mono">${dateStr}</p></div>`;
 
         if (order.tripType === 'round_trip') {
-            const retDateObj = new Date(order.returnDate);
-            const retDateStr = order.returnDate ? retDateObj.toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' }) : '-';
-            
+            const retDateStr = order.returnDate ? new Date(order.returnDate).toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' }) : '-';
             const retOrg = order.returnOrigin || order.dest || '?';
             const retDest = order.returnDest || order.origin || '?';
-
-            routeHtml += `
-            <div class="mt-1 pt-1 border-t border-white/5 relative">
-                <div class="absolute left-1.5 top-2 w-0.5 h-full bg-blue-500/20"></div>
-                <div class="flex justify-between items-start">
-                    <div>
-                        <p class="text-[10px] text-gray-300 font-bold flex items-center">
-                            <i class="fas fa-exchange-alt text-blue-400 mr-1.5 text-[10px]"></i> 
-                            ${retOrg} 
-                            <i class="fas fa-chevron-right text-[8px] mx-1 opacity-50"></i> 
-                            ${retDest}
-                        </p>
-                        <p class="text-[10px] text-gray-500 pl-4 font-mono">${retDateStr}</p>
-                    </div>
-                    
-                    <div class="px-1.5 py-0.5 rounded bg-black/20 border border-white/5 self-center mt-1">
-                        <p class="text-[8px] ${statusColorClass.split(' ')[2]} font-bold uppercase tracking-wide">
-                            ${order.status}
-                        </p>
-                    </div>
-                </div>
-            </div>`;
+            routeHtml += `<div class="mt-1 pt-1 border-t border-white/5 relative"><div class="absolute left-1.5 top-2 w-0.5 h-full bg-blue-500/20"></div><div class="flex justify-between items-start"><div><p class="text-[10px] text-gray-300 font-bold flex items-center"><i class="fas fa-exchange-alt text-blue-400 mr-1.5 text-[10px]"></i> ${retOrg} <i class="fas fa-chevron-right text-[8px] mx-1 opacity-50"></i> ${retDest}</p><p class="text-[10px] text-gray-500 pl-4 font-mono">${retDateStr}</p></div><div class="px-1.5 py-0.5 rounded bg-black/20 border border-white/5 self-center mt-1"><p class="text-[8px] ${statusColorClass.split(' ')[2]} font-bold uppercase tracking-wide">${order.status}</p></div></div></div>`;
         }
 
         const item = document.createElement('div');
         item.className = `rounded-xl border ${statusColorClass.split(' ')[1]} ${statusColorClass.split(' ')[0]} overflow-hidden mb-2 transition-all duration-300 active:scale-95`;
         item.onclick = function() { openDetailView(order.id); };
 
-        const mainRow = `
-        <div class="flex items-start justify-between p-3 cursor-pointer select-none relative">
-            <div class="absolute left-0 top-0 bottom-0 w-1 ${indicatorColor}"></div>
-            
-            <div class="flex items-start gap-3 pl-2 overflow-hidden flex-1">
-                <div class="w-7 h-7 rounded-lg bg-black/20 flex items-center justify-center font-mono text-xs font-bold ${statusColorClass.split(' ')[2]} shrink-0 border border-white/5 mt-0.5">
-                    ${displayNo}
-                </div>
-                
-                <div class="min-w-0 flex-1">
-                    <div class="flex justify-between items-start">
-                        <h4 class="text-sm font-bold text-white truncate leading-tight">${displayName}</h4>
-                        <div class="px-2 py-0.5 rounded border border-white/10 bg-black/20">
-                            <p class="text-[9px] ${statusColorClass.split(' ')[2]} font-bold uppercase tracking-wide">
-                                ${order.status}
-                            </p>
-                        </div>
-                    </div>
-                    
-                    ${routeHtml}
-                </div>
-            </div>
-            
-            <div class="pl-2 flex items-center self-center">
-                <i class="fas fa-chevron-right text-white/30 text-xs"></i>
-            </div>
-        </div>`;
-
-        item.innerHTML = mainRow;
+        item.innerHTML = `<div class="flex items-start justify-between p-3 cursor-pointer select-none relative"><div class="absolute left-0 top-0 bottom-0 w-1 ${indicatorColor}"></div><div class="flex items-start gap-3 pl-2 overflow-hidden flex-1"><div class="w-7 h-7 rounded-lg bg-black/20 flex items-center justify-center font-mono text-xs font-bold ${statusColorClass.split(' ')[2]} shrink-0 border border-white/5 mt-0.5">${displayNo}</div><div class="min-w-0 flex-1"><div class="flex justify-between items-start"><h4 class="text-sm font-bold text-white truncate leading-tight">${displayName}</h4><div class="px-2 py-0.5 rounded border border-white/10 bg-black/20"><p class="text-[9px] ${statusColorClass.split(' ')[2]} font-bold uppercase tracking-wide">${order.status}</p></div></div>${routeHtml}</div></div><div class="pl-2 flex items-center self-center"><i class="fas fa-chevron-right text-white/30 text-xs"></i></div></div>`;
         container.appendChild(item);
     });
 }
 
 function renderStats() {
-    let totalOmset = 0;
-    let totalTiketTerjual = 0;
-    let paxPending = 0;
-    let paxSukses = 0;
-    let paxBatal = 0;
+    let totalOmset = 0; let totalTiketTerjual = 0;
+    let paxPending = 0; let paxSukses = 0; let paxBatal = 0;
 
     if (orders) {
         orders.forEach(o => {
-            let paxCount = 1;
+            let depCount = 0; let retCount = 0;
             if (Array.isArray(o.passengers)) {
-                paxCount = o.passengers.length; 
-            } else if (o.name) {
-                paxCount = 1;
-            }
+                depCount = o.passengers.filter(p => !p.direction || p.direction === 'depart').length;
+                retCount = o.passengers.filter(p => p.direction === 'return').length;
+            } else if (o.name) { depCount = 1; }
 
-            if (o.status === 'pending') {
-                paxPending += paxCount;
-            } else if (o.status === 'success') {
+            const paxCount = (o.tripType === 'round_trip' && retCount > 0) ? Math.max(depCount, retCount) : depCount;
+
+            if (o.status === 'pending') paxPending += paxCount;
+            else if (o.status === 'success') {
                 paxSukses += paxCount;
                 totalTiketTerjual += paxCount;
-                
-                const totalOrderPrice = (parseFloat(o.price) || 0) + (parseFloat(o.returnPrice) || 0);
-                totalOmset += totalOrderPrice;
-            } else if (o.status === 'cancel') {
-                paxBatal += paxCount;
-            }
+                totalOmset += (parseFloat(o.price) || 0) + (parseFloat(o.returnPrice) || 0);
+            } 
+            else if (o.status === 'cancel') paxBatal += paxCount;
         });
     }
 

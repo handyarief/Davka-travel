@@ -312,19 +312,27 @@ window.togglePaxSame = function() {
         returnWrapper.classList.add('hidden');
     } else {
         returnWrapper.classList.remove('hidden');
+        
+        // REVISI: Jika baru dimatikan, copy jumlah pax dari pergi (default behaviour yang rapi)
+        const adultCount = parseInt(document.getElementById('inpPaxCount').value) || 1;
+        const infantCount = parseInt(document.getElementById('inpInfantCount').value) || 0;
+        if(document.getElementById('inpReturnPaxCount') && document.getElementById('inpReturnPaxCount').value === '1') {
+            document.getElementById('inpReturnPaxCount').value = adultCount;
+        }
+        if(document.getElementById('inpReturnInfantCount') && document.getElementById('inpReturnInfantCount').value === '0') {
+            document.getElementById('inpReturnInfantCount').value = infantCount;
+        }
     }
     updatePassengerForms();
 }
 
 window.updatePassengerForms = function() {
+    // REVISI: Mengambil nilai jumlah penumpang untuk pergi dan pulang terpisah
     const adultCount = parseInt(document.getElementById('inpPaxCount').value) || 1;
     const infantCount = parseInt(document.getElementById('inpInfantCount').value) || 0;
     
-    // UPDATE: Sinkronisasi Teks Indikator Penumpang Pulang
-    const returnAdultInd = document.getElementById('returnPaxAdultCount');
-    const returnInfantInd = document.getElementById('returnPaxInfantCount');
-    if (returnAdultInd) returnAdultInd.innerText = adultCount;
-    if (returnInfantInd) returnInfantInd.innerText = infantCount;
+    const returnAdultCount = document.getElementById('inpReturnPaxCount') ? (parseInt(document.getElementById('inpReturnPaxCount').value) || 1) : 1;
+    const returnInfantCount = document.getElementById('inpReturnInfantCount') ? (parseInt(document.getElementById('inpReturnInfantCount').value) || 0) : 0;
     
     const containerDepart = document.getElementById('passengerFormsDepart');
     const containerReturn = document.getElementById('passengerFormsReturn'); 
@@ -353,7 +361,11 @@ window.updatePassengerForms = function() {
         const bgThemeClass = directionStr === 'depart' ? 'bg-white/5' : 'bg-blue-500/5';
         const borderThemeClass = directionStr === 'depart' ? 'border-white/10 hover:border-davka-orange/50' : 'border-blue-500/30 hover:border-blue-500/50';
 
-        for(let i = 1; i <= adultCount; i++) {
+        // REVISI: Menggunakan count spesifik arah perjalanan
+        const currentAdultCount = directionStr === 'depart' ? adultCount : returnAdultCount;
+        const currentInfantCount = directionStr === 'depart' ? infantCount : returnInfantCount;
+
+        for(let i = 1; i <= currentAdultCount; i++) {
             const valName = storedAdults[i-1] ? storedAdults[i-1].name : '';
             const valNik = storedAdults[i-1] ? storedAdults[i-1].nik : '';
             const valDob = storedAdults[i-1] ? storedAdults[i-1].dob : ''; 
@@ -374,7 +386,7 @@ window.updatePassengerForms = function() {
             </div>`;
         }
 
-        for(let i = 1; i <= infantCount; i++) {
+        for(let i = 1; i <= currentInfantCount; i++) {
             const valName = storedInfants[i-1] ? storedInfants[i-1].name : '';
             const valNik = storedInfants[i-1] ? storedInfants[i-1].nik : '';
             const valDob = storedInfants[i-1] ? storedInfants[i-1].dob : ''; 
@@ -451,12 +463,17 @@ window.getPassengersFromForm = function() {
 // --- CALCULATE TOTAL FROM PAX ---
 window.calcTotalFromPax = function() {
     const adultCount = parseInt(document.getElementById('inpPaxCount').value) || 1;
+    
+    // REVISI: Mengambil jumlah pax pulang untuk kalkulasi harga pulang
+    const isSame = document.getElementById('inpPaxSame').checked;
+    const returnAdultCount = isSame ? adultCount : (document.getElementById('inpReturnPaxCount') ? (parseInt(document.getElementById('inpReturnPaxCount').value) || 1) : adultCount);
 
     const pricePerPax = parseFloat(document.getElementById('inpPricePerPax').value) || 0;
     if (pricePerPax > 0) document.getElementById('inpPrice').value = pricePerPax * adultCount;
 
     const returnPricePerPax = parseFloat(document.getElementById('inpReturnPricePerPax').value) || 0;
-    if (returnPricePerPax > 0) document.getElementById('inpReturnPrice').value = returnPricePerPax * adultCount;
+    // REVISI: Gunakan returnAdultCount untuk harga total pulang
+    if (returnPricePerPax > 0) document.getElementById('inpReturnPrice').value = returnPricePerPax * returnAdultCount;
 
     calcRemaining(); 
 }
@@ -484,6 +501,7 @@ window.calcRemaining = function() {
             : "bg-transparent text-right text-red-500 font-black text-lg outline-none w-40 cursor-default";
     }
 }
+
 // --- FETCH & REALTIME ---
 async function fetchOrders() {
     const { data, error } = await supabase
@@ -742,6 +760,17 @@ window.editOrder = function(id) {
     document.getElementById('inpPaxCount').value = adults.length || 1;
     document.getElementById('inpInfantCount').value = infants.length || 0;
     
+    // REVISI: Set value untuk dropdown penumpang pulang saat mode edit
+    const retAdults = returnPax.filter(p => !p.type || p.type === 'adult');
+    const retInfants = returnPax.filter(p => p.type === 'infant');
+    
+    if(document.getElementById('inpReturnPaxCount')) {
+        document.getElementById('inpReturnPaxCount').value = retAdults.length || 1;
+    }
+    if(document.getElementById('inpReturnInfantCount')) {
+        document.getElementById('inpReturnInfantCount').value = retInfants.length || 0;
+    }
+    
     document.getElementById('inpTripType').value = data.tripType || 'one_way';
     toggleTripType();
     
@@ -763,8 +792,6 @@ window.editOrder = function(id) {
         populateContainer('passengerFormsDepart', infants, false);
 
         if(!isSame && isPP) {
-            const retAdults = returnPax.filter(p => !p.type || p.type === 'adult');
-            const retInfants = returnPax.filter(p => p.type === 'infant');
             populateContainer('passengerFormsReturn', retAdults, true);
             populateContainer('passengerFormsReturn', retInfants, false);
         }
@@ -788,6 +815,9 @@ window.editOrder = function(id) {
     document.getElementById('inpPaymentMethodReturn').value = data.paymentMethodReturn || 'Tunai';
     
     const adultCount = adults.length || 1;
+    // REVISI: Saat edit pastikan total harga dibagi pax spesifik
+    const retAdultCount = retAdults.length > 0 ? retAdults.length : adultCount;
+    
     const priceDepart = data.price || 0;
     document.getElementById('inpPrice').value = priceDepart;
     document.getElementById('inpPricePerPax').value = priceDepart > 0 ? Math.round(priceDepart / adultCount) : 0;
@@ -795,7 +825,7 @@ window.editOrder = function(id) {
     
     const priceReturn = data.returnPrice || 0;
     document.getElementById('inpReturnPrice').value = priceReturn;
-    document.getElementById('inpReturnPricePerPax').value = priceReturn > 0 ? Math.round(priceReturn / adultCount) : 0;
+    document.getElementById('inpReturnPricePerPax').value = priceReturn > 0 ? Math.round(priceReturn / retAdultCount) : 0;
     document.getElementById('inpFeeReturn').value = data.feeReturn || 0;
 
     calcRemaining();
@@ -1203,8 +1233,14 @@ window.resetForm = function() {
     document.getElementById('orderForm').reset();
     document.getElementById('editIndex').value = "-1";
     document.getElementById('btnSaveText').innerText = "SIMPAN PESANAN";
+    
     document.getElementById('inpPaxCount').value = "1";
     document.getElementById('inpInfantCount').value = "0"; 
+    
+    // REVISI: Reset juga dropdown penumpang pulang
+    if (document.getElementById('inpReturnPaxCount')) document.getElementById('inpReturnPaxCount').value = "1";
+    if (document.getElementById('inpReturnInfantCount')) document.getElementById('inpReturnInfantCount').value = "0";
+    
     document.getElementById('inpTripType').value = 'one_way';
     
     document.getElementById('inpPricePerPax').value = '';

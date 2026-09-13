@@ -544,7 +544,6 @@ async function uploadToSupabaseStorage(base64Data, fileName) {
         return null; 
     }
 }
-
 // --- FORM HANDLING (SAVE & UPDATE) ---
 const orderForm = document.getElementById('orderForm');
 
@@ -943,7 +942,7 @@ function processFile(file, callback) {
     reader.readAsDataURL(file);
 }
 
-// --- REVISI: SETUP HISTORY UPLOADER (MENDUKUNG E-TIKET PULANG) ---
+// --- SETUP HISTORY UPLOADER (MENDUKUNG E-TIKET PULANG) ---
 function setupHistoryUploader() {
     const historyInput = document.getElementById('inpHistoryUpload');
     historyInput.addEventListener('change', function(e) {
@@ -1317,7 +1316,7 @@ window.resetForm = function() {
     enableSmoothInputUX();
 }
 
-// --- REVISI UTAMA: LOGIKA DETAIL PENYEMBUNYIAN TAB DAN MULTIPLE UPLOAD E-TIKET ---
+// --- REVISI UTAMA: DETAIL PESANAN ---
 window.openDetailView = function(orderId) {
     const order = orders.find(o => o.id === orderId);
     if (!order) return;
@@ -1347,6 +1346,7 @@ window.openDetailView = function(orderId) {
         badge.classList.add('bg-orange-500/10', 'border-orange-500/30', 'text-orange-400');
     }
 
+    // Mengisi Rincian Tab Keberangkatan (Pergi)
     document.getElementById('detail-train').innerText = order.train || '-';
     document.getElementById('detail-date').innerText = order.date ? new Date(order.date).toLocaleDateString('id-ID', {day: 'numeric', month: 'short', year: 'numeric'}) : '-';
     document.getElementById('detail-war-date').innerText = order.warDate ? new Date(order.warDate).toLocaleDateString('id-ID', {day: 'numeric', month: 'short'}) : '-';
@@ -1358,23 +1358,25 @@ window.openDetailView = function(orderId) {
     document.getElementById('detail-img-transfer-depart').innerHTML = renderProof(order.transferScreenshot, "No TF Pergi");
     document.getElementById('detail-img-chat-depart').innerHTML = renderProof(order.chatScreenshot, "No Chat Pergi");
 
+    // Identifikasi elemen Tab Pulang
     const btnReturnTab = document.getElementById('tab-btn-return');
     const returnBadge = document.getElementById('badge-return-active');
     const returnDataContainer = document.getElementById('data-return-exist');
     const returnEmptyContainer = document.getElementById('data-return-empty');
     const containerProofReturn = document.getElementById('container-proof-return');
-    const ticketGridContainer = document.getElementById('detail-ticket-container');
+    
+    // Identifikasi kontainer E-Tiket yang sudah dipisah ke masing-masing Tab
     const uploadTicketDepart = document.getElementById('detail-upload-ticket-depart');
     const uploadTicketReturn = document.getElementById('detail-upload-ticket-return');
 
     if (order.tripType === 'round_trip') {
-        // Tampilkan Tab Pulang jika Round Trip
         btnReturnTab.classList.remove('hidden');
         returnBadge.classList.remove('hidden');
         returnDataContainer.classList.remove('hidden');
         returnEmptyContainer.classList.add('hidden');
         containerProofReturn.classList.remove('hidden');
 
+        // Mengisi Rincian Tab Kepulangan (Pulang)
         document.getElementById('detail-return-train').innerText = order.returnTrain || '-';
         document.getElementById('detail-return-date').innerText = order.returnDate ? new Date(order.returnDate).toLocaleDateString('id-ID', {day: 'numeric', month: 'short', year: 'numeric'}) : '-';
         document.getElementById('detail-return-war-date').innerText = order.returnWarDate ? new Date(order.returnWarDate).toLocaleDateString('id-ID', {day: 'numeric', month: 'short'}) : '-';
@@ -1382,26 +1384,20 @@ window.openDetailView = function(orderId) {
         document.getElementById('detail-img-transfer-return').innerHTML = renderProof(order.transferScreenshotReturn, "No TF Pulang");
         document.getElementById('detail-img-chat-return').innerHTML = renderProof(order.chatScreenshotReturn, "No Chat Pulang");
 
-        // Format Grid: 2 Kolom untuk E-Tiket (Pergi & Pulang)
-        ticketGridContainer.className = "grid grid-cols-2 gap-3";
+        // Set tombol E-Tiket (Masing-masing terisolasi di tabnya)
         uploadTicketDepart.innerHTML = renderUploadBtnHTML(orderId, 'kai_ticket_depart', order.kaiTicketFile, 'E-Tiket Pergi');
-        
-        uploadTicketReturn.classList.remove('hidden');
         uploadTicketReturn.innerHTML = renderUploadBtnHTML(orderId, 'kai_ticket_return', order.kaiTicketFileReturn, 'E-Tiket Pulang');
 
     } else {
-        // Sembunyikan Tab Pulang jika One Way
+        // Logika Sekali Jalan (Sembunyikan dan kosongkan semua data Pulang)
         btnReturnTab.classList.add('hidden');
         returnBadge.classList.add('hidden');
         returnDataContainer.classList.add('hidden');
         returnEmptyContainer.classList.remove('hidden');
         containerProofReturn.classList.add('hidden');
 
-        // Format Grid: 1 Kolom Full Lebar untuk E-Tiket (Hanya Pergi)
-        ticketGridContainer.className = "grid grid-cols-1 gap-3";
+        // Hanya E-Tiket Pergi yang dirender
         uploadTicketDepart.innerHTML = renderUploadBtnHTML(orderId, 'kai_ticket_depart', order.kaiTicketFile, 'E-Tiket KAI');
-        
-        uploadTicketReturn.classList.add('hidden');
         uploadTicketReturn.innerHTML = '';
     }
 
@@ -1440,6 +1436,7 @@ window.openDetailView = function(orderId) {
 
     document.getElementById('detail-cost-breakdown').innerHTML = '';
     
+    // Pastikan UI pertama kali merender data Pergi (tab aktif default)
     switchTab('depart');
 
     const settlementOptions = ["-", "Tunai", "Transfer CIMB Niaga", "Transfer Seabank", "Dana", "Gopay", "Ovo", "ShopeePay"];

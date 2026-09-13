@@ -160,6 +160,7 @@
                 </div>
             </div>
         </section>
+        
         <section id="page-input" class="hidden fade-in pb-10 pt-4">
             <div class="flex justify-between items-center mb-6 mt-2">
                 <div>
@@ -550,6 +551,7 @@
                 </div>
             </div>
         </section>
+
         <section id="page-detail" class="hidden fade-in pb-32">
             <div class="pt-16 px-1">
                 <div class="flex items-center gap-3 mb-6">
@@ -585,7 +587,7 @@
                         </div>
                     </div>
 
-                    <!-- TAB CONTAINER: Akan disembunyikan/dimanipulasi via JS jika One-Way -->
+                    <!-- TAB CONTAINER -->
                     <div class="flex bg-white/5 p-1 rounded-xl mb-4 relative" id="tab-container">
                         <button onclick="switchTab('depart')" id="tab-btn-depart" class="flex-1 py-2 text-[10px] font-bold uppercase rounded-lg transition-all bg-davka-orange text-white shadow-lg">
                             <i class="fas fa-train mr-1"></i> Pergi
@@ -596,6 +598,7 @@
                         </button>
                     </div>
 
+                    <!-- TAB CONTENT PERGI -->
                     <div id="tab-content-depart" class="animate-scale-up">
                         <div class="bg-white/5 rounded-xl p-3 border border-white/10 mb-3">
                             <p class="text-[9px] text-davka-orange font-bold uppercase mb-1 opacity-70">Detail Keberangkatan</p>
@@ -611,7 +614,7 @@
                             </div>
                         </div>
 
-                        <div class="grid grid-cols-2 gap-2">
+                        <div class="grid grid-cols-2 gap-2 mb-3">
                             <div id="detail-img-transfer-depart" class="bg-black/20 rounded-lg p-2 h-24 flex items-center justify-center border border-white/5 text-gray-500 text-[9px] text-center">
                                 No Transfer
                             </div>
@@ -619,8 +622,12 @@
                                 No Chat
                             </div>
                         </div>
+                        
+                        <!-- REVISI: E-TIKET PERGI DIPINDAHKAN KE DALAM TAB PERGI -->
+                        <div id="detail-upload-ticket-depart" class="h-32"></div>
                     </div>
 
+                    <!-- TAB CONTENT PULANG -->
                     <div id="tab-content-return" class="hidden animate-scale-up">
                         <div class="bg-white/5 rounded-xl p-3 border border-blue-500/30 relative overflow-hidden mb-3">
                             <div class="absolute left-0 top-0 bottom-0 w-1 bg-blue-500"></div>
@@ -644,7 +651,7 @@
                             </div>
                         </div>
 
-                        <div id="container-proof-return" class="grid grid-cols-2 gap-2">
+                        <div id="container-proof-return" class="grid grid-cols-2 gap-2 mb-3">
                             <div id="detail-img-transfer-return" class="bg-black/20 rounded-lg p-2 h-24 flex items-center justify-center border border-white/5 text-gray-500 text-[9px] text-center">
                                 No Transfer
                             </div>
@@ -652,6 +659,9 @@
                                 No Chat
                             </div>
                         </div>
+
+                        <!-- REVISI: E-TIKET PULANG DIPINDAHKAN KE DALAM TAB PULANG -->
+                        <div id="detail-upload-ticket-return" class="h-32"></div>
                     </div>
                 </div>
 
@@ -664,7 +674,7 @@
                      <h3 class="text-xs font-bold text-gray-400 uppercase tracking-widest mb-3 border-b border-white/10 pb-2">Pembayaran & Status</h3>
                      
                      <div id="detail-cost-breakdown" class="hidden mb-3 border-b border-white/5 pb-2 space-y-1">
-                        </div>
+                     </div>
 
                      <div class="grid grid-cols-2 gap-4 mb-4">
                         <div>
@@ -680,16 +690,14 @@
                      <div class="mb-4">
                         <label class="text-[10px] text-gray-400 mb-1 block">Update Metode Pelunasan</label>
                         <select id="detail-settlement-select" class="w-full bg-davka-bg border border-white/10 rounded-lg px-3 py-2 text-xs text-white outline-none focus:border-davka-orange">
-                            </select>
+                        </select>
                      </div>
 
-                     <!-- REVISI: GRID UPLOAD E-TIKET & BUKTI BAYAR DINAMIS -->
+                     <!-- REVISI: Kontainer Bukti Lunas -->
                      <div class="space-y-3 mb-4">
                         <div id="detail-upload-settlement" class="h-24"></div> 
-                        <div id="detail-ticket-container" class="grid grid-cols-1 gap-3">
-                            <div id="detail-upload-ticket-depart" class="h-32"></div> 
-                            <div id="detail-upload-ticket-return" class="h-32 hidden"></div> 
-                        </div>
+                        <!-- Grid container lama untuk tiket dikosongkan/disembunyikan karena tiket sudah pindah ke tab -->
+                        <div id="detail-ticket-container" class="hidden"></div>
                      </div>
 
                      <div class="grid grid-cols-4 gap-2 border-t border-white/10 pt-4">
@@ -714,6 +722,7 @@
             </div>
         </section>
     </main>
+
     <nav class="fixed bottom-6 left-1/2 transform -translate-x-1/2 w-[90%] max-w-sm glass-nav z-50 rounded-full p-2 border border-white/10 shadow-2xl transition-all duration-300">
         <div class="flex justify-between items-center px-2">
             <button onclick="navTo('dashboard')" id="nav-dashboard" class="flex-1 flex flex-col items-center gap-1 text-gray-400 hover:text-white transition-colors py-2 active-nav rounded-full">

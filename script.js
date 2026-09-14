@@ -313,7 +313,6 @@ window.togglePaxSame = function() {
     } else {
         returnWrapper.classList.remove('hidden');
         
-        // REVISI: Jika baru dimatikan, copy jumlah pax dari pergi (default behaviour yang rapi)
         const adultCount = parseInt(document.getElementById('inpPaxCount').value) || 1;
         const infantCount = parseInt(document.getElementById('inpInfantCount').value) || 0;
         if(document.getElementById('inpReturnPaxCount') && document.getElementById('inpReturnPaxCount').value === '1') {
@@ -325,9 +324,7 @@ window.togglePaxSame = function() {
     }
     updatePassengerForms();
 }
-
 window.updatePassengerForms = function() {
-    // REVISI: Mengambil nilai jumlah penumpang untuk pergi dan pulang terpisah
     const adultCount = parseInt(document.getElementById('inpPaxCount').value) || 1;
     const infantCount = parseInt(document.getElementById('inpInfantCount').value) || 0;
     
@@ -361,7 +358,6 @@ window.updatePassengerForms = function() {
         const bgThemeClass = directionStr === 'depart' ? 'bg-white/5' : 'bg-blue-500/5';
         const borderThemeClass = directionStr === 'depart' ? 'border-white/10 hover:border-davka-orange/50' : 'border-blue-500/30 hover:border-blue-500/50';
 
-        // REVISI: Menggunakan count spesifik arah perjalanan
         const currentAdultCount = directionStr === 'depart' ? adultCount : returnAdultCount;
         const currentInfantCount = directionStr === 'depart' ? infantCount : returnInfantCount;
 
@@ -409,11 +405,9 @@ window.updatePassengerForms = function() {
         return html;
     };
 
-    // Render Depart Forms
     const departData = extractStored('passengerFormsDepart');
     containerDepart.innerHTML = buildHtml(departData.storedAdults, departData.storedInfants, 'depart');
 
-    // Render Return Forms
     if(isPP && !isSame) {
         const returnData = extractStored('passengerFormsReturn');
         containerReturn.innerHTML = buildHtml(returnData.storedAdults, returnData.storedInfants, 'return');
@@ -460,11 +454,9 @@ window.getPassengersFromForm = function() {
     return paxList;
 }
 
-// --- CALCULATE TOTAL FROM PAX ---
 window.calcTotalFromPax = function() {
     const adultCount = parseInt(document.getElementById('inpPaxCount').value) || 1;
     
-    // REVISI: Mengambil jumlah pax pulang untuk kalkulasi harga pulang
     const isSame = document.getElementById('inpPaxSame').checked;
     const returnAdultCount = isSame ? adultCount : (document.getElementById('inpReturnPaxCount') ? (parseInt(document.getElementById('inpReturnPaxCount').value) || 1) : adultCount);
 
@@ -472,7 +464,6 @@ window.calcTotalFromPax = function() {
     if (pricePerPax > 0) document.getElementById('inpPrice').value = pricePerPax * adultCount;
 
     const returnPricePerPax = parseFloat(document.getElementById('inpReturnPricePerPax').value) || 0;
-    // REVISI: Gunakan returnAdultCount untuk harga total pulang
     if (returnPricePerPax > 0) document.getElementById('inpReturnPrice').value = returnPricePerPax * returnAdultCount;
 
     calcRemaining(); 
@@ -502,7 +493,6 @@ window.calcRemaining = function() {
     }
 }
 
-// --- FETCH & REALTIME ---
 async function fetchOrders() {
     const { data, error } = await supabase
         .from('orders')
@@ -542,7 +532,7 @@ async function fetchOrdersBg() {
         }
     }
 }
-// --- LOGIC UPLOAD & STORAGE ---
+
 async function uploadToSupabaseStorage(base64Data, fileName) {
     if (!base64Data || base64Data.startsWith('http')) return base64Data; 
     try {
@@ -561,7 +551,6 @@ async function uploadToSupabaseStorage(base64Data, fileName) {
     }
 }
 
-// --- FORM HANDLING (SAVE & UPDATE) ---
 const orderForm = document.getElementById('orderForm');
 
 orderForm.addEventListener('submit', async (e) => {
@@ -686,7 +675,6 @@ window.deleteOrder = async function(id) {
         finally { toggleLoader(false); }
     }
 }
-
 window.toggleStatus = async function(id) {
     const index = orders.findIndex(o => o.id === id);
     if(index === -1) return;
@@ -741,7 +729,6 @@ window.editOrder = function(id) {
     const isPP = data.tripType === 'round_trip';
     let isSame = true;
     
-    // Check if return differs from depart
     if(isPP && returnPax.length > 0) {
         if(departPax.length !== returnPax.length) { isSame = false; }
         else {
@@ -760,7 +747,6 @@ window.editOrder = function(id) {
     document.getElementById('inpPaxCount').value = adults.length || 1;
     document.getElementById('inpInfantCount').value = infants.length || 0;
     
-    // REVISI: Set value untuk dropdown penumpang pulang saat mode edit
     const retAdults = returnPax.filter(p => !p.type || p.type === 'adult');
     const retInfants = returnPax.filter(p => p.type === 'infant');
     
@@ -774,7 +760,6 @@ window.editOrder = function(id) {
     document.getElementById('inpTripType').value = data.tripType || 'one_way';
     toggleTripType();
     
-    // Force DOM update to render both containers before populating
     setTimeout(() => {
         const populateContainer = (containerId, sourceArr, isAdult) => {
             let idx = 0;
@@ -815,7 +800,6 @@ window.editOrder = function(id) {
     document.getElementById('inpPaymentMethodReturn').value = data.paymentMethodReturn || 'Tunai';
     
     const adultCount = adults.length || 1;
-    // REVISI: Saat edit pastikan total harga dibagi pax spesifik
     const retAdultCount = retAdults.length > 0 ? retAdults.length : adultCount;
     
     const priceDepart = data.price || 0;
@@ -972,7 +956,6 @@ function setupHistoryUploader() {
         });
     });
 }
-
 window.toggleTripType = function() {
     const type = document.getElementById('inpTripType').value;
     const fields = document.getElementById('returnTripFields');
@@ -1200,7 +1183,6 @@ window.clearImage = function(type) {
     }
     resetUploadZones(); 
 }
-
 window.searchOrders = function() { renderOrderList(document.getElementById('searchInput').value); }
 function formatRupiah(num) { return new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', minimumFractionDigits: 0 }).format(num); }
 function updateDate() { document.getElementById('current-date').innerText = new Date().toLocaleDateString('id-ID', { weekday: 'short', day: 'numeric', month: 'short' }); }
@@ -1237,7 +1219,6 @@ window.resetForm = function() {
     document.getElementById('inpPaxCount').value = "1";
     document.getElementById('inpInfantCount').value = "0"; 
     
-    // REVISI: Reset juga dropdown penumpang pulang
     if (document.getElementById('inpReturnPaxCount')) document.getElementById('inpReturnPaxCount').value = "1";
     if (document.getElementById('inpReturnInfantCount')) document.getElementById('inpReturnInfantCount').value = "0";
     
@@ -1294,14 +1275,28 @@ window.openDetailView = function(orderId) {
     document.getElementById('detail-date').innerText = order.date ? new Date(order.date).toLocaleDateString('id-ID', {day: 'numeric', month: 'short', year: 'numeric'}) : '-';
     document.getElementById('detail-war-date').innerText = order.warDate ? new Date(order.warDate).toLocaleDateString('id-ID', {day: 'numeric', month: 'short'}) : '-';
     
-    const renderProof = (url, label) => url ? 
-        `<img src="${url}" class="w-full h-full object-cover rounded-lg cursor-pointer hover:opacity-80 transition-opacity" onclick="showImageModal(this.src, true)">` : 
-        `<div class="text-gray-600 text-[9px] text-center flex flex-col items-center justify-center h-full"><i class="fas fa-times-circle text-xs mb-1"></i>${label}</div>`;
+    // REVISI B: Implementasi Teks Overlay Keterangan (Bukti Transfer & Bukti Chat)
+    const renderProof = (url, label, isTransfer) => {
+        if(url) {
+            // Teks label menyesuaikan apakah ini Transfer atau Chat
+            const overlayText = isTransfer ? "BUKTI TRANSFER" : "BUKTI CHAT WA";
+            return `
+            <div class="relative w-full h-full cursor-pointer hover:opacity-90 transition-opacity" onclick="showImageModal('${url}', true)">
+                <img src="${url}" class="w-full h-full object-cover rounded-lg">
+                <div class="absolute bottom-0 left-0 w-full bg-black/70 backdrop-blur-sm p-1.5 rounded-b-lg">
+                    <p class="text-[9px] text-white font-bold text-center tracking-wider">${overlayText}</p>
+                </div>
+            </div>`;
+        } else {
+            return `<div class="text-gray-600 text-[9px] text-center flex flex-col items-center justify-center h-full"><i class="fas fa-times-circle text-xs mb-1"></i>${label}</div>`;
+        }
+    };
 
-    document.getElementById('detail-img-transfer-depart').innerHTML = renderProof(order.transferScreenshot, "No TF Pergi");
-    document.getElementById('detail-img-chat-depart').innerHTML = renderProof(order.chatScreenshot, "No Chat Pergi");
+    // Mengirim parameter boolean true/false untuk membedakan label
+    document.getElementById('detail-img-transfer-depart').innerHTML = renderProof(order.transferScreenshot, "No TF Pergi", true);
+    document.getElementById('detail-img-chat-depart').innerHTML = renderProof(order.chatScreenshot, "No Chat Pergi", false);
 
-    const btnReturnTab = document.getElementById('tab-btn-return');
+    const tabContainer = document.getElementById('tab-container');
     const returnBadge = document.getElementById('badge-return-active');
     const returnDataContainer = document.getElementById('data-return-exist');
     const returnEmptyContainer = document.getElementById('data-return-empty');
@@ -1311,7 +1306,10 @@ window.openDetailView = function(orderId) {
     const uploadTicketReturn = document.getElementById('detail-upload-ticket-return');
 
     if (order.tripType === 'round_trip') {
-        btnReturnTab.classList.remove('hidden');
+        // REVISI A: Menampilkan kembali seluruh tab container jika PP
+        tabContainer.classList.remove('hidden');
+        tabContainer.classList.add('flex');
+        
         returnBadge.classList.remove('hidden');
         returnDataContainer.classList.remove('hidden');
         returnEmptyContainer.classList.add('hidden');
@@ -1321,13 +1319,16 @@ window.openDetailView = function(orderId) {
         document.getElementById('detail-return-date').innerText = order.returnDate ? new Date(order.returnDate).toLocaleDateString('id-ID', {day: 'numeric', month: 'short', year: 'numeric'}) : '-';
         document.getElementById('detail-return-war-date').innerText = order.returnWarDate ? new Date(order.returnWarDate).toLocaleDateString('id-ID', {day: 'numeric', month: 'short'}) : '-';
         
-        document.getElementById('detail-img-transfer-return').innerHTML = renderProof(order.transferScreenshotReturn, "No TF Pulang");
-        document.getElementById('detail-img-chat-return').innerHTML = renderProof(order.chatScreenshotReturn, "No Chat Pulang");
+        document.getElementById('detail-img-transfer-return').innerHTML = renderProof(order.transferScreenshotReturn, "No TF Pulang", true);
+        document.getElementById('detail-img-chat-return').innerHTML = renderProof(order.chatScreenshotReturn, "No Chat Pulang", false);
 
         uploadTicketDepart.innerHTML = renderUploadBtnHTML(orderId, 'kai_ticket_depart', order.kaiTicketFile, 'E-Tiket Pergi');
         uploadTicketReturn.innerHTML = renderUploadBtnHTML(orderId, 'kai_ticket_return', order.kaiTicketFileReturn, 'E-Tiket Pulang');
     } else {
-        btnReturnTab.classList.add('hidden');
+        // REVISI A: Menyembunyikan keseluruhan tab container jika Sekali Jalan
+        tabContainer.classList.add('hidden');
+        tabContainer.classList.remove('flex');
+        
         returnBadge.classList.add('hidden');
         returnDataContainer.classList.add('hidden');
         returnEmptyContainer.classList.remove('hidden');

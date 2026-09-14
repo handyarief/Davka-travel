@@ -710,7 +710,6 @@ window.navTo = function(pageId) {
         window.scrollTo({ top: 0, behavior: 'smooth' });
     }, 400); 
 }
-
 window.editOrder = function(id) {
     const index = orders.findIndex(o => o.id === id);
     if (index === -1) return;
@@ -1210,7 +1209,6 @@ window.showImageModal = function(src, dl=false) {
     document.getElementById('imageModal').classList.remove('hidden');
 }
 window.closeImageModal = function() { document.getElementById('imageModal').classList.add('hidden'); }
-
 window.resetForm = function() {
     document.getElementById('orderForm').reset();
     document.getElementById('editIndex').value = "-1";
@@ -1275,26 +1273,30 @@ window.openDetailView = function(orderId) {
     document.getElementById('detail-date').innerText = order.date ? new Date(order.date).toLocaleDateString('id-ID', {day: 'numeric', month: 'short', year: 'numeric'}) : '-';
     document.getElementById('detail-war-date').innerText = order.warDate ? new Date(order.warDate).toLocaleDateString('id-ID', {day: 'numeric', month: 'short'}) : '-';
     
-    // REVISI B: Implementasi Teks Overlay Keterangan (Bukti Transfer & Bukti Chat)
+    // REVISI B: Perubahan Layout Bukti Dokumen (Vertical Stacked seperti gambar e-tiket)
     const renderProof = (url, label, isTransfer) => {
         if(url) {
-            // Teks label menyesuaikan apakah ini Transfer atau Chat
             const overlayText = isTransfer ? "BUKTI TRANSFER" : "BUKTI CHAT WA";
             return `
-            <div class="relative w-full h-full cursor-pointer hover:opacity-90 transition-opacity" onclick="showImageModal('${url}', true)">
-                <img src="${url}" class="w-full h-full object-cover rounded-lg">
-                <div class="absolute bottom-0 left-0 w-full bg-black/70 backdrop-blur-sm p-1.5 rounded-b-lg">
-                    <p class="text-[9px] text-white font-bold text-center tracking-wider">${overlayText}</p>
+            <div class="w-full h-full flex flex-col cursor-pointer hover:opacity-90 transition-opacity" onclick="showImageModal('${url}', true)">
+                <div class="flex-1 w-full bg-white/5 overflow-hidden">
+                    <img src="${url}" class="w-full h-full object-cover object-top">
+                </div>
+                <div class="h-8 bg-[#374151] flex items-center justify-center shrink-0 border-t border-white/10">
+                    <p class="text-[9px] text-white font-bold tracking-widest uppercase">${overlayText}</p>
                 </div>
             </div>`;
         } else {
-            return `<div class="text-gray-600 text-[9px] text-center flex flex-col items-center justify-center h-full"><i class="fas fa-times-circle text-xs mb-1"></i>${label}</div>`;
+            return `
+            <div class="w-full h-full flex flex-col items-center justify-center text-gray-500 bg-[#1f2937]/30">
+                <i class="fas fa-image mb-1 opacity-50 text-xs"></i>
+                <span class="text-[8px] uppercase tracking-wider">${label}</span>
+            </div>`;
         }
     };
 
-    // Mengirim parameter boolean true/false untuk membedakan label
-    document.getElementById('detail-img-transfer-depart').innerHTML = renderProof(order.transferScreenshot, "No TF Pergi", true);
-    document.getElementById('detail-img-chat-depart').innerHTML = renderProof(order.chatScreenshot, "No Chat Pergi", false);
+    document.getElementById('detail-img-transfer-depart').innerHTML = renderProof(order.transferScreenshot, "Belum Upload TF", true);
+    document.getElementById('detail-img-chat-depart').innerHTML = renderProof(order.chatScreenshot, "Belum Upload Chat", false);
 
     const tabContainer = document.getElementById('tab-container');
     const returnBadge = document.getElementById('badge-return-active');
@@ -1306,7 +1308,6 @@ window.openDetailView = function(orderId) {
     const uploadTicketReturn = document.getElementById('detail-upload-ticket-return');
 
     if (order.tripType === 'round_trip') {
-        // REVISI A: Menampilkan kembali seluruh tab container jika PP
         tabContainer.classList.remove('hidden');
         tabContainer.classList.add('flex');
         
@@ -1319,13 +1320,12 @@ window.openDetailView = function(orderId) {
         document.getElementById('detail-return-date').innerText = order.returnDate ? new Date(order.returnDate).toLocaleDateString('id-ID', {day: 'numeric', month: 'short', year: 'numeric'}) : '-';
         document.getElementById('detail-return-war-date').innerText = order.returnWarDate ? new Date(order.returnWarDate).toLocaleDateString('id-ID', {day: 'numeric', month: 'short'}) : '-';
         
-        document.getElementById('detail-img-transfer-return').innerHTML = renderProof(order.transferScreenshotReturn, "No TF Pulang", true);
-        document.getElementById('detail-img-chat-return').innerHTML = renderProof(order.chatScreenshotReturn, "No Chat Pulang", false);
+        document.getElementById('detail-img-transfer-return').innerHTML = renderProof(order.transferScreenshotReturn, "Belum Upload TF", true);
+        document.getElementById('detail-img-chat-return').innerHTML = renderProof(order.chatScreenshotReturn, "Belum Upload Chat", false);
 
         uploadTicketDepart.innerHTML = renderUploadBtnHTML(orderId, 'kai_ticket_depart', order.kaiTicketFile, 'E-Tiket Pergi');
         uploadTicketReturn.innerHTML = renderUploadBtnHTML(orderId, 'kai_ticket_return', order.kaiTicketFileReturn, 'E-Tiket Pulang');
     } else {
-        // REVISI A: Menyembunyikan keseluruhan tab container jika Sekali Jalan
         tabContainer.classList.add('hidden');
         tabContainer.classList.remove('flex');
         

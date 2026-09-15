@@ -167,7 +167,7 @@
                     <h2 class="text-xl font-bold text-white">Form Pemesanan</h2>
                     <div class="h-1 w-10 bg-davka-orange rounded-full mt-1"></div>
                 </div>
-                <button onclick="resetForm()" class="text-[10px] font-bold text-davka-orange bg-davka-orange/10 px-3 py-2 rounded-full hover:bg-davka-orange hover:text-white transition-all flex items-center gap-2">
+                <button type="button" onclick="resetForm()" class="text-[10px] font-bold text-davka-orange bg-davka-orange/10 px-3 py-2 rounded-full hover:bg-davka-orange hover:text-white transition-all flex items-center gap-2">
                     <i class="fas fa-sync-alt"></i> RESET FORM
                 </button>
             </div>
@@ -367,247 +367,6 @@
 
                 </div>
                 <!-- UPLOAD BUKTI -->
-                <div class="glass p-5 rounded-3xl space-y-4">
-                    <div class="flex items-center gap-2 mb-2">
-                        <div class="w-8 h-8 rounded-full bg-purple-500/20 flex items-center justify-center text-purple-400">
-                            <i class="fas fa-file-upload text-xs"></i>
-                        </div>
-                        <h3 class="text-sm font-bold text-white">Upload Bukti</h3>
-                    </div>
-                    
-                    <div id="uploadTabContainer" class="hidden flex bg-white/5 p-1 rounded-xl mb-4 relative">
-                        <button type="button" onclick="switchUploadTab('depart')" id="btn-upload-depart" class="flex-1 py-2 text-[10px] font-bold uppercase rounded-lg transition-all bg-davka-orange text-white shadow-lg">
-                            <i class="fas fa-plane-departure mr-1"></i> Tiket Pergi
-                        </button>
-                        <button type="button" onclick="switchUploadTab('return')" id="btn-upload-return" class="flex-1 py-2 text-[10px] font-bold uppercase rounded-lg transition-all text-gray-400 hover:text-white">
-                            <i class="fas fa-plane-arrival mr-1"></i> Tiket Pulang
-                        </button>
-                    </div>
-
-                    <div id="uploadContainerDepart" class="grid grid-cols-1 gap-4 animate-scale-up">
-                        <p class="text-[9px] text-gray-500 uppercase font-bold text-center mb-1 hidden" id="lblUploadDepart">Dokumen Keberangkatan</p>
-                        
-                        <div id="zoneTransfer" onclick="handleUploadZoneClick('zoneTransfer', 'inpFileTransfer')" class="upload-zone-base bg-davka-bg p-4 rounded-xl border border-davka-border text-center group cursor-pointer hover:border-davka-orange transition-all duration-200 relative h-48 flex flex-col items-center justify-center select-none active:scale-[0.98]">
-                            <input type="file" id="inpFileTransfer" accept="image/*" class="hidden">
-                            
-                            <i class="fas fa-receipt text-3xl text-gray-600 group-hover:text-davka-orange mb-3 transition-colors"></i>
-                            <p class="text-xs text-gray-400 font-bold" id="labelTransfer">Bukti Transfer (Pergi)</p>
-                            <p class="text-[10px] text-gray-500 mt-1" id="subLabelTransfer">Ketuk 1x Pilih, Ketuk lagi Buka</p>
-                            
-                            <div id="hintTransfer" class="hidden absolute top-3 right-3 bg-davka-orange text-white text-[9px] font-bold px-3 py-1 rounded-full animate-bounce shadow-lg z-30">
-                                <i class="fas fa-hand-pointer mr-1"></i> BUKA FILE
-                            </div>
-
-                            <textarea id="inpTransferData" class="hidden"></textarea>
-                            
-                            <div id="previewTransfer" class="hidden absolute inset-0 bg-black z-20 rounded-xl overflow-hidden">
-                                <img id="imgTransfer" onclick="showImageModal(this.src, true); event.stopPropagation();" class="w-full h-full object-cover opacity-90 hover:opacity-100 transition-opacity cursor-zoom-in">
-                                
-                                <button type="button" onclick="clearImage('transfer'); event.stopPropagation();" class="absolute top-2 right-2 bg-red-600 text-white rounded-full w-8 h-8 flex items-center justify-center z-30 shadow-lg active:scale-90 transition-transform">
-                                    <i class="fas fa-times text-xs"></i>
-                                </button>
-                                
-                                <div class="absolute bottom-0 left-0 w-full bg-black/70 backdrop-blur-sm py-2 pointer-events-none">
-                                    <p class="text-[10px] text-white font-bold text-center"><i class="fas fa-download mr-1 text-davka-orange"></i> Ketuk foto untuk simpan</p>
-                                </div>
-                            </div>
-                        </div>
-
-                        <div id="zoneChat" onclick="handleUploadZoneClick('zoneChat', 'inpFileChat')" class="upload-zone-base bg-davka-bg p-4 rounded-xl border border-davka-border text-center group cursor-pointer hover:border-green-500 transition-all duration-200 relative h-48 flex flex-col items-center justify-center select-none active:scale-[0.98]">
-                            <input type="file" id="inpFileChat" accept="image/*" class="hidden">
-                            
-                            <i class="fab fa-whatsapp text-3xl text-gray-600 group-hover:text-green-500 mb-3 transition-colors"></i>
-                            <p class="text-xs text-gray-400 font-bold" id="labelChat">Chat WA (Pergi)</p>
-                            <p class="text-[10px] text-gray-500 mt-1" id="subLabelChat">Ketuk 1x Pilih, Ketuk lagi Buka</p>
-                            
-                            <div id="hintChat" class="hidden absolute top-3 right-3 bg-green-500 text-white text-[9px] font-bold px-3 py-1 rounded-full animate-bounce shadow-lg z-30">
-                                <i class="fas fa-hand-pointer mr-1"></i> BUKA FILE
-                            </div>
-
-                            <textarea id="inpChatData" class="hidden"></textarea>
-                            
-                            <div id="previewChat" class="hidden absolute inset-0 bg-black z-20 rounded-xl overflow-hidden">
-                                <img id="imgChat" onclick="showImageModal(this.src, true); event.stopPropagation();" class="w-full h-full object-cover opacity-90 hover:opacity-100 transition-opacity cursor-zoom-in">
-                                
-                                <button type="button" onclick="clearImage('chat'); event.stopPropagation();" class="absolute top-2 right-2 bg-red-600 text-white rounded-full w-8 h-8 flex items-center justify-center z-30 shadow-lg active:scale-90 transition-transform">
-                                    <i class="fas fa-times text-xs"></i>
-                                </button>
-                                
-                                <div class="absolute bottom-0 left-0 w-full bg-black/70 backdrop-blur-sm py-2 pointer-events-none">
-                                    <p class="text-[10px] text-white font-bold text-center"><i class="fas fa-download mr-1 text-green-500"></i> Ketuk foto untuk simpan</p>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                    <div id="uploadContainerReturn" class="hidden grid grid-cols-1 gap-4 animate-scale-up">
-                         <p class="text-[9px] text-blue-500 uppercase font-bold text-center mb-1">Dokumen Kepulangan</p>
-                         
-                         <div id="zoneTransferReturn" onclick="handleUploadZoneClick('zoneTransferReturn', 'inpFileTransferReturn')" class="upload-zone-base bg-davka-bg p-4 rounded-xl border border-blue-500/30 text-center group cursor-pointer hover:border-blue-500 transition-all duration-200 relative h-48 flex flex-col items-center justify-center select-none active:scale-[0.98]">
-                            <input type="file" id="inpFileTransferReturn" accept="image/*" class="hidden">
-                            
-                            <i class="fas fa-receipt text-3xl text-gray-600 group-hover:text-blue-500 mb-3 transition-colors"></i>
-                            <p class="text-xs text-gray-400 font-bold" id="labelTransferReturn">Bukti Transfer (Pulang)</p>
-                            <p class="text-[10px] text-gray-500 mt-1">Ketuk 1x Pilih, Ketuk lagi Buka</p>
-                            
-                            <div id="hintTransferReturn" class="hidden absolute top-3 right-3 bg-blue-500 text-white text-[9px] font-bold px-3 py-1 rounded-full animate-bounce shadow-lg z-30">
-                                <i class="fas fa-hand-pointer mr-1"></i> BUKA FILE
-                            </div>
-
-                            <textarea id="inpTransferDataReturn" class="hidden"></textarea>
-                            
-                            <div id="previewTransferReturn" class="hidden absolute inset-0 bg-black z-20 rounded-xl overflow-hidden">
-                                <img id="imgTransferReturn" onclick="showImageModal(this.src, true); event.stopPropagation();" class="w-full h-full object-cover opacity-90 hover:opacity-100 transition-opacity cursor-zoom-in">
-                                
-                                <button type="button" onclick="clearImage('transferReturn'); event.stopPropagation();" class="absolute top-2 right-2 bg-red-600 text-white rounded-full w-8 h-8 flex items-center justify-center z-30 shadow-lg active:scale-90 transition-transform">
-                                    <i class="fas fa-times text-xs"></i>
-                                </button>
-                                
-                                <div class="absolute bottom-0 left-0 w-full bg-black/70 backdrop-blur-sm py-2 pointer-events-none">
-                                    <p class="text-[10px] text-white font-bold text-center"><i class="fas fa-download mr-1 text-blue-500"></i> Ketuk foto untuk simpan</p>
-                                </div>
-                            </div>
-                        </div>
-
-                         <div id="zoneChatReturn" onclick="handleUploadZoneClick('zoneChatReturn', 'inpFileChatReturn')" class="upload-zone-base bg-davka-bg p-4 rounded-xl border border-blue-500/30 text-center group cursor-pointer hover:border-blue-500 transition-all duration-200 relative h-48 flex flex-col items-center justify-center select-none active:scale-[0.98]">
-                            <input type="file" id="inpFileChatReturn" accept="image/*" class="hidden">
-                            
-                            <i class="fab fa-whatsapp text-3xl text-gray-600 group-hover:text-blue-500 mb-3 transition-colors"></i>
-                            <p class="text-xs text-gray-400 font-bold" id="labelChatReturn">Chat WA (Pulang)</p>
-                            <p class="text-[10px] text-gray-500 mt-1">Ketuk 1x Pilih, Ketuk lagi Buka</p>
-                            
-                            <div id="hintChatReturn" class="hidden absolute top-3 right-3 bg-blue-500 text-white text-[9px] font-bold px-3 py-1 rounded-full animate-bounce shadow-lg z-30">
-                                <i class="fas fa-hand-pointer mr-1"></i> BUKA FILE
-                            </div>
-
-                            <textarea id="inpChatDataReturn" class="hidden"></textarea>
-                            
-                            <div id="previewChatReturn" class="hidden absolute inset-0 bg-black z-20 rounded-xl overflow-hidden">
-                                <img id="imgChatReturn" onclick="showImageModal(this.src, true); event.stopPropagation();" class="w-full h-full object-cover opacity-90 hover:opacity-100 transition-opacity cursor-zoom-in">
-                                
-                                <button type="button" onclick="clearImage('chatReturn'); event.stopPropagation();" class="absolute top-2 right-2 bg-red-600 text-white rounded-full w-8 h-8 flex items-center justify-center z-30 shadow-lg active:scale-90 transition-transform">
-                                    <i class="fas fa-times text-xs"></i>
-                                </button>
-                                
-                                <div class="absolute bottom-0 left-0 w-full bg-black/70 backdrop-blur-sm py-2 pointer-events-none">
-                                    <p class="text-[10px] text-white font-bold text-center"><i class="fas fa-download mr-1 text-blue-500"></i> Ketuk foto untuk simpan</p>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-                
-                <div class="glass p-5 rounded-3xl space-y-4 border-t-4 border-davka-orange">
-                    <h3 class="text-sm font-bold text-davka-orange uppercase tracking-widest text-center">Rincian Pembayaran</h3>
-                    
-                    <div class="space-y-3">
-                        <div class="relative bg-davka-bg/30 p-2 rounded-xl border border-white/5">
-                            <label class="text-[10px] font-bold text-davka-orange block mb-2 tracking-widest pl-1"><i class="fas fa-plane-departure mr-1"></i> BIAYA KEBERANGKATAN</label>
-                            
-                            <div class="mb-3 px-1">
-                                <label class="text-[9px] text-gray-500 font-bold uppercase mb-1 block">Metode Bayar (Pergi)</label>
-                                <select id="inpPaymentMethod" class="w-full bg-davka-bg border border-davka-border rounded-xl px-4 py-3 text-xs text-white focus:border-davka-orange outline-none">
-                                    <option value="Tunai">Tunai</option>
-                                    <option value="Transfer CIMB Niaga">Transfer CIMB Niaga</option>
-                                    <option value="Transfer Seabank">Transfer Seabank</option>
-                                    <option value="Dana">Dana</option>
-                                    <option value="Gopay">Gopay</option>
-                                    <option value="Ovo">Ovo</option>
-                                    <option value="ShopeePay">ShopeePay</option>
-                                </select>
-                            </div>
-
-                            <div class="flex items-center justify-between bg-davka-bg p-3 rounded-xl border border-davka-border mb-2">
-                                <label class="text-xs text-gray-400">Harga Pergi/Pax</label>
-                                <input type="number" id="inpPricePerPax" oninput="calcTotalFromPax()" class="bg-transparent text-right text-white font-bold outline-none w-32 focus:text-davka-orange transition-colors" placeholder="0">
-                            </div>
-
-                            <div class="flex items-center justify-between bg-davka-bg p-3 rounded-xl border border-davka-border mb-2">
-                                <label class="text-xs text-gray-400">Total Pergi</label>
-                                <input type="number" id="inpPrice" oninput="calcRemaining()" required class="bg-transparent text-right text-white font-bold outline-none w-32 focus:text-davka-orange transition-colors" placeholder="0">
-                            </div>
-
-                            <div class="flex items-center justify-between bg-davka-bg p-3 rounded-xl border border-davka-border mb-2">
-                                <label class="text-xs text-gray-400">DP Pergi</label>
-                                <input type="number" id="inpFeeDepart" oninput="calcRemaining()" class="bg-transparent text-right text-davka-orange font-bold outline-none w-32" placeholder="0">
-                            </div>
-
-                            <div class="flex items-center justify-between bg-davka-surface p-4 rounded-xl border border-white/10">
-                                <label class="text-xs font-bold text-white uppercase">Sisa Tagihan Pergi</label>
-                                <input type="text" id="inpRemainingDepart" class="bg-transparent text-right text-red-500 font-black text-lg outline-none w-40 cursor-default" placeholder="Rp 0" readonly>
-                            </div>
-                        </div>
-                        <div id="paymentReturnSection" class="hidden relative pt-2 border-t border-dashed border-white/10 mt-2 bg-blue-500/5 p-2 rounded-xl border border-blue-500/20">
-                            <label class="text-[10px] font-bold text-blue-500 block mb-2 tracking-widest pl-1"><i class="fas fa-plane-arrival mr-1"></i> BIAYA KEPULANGAN (PP)</label>
-                            
-                            <div class="mb-3 px-1">
-                                <label class="text-[9px] text-blue-400 font-bold uppercase mb-1 block">Metode Bayar (Pulang)</label>
-                                <select id="inpPaymentMethodReturn" class="w-full bg-davka-bg border border-blue-500/30 rounded-xl px-4 py-3 text-xs text-white focus:border-blue-500 outline-none">
-                                    <option value="Tunai">Tunai</option>
-                                    <option value="Transfer CIMB Niaga">Transfer CIMB Niaga</option>
-                                    <option value="Transfer Seabank">Transfer Seabank</option>
-                                    <option value="Dana">Dana</option>
-                                    <option value="Gopay">Gopay</option>
-                                    <option value="Ovo">Ovo</option>
-                                    <option value="ShopeePay">ShopeePay</option>
-                                </select>
-                            </div>
-
-                            <div class="flex items-center justify-between bg-davka-bg p-3 rounded-xl border border-blue-500/30 mb-2">
-                                <label class="text-xs text-gray-400">Harga Pulang/Pax</label>
-                                <input type="number" id="inpReturnPricePerPax" oninput="calcTotalFromPax()" class="bg-transparent text-right text-white font-bold outline-none w-32 focus:text-blue-400 transition-colors" placeholder="0">
-                            </div>
-
-                            <div class="flex items-center justify-between bg-davka-bg p-3 rounded-xl border border-blue-500/30 mb-2">
-                                <label class="text-xs text-gray-400">Total Pulang</label>
-                                <input type="number" id="inpReturnPrice" oninput="calcRemaining()" class="bg-transparent text-right text-white font-bold outline-none w-32 focus:text-blue-400 transition-colors" placeholder="0">
-                            </div>
-
-                            <div class="flex items-center justify-between bg-davka-bg p-3 rounded-xl border border-blue-500/30 mb-2">
-                                <label class="text-xs text-gray-400">DP Pulang</label>
-                                <input type="number" id="inpFeeReturn" oninput="calcRemaining()" class="bg-transparent text-right text-blue-400 font-bold outline-none w-32" placeholder="0">
-                            </div>
-
-                            <div class="flex items-center justify-between bg-blue-900/20 p-4 rounded-xl border border-blue-500/30">
-                                <label class="text-xs font-bold text-blue-400 uppercase">Sisa Tagihan Pulang</label>
-                                <input type="text" id="inpRemainingReturn" class="bg-transparent text-right text-red-500 font-black text-lg outline-none w-40 cursor-default" placeholder="Rp 0" readonly>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-
-                <div class="pt-2 pb-10 space-y-3">
-                    <button type="submit" class="w-full bg-gradient-to-r from-davka-orange to-red-600 text-white font-bold py-4 rounded-2xl shadow-lg shadow-orange-500/30 active:scale-95 transition-transform flex justify-center items-center gap-2">
-                        <i class="fas fa-save"></i> <span id="btnSaveText">SIMPAN PESANAN</span>
-                    </button>
-                </div>
-            </form>
-        </section>
-        <section id="page-list" class="hidden fade-in space-y-4">
-            <div class="pt-16 pb-2">
-                <div class="mb-4">
-                    <div class="flex justify-between items-center mb-3">
-                        <h2 class="text-xl font-bold text-white">Data Pemesan</h2>
-                        <div class="bg-davka-surface px-2 py-1 rounded border border-white/10">
-                            <i class="fas fa-history text-davka-orange text-xs"></i>
-                        </div>
-                    </div>
-                    <div class="relative">
-                        <input type="text" id="searchInput" onkeyup="searchOrders()" placeholder="Cari nama kontak..." class="w-full bg-davka-surface border border-white/10 text-white rounded-2xl py-3 pl-12 pr-4 focus:outline-none focus:border-davka-orange focus:ring-1 focus:ring-davka-orange transition-all shadow-inner" autocapitalize="characters">
-                        <i class="fas fa-search absolute left-4 top-3.5 text-gray-500"></i>
-                    </div>
-                </div>
-
-                <div id="ordersContainer" class="space-y-4 pb-48">
-                </div>
-            
-                <div id="emptyState" class="hidden flex flex-col items-center justify-center py-20 text-gray-600">
-                    <div class="w-20 h-20 rounded-full bg-davka-surface flex items-center justify-center mb-4">
-                        <i class="fas fa-inbox text-3xl opacity-30"></i>
-                    </div>
-                    <p class="text-sm">Belum ada pesanan.</p>
-                </div>
-            </div>
-        </section>
                 <div class="glass p-5 rounded-3xl space-y-4">
                     <div class="flex items-center gap-2 mb-2">
                         <div class="w-8 h-8 rounded-full bg-purple-500/20 flex items-center justify-center text-purple-400">
@@ -1026,19 +785,19 @@
         </section>
     </main>
     
-    <!-- REVISI NAVIGASI BAR: Ukuran Compact & Hanya Ikon -->
-    <nav class="fixed bottom-0 left-0 w-full bg-[#0b1221]/95 backdrop-blur-xl border-t border-white/10 z-50 h-16 shadow-[0_-10px_30px_rgba(0,0,0,0.6)] transition-all duration-300">
-        <div class="flex justify-between items-center max-w-sm mx-auto h-full px-6">
+    <!-- REVISI NAVIGASI BAR: Ukuran Ultra-Compact, Floating Pill, & 3D Ikon -->
+    <nav class="fixed bottom-5 left-1/2 transform -translate-x-1/2 w-11/12 max-w-xs bg-davka-surface/90 backdrop-blur-xl border border-white/10 z-50 h-[50px] rounded-full shadow-[0_15px_35px_rgba(0,0,0,0.7),inset_0_1px_2px_rgba(255,255,255,0.15)] transition-all duration-300">
+        <div class="flex justify-between items-center h-full px-8">
             <button onclick="navTo('dashboard')" id="nav-dashboard" class="flex-1 flex justify-center items-center text-gray-500 hover:text-gray-300 transition-colors h-full active-nav">
-                <i class="fas fa-home text-[26px] icon-3d"></i>
+                <i class="fas fa-home text-[20px] icon-3d"></i>
             </button>
             
             <button onclick="navTo('input')" id="nav-input" class="flex-1 flex justify-center items-center text-gray-500 hover:text-gray-300 transition-colors h-full">
-                <i class="fas fa-edit text-[26px] icon-3d"></i>
+                <i class="fas fa-edit text-[20px] icon-3d"></i>
             </button>
 
             <button onclick="navTo('list')" id="nav-list" class="flex-1 flex justify-center items-center text-gray-500 hover:text-gray-300 transition-colors h-full">
-                <i class="fas fa-folder-open text-[26px] icon-3d"></i>
+                <i class="fas fa-folder-open text-[20px] icon-3d"></i>
             </button>
         </div>
     </nav>

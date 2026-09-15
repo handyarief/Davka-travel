@@ -264,8 +264,7 @@ select:focus {
     to { transform: scale(1); opacity: 1; }
 }
 
-/* === REVISI: NAVIGATION STATES & 3D ICONS MODERNIZATION === */
-/* Penyesuaian bayangan dan efek scale agar lebih cocok untuk ukuran bar yang tipis (50px) */
+/* === NAVIGATION STATES & 3D ICONS === */
 .icon-3d {
     background: linear-gradient(135deg, #f8fafc 0%, #cbd5e1 40%, #64748b 100%);
     -webkit-background-clip: text;
@@ -302,7 +301,7 @@ input[type="date"]::-webkit-calendar-picker-indicator:hover {
     font-family: 'Cinzel', serif;
 }
 
-/* === NEW: FUTURISTIC INVOICE STYLES (CYBERPUNK HUD) === */
+/* === FUTURISTIC INVOICE STYLES (CYBERPUNK HUD) === */
 #receipt-render-area {
     position: fixed;
     top: 0;
@@ -315,7 +314,6 @@ input[type="date"]::-webkit-calendar-picker-indicator:hover {
     print-color-adjust: exact !important;
 }
 
-/* 1. Cyber Grid Background */
 .cyber-grid-bg {
     background-image: 
         linear-gradient(rgba(255, 255, 255, 0.03) 1px, transparent 1px),
@@ -324,7 +322,6 @@ input[type="date"]::-webkit-calendar-picker-indicator:hover {
     background-position: center top;
 }
 
-/* 2. Text Glowing Utilities */
 .glow-text-orange {
     text-shadow: 0 0 8px rgba(255, 84, 0, 0.8), 0 0 15px rgba(255, 84, 0, 0.4);
 }
@@ -332,7 +329,6 @@ input[type="date"]::-webkit-calendar-picker-indicator:hover {
     text-shadow: 0 0 10px rgba(255, 255, 255, 0.6);
 }
 
-/* 3. Barcode Mockup (Pure CSS untuk html2canvas) */
 .barcode-mockup {
     width: 250px;
     height: 35px;
@@ -357,7 +353,6 @@ input[type="date"]::-webkit-calendar-picker-indicator:hover {
     );
 }
 
-/* 4. Update Stamp Style: Hologram Effect */
 .stamp-lunas-modern {
     position: absolute;
     top: 50%; 
@@ -372,11 +367,9 @@ input[type="date"]::-webkit-calendar-picker-indicator:hover {
     object-fit: cover;
     border-radius: 50%;
     
-    /* Hologram Effect */
     opacity: 0.18; 
     mix-blend-mode: screen; 
     
-    /* Glow */
     box-shadow: 0 0 40px rgba(14, 165, 233, 0.3);
     filter: drop-shadow(0 0 15px rgba(14, 165, 233, 0.5)) hue-rotate(180deg);
     
@@ -399,7 +392,6 @@ input[type="date"]::-webkit-calendar-picker-indicator:hover {
     text-overflow: ellipsis;
 }
 
-/* === UPLOAD BUTTON STATES === */
 .upload-zone-active {
     border-color: #ff5400 !important;
     background-color: rgba(255, 84, 0, 0.05);
@@ -407,12 +399,10 @@ input[type="date"]::-webkit-calendar-picker-indicator:hover {
     transform: scale(0.98);
 }
 
-/* === KEYBOARD FIX: CLASS PENYEMBUNYI NAV MENU === */
 .nav-hidden-keyboard {
     display: none !important;
 }
 
-/* === NEW: TOGGLE SWITCH (GLASSMORPHISM STYLE) === */
 .toggle-switch {
     position: relative;
     display: inline-block;
@@ -467,4 +457,39 @@ input:checked + .slider:before {
 
 .slider.round:before {
     border-radius: 50%;
+}
+
+/* === MULTI-STEP WIZARD PROGRESS INDICATOR === */
+.step-indicator {
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    background-color: #0b1221;
+    border: 2px solid rgba(255, 255, 255, 0.1);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: rgba(255, 255, 255, 0.3);
+    font-size: 12px;
+    z-index: 10;
+    transition: all 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
+    box-shadow: 0 4px 10px rgba(0,0,0,0.5);
+}
+
+.step-indicator.active {
+    background-color: #ff5400;
+    border-color: #ff5400;
+    color: white;
+    box-shadow: 0 0 15px rgba(255, 84, 0, 0.5);
+    transform: scale(1.15);
+}
+
+.step-indicator.completed {
+    background-color: rgba(255, 84, 0, 0.2);
+    border-color: #ff5400;
+    color: #ff5400;
+}
+
+.form-step {
+    transition: all 0.4s ease-in-out;
 }

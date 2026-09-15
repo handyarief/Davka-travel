@@ -14,6 +14,10 @@ let activeUploadZone = null;
 let currentDetailOrder = null; 
 let currentDetailTab = 'depart'; 
 
+// Variabel Form Wizard
+let currentStep = 1;
+const totalSteps = 5;
+
 // --- INIT SYSTEM ---
 document.addEventListener('DOMContentLoaded', async () => {
     const splash = document.getElementById('splash-screen');
@@ -198,6 +202,7 @@ window.switchTab = function(tabName) {
         }
     }
 }
+
 // --- CORE: FUNGSI RENDER FINANSIAL DINAMIS ---
 function renderDetailFinancials(mode) {
     if(!currentDetailOrder) return;
@@ -274,8 +279,8 @@ window.switchUploadTab = function(tabName) {
     const containerDepart = document.getElementById('uploadContainerDepart');
     const containerReturn = document.getElementById('uploadContainerReturn');
 
-    const inactiveClass = "flex-1 py-2 text-[10px] font-bold uppercase rounded-lg transition-all text-gray-400 hover:text-white";
-    const activeClass = "flex-1 py-2 text-[10px] font-bold uppercase rounded-lg transition-all bg-davka-orange text-white shadow-lg";
+    const inactiveClass = "flex-1 py-3 text-[10px] font-bold uppercase rounded-lg transition-all text-gray-400 hover:text-white";
+    const activeClass = "flex-1 py-3 text-[10px] font-bold uppercase rounded-lg transition-all bg-davka-orange text-white shadow-[0_4px_10px_rgba(255,84,0,0.3)]";
 
     if (tabName === 'depart') {
         btnDepart.className = activeClass;
@@ -287,6 +292,76 @@ window.switchUploadTab = function(tabName) {
         btnReturn.className = activeClass;
         containerDepart.classList.add('hidden');
         containerReturn.classList.remove('hidden');
+    }
+}
+// --- MULTI-STEP WIZARD LOGIC ---
+window.nextStep = function(step) {
+    // Validasi input required pada step saat ini
+    const stepElement = document.getElementById(`step-${step}`);
+    const inputs = stepElement.querySelectorAll('input[required], select[required], textarea[required]');
+    
+    let isValid = true;
+    inputs.forEach(input => {
+        if (!input.checkValidity()) {
+            input.reportValidity();
+            isValid = false;
+        }
+    });
+
+    if (!isValid) return;
+
+    // Sembunyikan step saat ini
+    stepElement.classList.remove('fade-in');
+    stepElement.classList.add('hidden');
+    
+    // Tampilkan step berikutnya
+    currentStep = step + 1;
+    const nextStepElement = document.getElementById(`step-${currentStep}`);
+    nextStepElement.classList.remove('hidden');
+    nextStepElement.classList.add('fade-in');
+    
+    updateWizardProgress();
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+};
+
+window.prevStep = function(step) {
+    const stepElement = document.getElementById(`step-${step}`);
+    
+    // Sembunyikan step saat ini
+    stepElement.classList.remove('fade-in');
+    stepElement.classList.add('hidden');
+    
+    // Tampilkan step sebelumnya
+    currentStep = step - 1;
+    const prevStepElement = document.getElementById(`step-${currentStep}`);
+    prevStepElement.classList.remove('hidden');
+    prevStepElement.classList.add('fade-in');
+    
+    updateWizardProgress();
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+};
+
+function updateWizardProgress() {
+    const progressPercentage = ((currentStep - 1) / (totalSteps - 1)) * 100;
+    const wizardBar = document.getElementById('wizard-bar');
+    if (wizardBar) wizardBar.style.width = `${progressPercentage}%`;
+    
+    const icons = ['fa-address-book', 'fa-train', 'fa-users', 'fa-file-upload', 'fa-wallet'];
+    
+    for (let i = 1; i <= totalSteps; i++) {
+        const indicator = document.getElementById(`indicator-${i}`);
+        if (!indicator) continue;
+        
+        if (i < currentStep) {
+            indicator.className = 'step-indicator completed';
+            indicator.innerHTML = '<i class="fas fa-check"></i>';
+        } else if (i === currentStep) {
+            indicator.className = 'step-indicator active';
+            indicator.innerHTML = `<i class="fas ${icons[i-1]}"></i>`;
+        } else {
+            indicator.className = 'step-indicator';
+            indicator.innerHTML = `<i class="fas ${icons[i-1]}"></i>`;
+        }
     }
 }
 
@@ -323,7 +398,7 @@ function handleInputEnter(e, currentIndex, allElements) {
     }
 }
 
-// --- NEW REVISION: TAB PENUMPANG SAMA / BEDA ---
+// --- TAB PENUMPANG SAMA / BEDA ---
 window.togglePaxSame = function() {
     const isSame = document.getElementById('inpPaxSame').checked;
     const returnWrapper = document.getElementById('passengerFormsReturnWrapper');
@@ -386,8 +461,8 @@ window.updatePassengerForms = function() {
             const valDob = storedAdults[i-1] ? storedAdults[i-1].dob : ''; 
             
             html += `
-            <div class="passenger-item border ${borderThemeClass} rounded-xl p-3 ${bgThemeClass} relative group transition-colors" data-type="adult" data-direction="${directionStr}">
-                <div class="absolute -left-1 top-3 w-1 h-6 bg-${themeColorClass} rounded-r"></div>
+            <div class="passenger-item border ${borderThemeClass} rounded-xl p-3 ${bgThemeClass} relative group transition-colors shadow-inner" data-type="adult" data-direction="${directionStr}">
+                <div class="absolute -left-1 top-3 w-1 h-6 bg-${themeColorClass} rounded-r shadow-[0_0_10px_currentColor]"></div>
                 <p class="text-[10px] font-bold text-${themeColorClass} mb-2 uppercase tracking-wider pl-2">
                     <i class="fas fa-user mr-1"></i> Dewasa ${i} ${directionStr === 'return' ? '(Pulang)' : ''}
                 </p>
@@ -407,8 +482,8 @@ window.updatePassengerForms = function() {
             const valDob = storedInfants[i-1] ? storedInfants[i-1].dob : ''; 
             
             html += `
-            <div class="passenger-item border border-pink-500/30 rounded-xl p-3 bg-pink-500/5 relative group hover:border-pink-500 transition-colors" data-type="infant" data-direction="${directionStr}">
-                <div class="absolute -left-1 top-3 w-1 h-6 bg-pink-500 rounded-r"></div>
+            <div class="passenger-item border border-pink-500/30 rounded-xl p-3 bg-pink-500/5 relative group hover:border-pink-500 transition-colors shadow-inner" data-type="infant" data-direction="${directionStr}">
+                <div class="absolute -left-1 top-3 w-1 h-6 bg-pink-500 rounded-r shadow-[0_0_10px_currentColor]"></div>
                 <p class="text-[10px] font-bold text-pink-400 mb-2 uppercase tracking-wider pl-2">
                     <i class="fas fa-baby mr-1"></i> Bayi ${i} ${directionStr === 'return' ? '(Pulang)' : ''}
                 </p>
@@ -568,7 +643,6 @@ async function uploadToSupabaseStorage(base64Data, fileName) {
         return null; 
     }
 }
-
 const orderForm = document.getElementById('orderForm');
 
 orderForm.addEventListener('submit', async (e) => {
@@ -710,7 +784,7 @@ window.toggleStatus = async function(id) {
     catch(e) { console.error(e); }
 }
 
-// REVISI: MODIFIKASI FUNGSI navTo UNTUK MENDUKUNG HISTORY API (BACK BUTTON)
+// REVISI: MODIFIKASI FUNGSI navTo UNTUK MENDUKUNG HISTORY API & RESET WIZARD
 window.navTo = function(pageId, fromPopState = false) {
     const currentPages = document.querySelectorAll('main > section:not(.hidden)');
     currentPages.forEach(page => { page.classList.add('fade-out'); page.classList.remove('fade-in'); });
@@ -734,9 +808,21 @@ window.navTo = function(pageId, fromPopState = false) {
             const btn = document.getElementById('nav-input');
             if(btn) btn.classList.add('active-nav');
             if(document.getElementById('editIndex').value === "-1") resetForm();
+            
+            // Force reset wizard to step 1 whenever entering input page
+            currentStep = 1;
+            document.querySelectorAll('.form-step').forEach(el => {
+                el.classList.add('hidden');
+                el.classList.remove('fade-in');
+            });
+            const firstStep = document.getElementById('step-1');
+            if (firstStep) {
+                firstStep.classList.remove('hidden');
+                firstStep.classList.add('fade-in');
+            }
+            if (typeof updateWizardProgress === 'function') updateWizardProgress();
         }
         
-        // Push state jika bukan trigger dari back/forward (popstate)
         if (!fromPopState) {
             window.history.pushState({ view: pageId }, '', `#${pageId}`);
         }
@@ -1287,6 +1373,19 @@ window.resetForm = function() {
     calcRemaining();
     resetUploadZones();
     enableSmoothInputUX();
+
+    // REVISI: Reset wizard kembali ke Step 1
+    currentStep = 1;
+    document.querySelectorAll('.form-step').forEach(el => {
+        el.classList.add('hidden');
+        el.classList.remove('fade-in');
+    });
+    const step1 = document.getElementById('step-1');
+    if (step1) {
+        step1.classList.remove('hidden');
+        step1.classList.add('fade-in');
+    }
+    if (typeof updateWizardProgress === 'function') updateWizardProgress();
 }
 
 window.openDetailView = function(orderId, fromPopState = false) {
@@ -1440,8 +1539,6 @@ window.openDetailView = function(orderId, fromPopState = false) {
 }
 
 window.closeDetailView = function() {
-    // Alih-alih menutup secara paksa dan memutus history, kita panggil history.back()
-    // agar popstate ter-trigger dan UI mengarah ke state sebelumnya dengan benar
     window.history.back();
 }
 

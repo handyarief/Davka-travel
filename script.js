@@ -82,6 +82,26 @@ function initializeAppLogic() {
     setupHistoryUploader();
     enableSmoothInputUX();
     setupKeyboardListener();
+
+    // REVISI: SETUP HISTORY API UNTUK TOMBOL BACK HARDWARE
+    window.history.replaceState({ view: 'dashboard' }, '', '#dashboard');
+    window.addEventListener('popstate', (e) => {
+        const modal = document.getElementById('imageModal');
+        if (modal && !modal.classList.contains('hidden')) {
+            modal.classList.add('hidden');
+            return; 
+        }
+        
+        if (e.state && e.state.view) {
+            if (e.state.view === 'detail') {
+                openDetailView(e.state.id, true);
+            } else if (e.state.view !== 'modal') {
+                navTo(e.state.view, true);
+            }
+        } else {
+            navTo('dashboard', true);
+        }
+    });
 }
 
 function setupKeyboardListener() {
@@ -178,7 +198,6 @@ window.switchTab = function(tabName) {
         }
     }
 }
-
 // --- CORE: FUNGSI RENDER FINANSIAL DINAMIS ---
 function renderDetailFinancials(mode) {
     if(!currentDetailOrder) return;
@@ -468,7 +487,6 @@ window.calcTotalFromPax = function() {
 
     calcRemaining(); 
 }
-
 window.calcRemaining = function() {
     const priceDepart = parseFloat(document.getElementById('inpPrice').value) || 0;
     const dpDepart = parseFloat(document.getElementById('inpFeeDepart').value) || 0;
@@ -528,7 +546,7 @@ async function fetchOrdersBg() {
         
         if(currentDetailOrder && !document.getElementById('page-detail').classList.contains('hidden')) {
             const updatedOrder = orders.find(o => o.id === currentDetailOrder.id);
-            if(updatedOrder) openDetailView(updatedOrder.id);
+            if(updatedOrder) openDetailView(updatedOrder.id, true);
         }
     }
 }
@@ -652,6 +670,7 @@ orderForm.addEventListener('submit', async (e) => {
         renderOrderList(''); 
         showToast("Data Tersimpan!");
         resetForm();
+        navTo('list'); 
     } catch (err) {
         console.error("Save Failed:", err);
         alert(`Gagal simpan: ${err.message || "Cek koneksi internet"}`);
@@ -684,32 +703,48 @@ window.toggleStatus = async function(id) {
     orders[index].status = next;
     
     renderOrderList(document.getElementById('searchInput').value);
-    if(!document.getElementById('page-detail').classList.contains('hidden')) openDetailView(id);
+    if(!document.getElementById('page-detail').classList.contains('hidden')) openDetailView(id, true);
     renderStats();
 
     try { await supabase.from('orders').update({ status: next }).eq('id', id); } 
     catch(e) { console.error(e); }
 }
 
-window.navTo = function(pageId) {
+// REVISI: MODIFIKASI FUNGSI navTo UNTUK MENDUKUNG HISTORY API (BACK BUTTON)
+window.navTo = function(pageId, fromPopState = false) {
     const currentPages = document.querySelectorAll('main > section:not(.hidden)');
     currentPages.forEach(page => { page.classList.add('fade-out'); page.classList.remove('fade-in'); });
 
     setTimeout(() => {
         document.querySelectorAll('main > section').forEach(el => { el.classList.add('hidden'); el.classList.remove('fade-out'); });
         const target = document.getElementById(`page-${pageId}`);
-        target.classList.remove('hidden'); target.classList.add('fade-in');
+        if(target) { target.classList.remove('hidden'); target.classList.add('fade-in'); }
 
         document.querySelectorAll('nav button').forEach(el => el.classList.remove('active-nav'));
-        if(pageId === 'dashboard') document.getElementById('nav-dashboard').classList.add('active-nav');
+        if(pageId === 'dashboard') {
+            const btn = document.getElementById('nav-dashboard');
+            if(btn) btn.classList.add('active-nav');
+        }
         if(pageId === 'list') {
-            document.getElementById('nav-list').classList.add('active-nav');
+            const btn = document.getElementById('nav-list');
+            if(btn) btn.classList.add('active-nav');
             renderOrderList(document.getElementById('searchInput').value); 
         }
-        if(pageId === 'input' && document.getElementById('editIndex').value === "-1") resetForm();
+        if(pageId === 'input') {
+            const btn = document.getElementById('nav-input');
+            if(btn) btn.classList.add('active-nav');
+            if(document.getElementById('editIndex').value === "-1") resetForm();
+        }
+        
+        // Push state jika bukan trigger dari back/forward (popstate)
+        if (!fromPopState) {
+            window.history.pushState({ view: pageId }, '', `#${pageId}`);
+        }
+
         window.scrollTo({ top: 0, behavior: 'smooth' });
     }, 400); 
 }
+
 window.editOrder = function(id) {
     const index = orders.findIndex(o => o.id === id);
     if (index === -1) return;
@@ -838,7 +873,7 @@ window.updateSettlement = async function(id, newVal) {
         orders[index].status = nextStatus;
         
         renderOrderList(document.getElementById('searchInput').value);
-        if(!document.getElementById('page-detail').classList.contains('hidden')) openDetailView(id); 
+        if(!document.getElementById('page-detail').classList.contains('hidden')) openDetailView(id, true); 
 
         renderStats(); 
         try {
@@ -944,7 +979,7 @@ function setupHistoryUploader() {
                      else if (currentUploadType === 'kai_ticket_depart') orders[idx].kaiTicketFile = publicUrl;
                      else if (currentUploadType === 'kai_ticket_return') orders[idx].kaiTicketFileReturn = publicUrl;
                      
-                     if(!document.getElementById('page-detail').classList.contains('hidden')) openDetailView(currentUploadOrderId);
+                     if(!document.getElementById('page-detail').classList.contains('hidden')) openDetailView(currentUploadOrderId, true);
                 }
                 showToast("Tersimpan!");
             } catch(e) { console.error(e); alert("Gagal simpan."); } 
@@ -1149,7 +1184,6 @@ function captureAndShowModal(elementId) {
     })
     .catch(err => { console.error("Render Error:", err); toggleLoader(false); alert("Gagal render."); });
 }
-
 function renderUploadBtnHTML(id, type, file, label) {
     if(file) {
         return `<div class="relative w-full h-full rounded-lg overflow-hidden border border-white/10 group cursor-pointer bg-black/40">
@@ -1196,6 +1230,8 @@ window.showToast = function(msg) {
     t.classList.remove('opacity-0', 'translate-y-[-20px]', 'pointer-events-none');
     setTimeout(() => t.classList.add('opacity-0', 'translate-y-[-20px]', 'pointer-events-none'), 3000);
 }
+
+// UPDATE showImageModal for History API
 window.showImageModal = function(src, dl=false) {
     document.getElementById('modalImg').src = src;
     const acts = document.getElementById('modalActions'); acts.innerHTML = '';
@@ -1207,8 +1243,18 @@ window.showImageModal = function(src, dl=false) {
         acts.appendChild(btn);
     }
     document.getElementById('imageModal').classList.remove('hidden');
+    
+    // Simpan history push state agar tombol back perangkat bisa menutup modal
+    window.history.pushState({ view: 'modal' }, '', '#modal');
 }
-window.closeImageModal = function() { document.getElementById('imageModal').classList.add('hidden'); }
+
+window.closeImageModal = function(fromPopState = false) { 
+    document.getElementById('imageModal').classList.add('hidden'); 
+    if(!fromPopState) {
+        window.history.back(); // Jika tombol silang di UI ditekan, panggil history.back() untuk sinkronisasi popstate
+    }
+}
+
 window.resetForm = function() {
     document.getElementById('orderForm').reset();
     document.getElementById('editIndex').value = "-1";
@@ -1243,7 +1289,7 @@ window.resetForm = function() {
     enableSmoothInputUX();
 }
 
-window.openDetailView = function(orderId) {
+window.openDetailView = function(orderId, fromPopState = false) {
     const order = orders.find(o => o.id === orderId);
     if (!order) return;
 
@@ -1252,6 +1298,11 @@ window.openDetailView = function(orderId) {
     document.getElementById('page-list').classList.add('hidden', 'fade-out');
     document.getElementById('page-detail').classList.remove('hidden');
     document.getElementById('page-detail').classList.add('fade-in');
+    
+    // REVISI: HISTORY API
+    if (!fromPopState) {
+        window.history.pushState({ view: 'detail', id: orderId }, '', `#detail-${orderId}`);
+    }
     
     window.scrollTo({ top: 0, behavior: 'smooth' });
 
@@ -1273,7 +1324,6 @@ window.openDetailView = function(orderId) {
     document.getElementById('detail-date').innerText = order.date ? new Date(order.date).toLocaleDateString('id-ID', {day: 'numeric', month: 'short', year: 'numeric'}) : '-';
     document.getElementById('detail-war-date').innerText = order.warDate ? new Date(order.warDate).toLocaleDateString('id-ID', {day: 'numeric', month: 'short'}) : '-';
     
-    // REVISI B: Perubahan Layout Bukti Dokumen (Vertical Stacked seperti gambar e-tiket)
     const renderProof = (url, label, isTransfer) => {
         if(url) {
             const overlayText = isTransfer ? "BUKTI TRANSFER" : "BUKTI CHAT WA";
@@ -1390,12 +1440,9 @@ window.openDetailView = function(orderId) {
 }
 
 window.closeDetailView = function() {
-    document.getElementById('page-detail').classList.add('hidden', 'fade-out');
-    document.getElementById('page-detail').classList.remove('fade-in');
-    document.getElementById('page-list').classList.remove('hidden');
-    document.getElementById('page-list').classList.add('fade-in');
-    currentDetailOrder = null;
-    renderOrderList(document.getElementById('searchInput').value);
+    // Alih-alih menutup secara paksa dan memutus history, kita panggil history.back()
+    // agar popstate ter-trigger dan UI mengarah ke state sebelumnya dengan benar
+    window.history.back();
 }
 
 window.renderOrderList = function(filterText = '') {
@@ -1403,7 +1450,7 @@ window.renderOrderList = function(filterText = '') {
     container.innerHTML = '';
     if(!orders) return;
     
-    const sortedOrders = [...orders].sort((a, b) => new Date(a.created_at || a.id) - new Date(b.created_at || b.id));
+    const sortedOrders = [...orders].sort((a, b) => new Date(b.created_at || b.id) - new Date(a.created_at || a.id));
     const filtered = sortedOrders.filter(o => {
         const name = o.contactName || o.name || '';
         return name.toLowerCase().includes(filterText.toLowerCase());
@@ -1419,7 +1466,7 @@ window.renderOrderList = function(filterText = '') {
         else { statusColorClass = 'bg-orange-500/10 border-orange-500/30 text-orange-400'; indicatorColor = 'bg-orange-500'; }
 
         const displayName = (order.contactName || order.name || 'No Name').toUpperCase();
-        const displayNo = index + 1; 
+        const displayNo = filtered.length - index; 
         const dateStr = order.date ? new Date(order.date).toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' }) : '-';
         
         let routeHtml = `<div class="mt-1"><p class="text-[10px] text-gray-300 font-bold flex items-center"><i class="fas fa-train text-davka-orange mr-1.5 text-[10px]"></i> ${order.origin || '?'} <i class="fas fa-chevron-right text-[8px] mx-1 opacity-50"></i> ${order.dest || '?'}</p><p class="text-[10px] text-gray-500 pl-4 font-mono">${dateStr}</p></div>`;

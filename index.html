@@ -785,20 +785,23 @@
             </div>
         </section>
     </main>
-    <nav class="fixed bottom-6 left-1/2 transform -translate-x-1/2 w-[90%] max-w-sm glass-nav z-50 rounded-full p-2 border border-white/10 shadow-2xl transition-all duration-300">
-        <div class="flex justify-between items-center px-2">
-            <button onclick="navTo('dashboard')" id="nav-dashboard" class="flex-1 flex flex-col items-center gap-1 text-gray-400 hover:text-white transition-colors py-2 active-nav rounded-full">
-                <i class="fas fa-home text-lg"></i>
+    
+    <!-- REVISI NAVIGASI BAR -->
+    <nav class="fixed bottom-0 left-0 w-full bg-[#0b1221]/95 backdrop-blur-xl border-t border-white/10 z-50 pt-2 pb-5 px-6 shadow-[0_-10px_30px_rgba(0,0,0,0.6)] transition-all duration-300 rounded-t-3xl">
+        <div class="flex justify-between items-center max-w-sm mx-auto">
+            <button onclick="navTo('dashboard')" id="nav-dashboard" class="flex-1 flex flex-col items-center gap-1 text-gray-500 hover:text-gray-300 transition-colors py-1 active-nav">
+                <i class="fas fa-home text-2xl icon-3d"></i>
+                <span class="text-[9px] font-bold tracking-widest mt-0.5 uppercase">Home</span>
             </button>
             
-            <div class="relative -top-6">
-                <button onclick="navTo('input')" id="nav-input" class="bg-gradient-to-br from-davka-orange to-red-500 text-white rounded-full w-14 h-14 flex items-center justify-center shadow-neon border-4 border-davka-bg active:scale-90 transition-transform">
-                    <i class="fas fa-plus text-xl"></i>
-                </button>
-            </div>
+            <button onclick="navTo('input')" id="nav-input" class="flex-1 flex flex-col items-center gap-1 text-gray-500 hover:text-gray-300 transition-colors py-1">
+                <i class="fas fa-edit text-2xl icon-3d"></i>
+                <span class="text-[9px] font-bold tracking-widest mt-0.5 uppercase">Buat Pesanan</span>
+            </button>
 
-            <button onclick="navTo('list')" id="nav-list" class="flex-1 flex flex-col items-center gap-1 text-gray-400 hover:text-white transition-colors py-2 rounded-full">
-                <i class="fas fa-list-ul text-lg"></i>
+            <button onclick="navTo('list')" id="nav-list" class="flex-1 flex flex-col items-center gap-1 text-gray-500 hover:text-gray-300 transition-colors py-1">
+                <i class="fas fa-folder-open text-2xl icon-3d"></i>
+                <span class="text-[9px] font-bold tracking-widest mt-0.5 uppercase">Data Pesanan</span>
             </button>
         </div>
     </nav>
@@ -815,7 +818,6 @@
             <p class="mt-4 text-gray-500 text-[10px]">Ketuk area gelap untuk menutup</p>
         </div>
     </div>
-    
     <div id="receipt-render-area" style="width: 480px; position: fixed; left: -9999px;">
         <div class="relative bg-davka-bg text-white font-sans overflow-hidden min-h-min border-none flex flex-col cyber-grid-bg">
             

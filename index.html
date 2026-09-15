@@ -142,6 +142,7 @@
                         </div>
                     </div>
                 </div>
+                
                 <div class="glass p-1 rounded-2xl flex justify-between items-center text-center shadow-lg">
                     <div class="flex-1 py-3 hover:bg-white/5 rounded-xl transition-colors">
                         <p class="text-[10px] text-gray-400 font-bold uppercase mb-1">Pending</p>
@@ -158,6 +159,64 @@
                         <p class="text-lg font-bold text-red-500" id="stat-cancel">0</p>
                     </div>
                 </div>
+
+                <!-- ==================== SMART NOTIFICATION: WAR TIKET H-45 ==================== -->
+                <div class="mt-6 mb-2">
+                    <div class="ticket-war-wrapper perspective-1000">
+                        <div class="ticket-war-card glass p-4 rounded-3xl relative overflow-hidden preserve-3d group hover:border-davka-orange/50 transition-colors duration-500 shadow-[0_10px_30px_rgba(0,0,0,0.5)]">
+                            
+                            <!-- Background Glow Effects -->
+                            <div class="absolute -right-10 -top-10 w-32 h-32 bg-blue-500 rounded-full blur-3xl opacity-10 group-hover:opacity-30 transition-opacity duration-700"></div>
+                            <div class="absolute -left-10 -bottom-10 w-32 h-32 bg-davka-orange rounded-full blur-3xl opacity-10 group-hover:opacity-30 transition-opacity duration-700"></div>
+                            
+                            <div class="relative z-10 translate-z-10">
+                                <div class="flex items-center gap-3 mb-4 border-b border-white/10 pb-3">
+                                    <div class="w-10 h-10 rounded-xl bg-gradient-to-br from-davka-orange to-red-600 flex items-center justify-center shadow-[0_0_15px_rgba(255,84,0,0.4)] transform group-hover:rotate-6 group-hover:scale-110 transition-all duration-500 border border-white/20">
+                                        <i class="fas fa-bullhorn text-white text-lg animate-pulse"></i>
+                                    </div>
+                                    <div>
+                                        <h3 class="text-sm font-black text-white uppercase tracking-widest drop-shadow-md">Info War Tiket</h3>
+                                        <p class="text-[10px] text-gray-400 font-bold uppercase tracking-wider">Jadwal Pemesanan H-45</p>
+                                    </div>
+                                </div>
+
+                                <div class="space-y-3">
+                                    <!-- Card Hari Ini -->
+                                    <div class="bg-black/40 border border-white/10 rounded-2xl p-3 flex justify-between items-center shadow-inner hover:border-davka-orange/50 transition-all transform group-hover:translate-z-20 group-hover:-translate-y-1 hover:bg-white/5 cursor-default relative overflow-hidden">
+                                        <div class="absolute left-0 top-0 bottom-0 w-1 bg-davka-orange shadow-[0_0_10px_#ff5400]"></div>
+                                        <div class="pl-2">
+                                            <p class="text-[9px] text-davka-orange font-bold uppercase tracking-widest mb-0.5"><i class="fas fa-clock mr-1"></i> Beli Hari Ini</p>
+                                            <p class="text-xs font-bold text-gray-300" id="notif-today-date">Memuat...</p>
+                                        </div>
+                                        <i class="fas fa-arrow-right text-davka-orange/50 text-xs mx-1"></i>
+                                        <div class="text-right">
+                                            <p class="text-[9px] text-gray-400 font-bold uppercase tracking-widest mb-0.5">Berangkat</p>
+                                            <p class="text-sm font-black text-white drop-shadow-md" id="notif-today-target">Memuat...</p>
+                                        </div>
+                                    </div>
+
+                                    <!-- Card Besok -->
+                                    <div class="bg-blue-900/10 border border-blue-500/20 rounded-2xl p-3 flex justify-between items-center shadow-inner hover:border-blue-500/50 transition-all transform group-hover:translate-z-20 group-hover:-translate-y-1 hover:bg-blue-900/30 cursor-default relative overflow-hidden">
+                                        <div class="absolute left-0 top-0 bottom-0 w-1 bg-blue-500 shadow-[0_0_10px_#3b82f6]"></div>
+                                        <div class="pl-2">
+                                            <p class="text-[9px] text-blue-400 font-bold uppercase tracking-widest mb-0.5"><i class="fas fa-calendar-day mr-1"></i> Beli Besok</p>
+                                            <p class="text-xs font-bold text-gray-300" id="notif-tomorrow-date">Memuat...</p>
+                                        </div>
+                                        <i class="fas fa-arrow-right text-blue-400/50 text-xs mx-1"></i>
+                                        <div class="text-right">
+                                            <p class="text-[9px] text-gray-400 font-bold uppercase tracking-widest mb-0.5">Berangkat</p>
+                                            <p class="text-sm font-black text-white drop-shadow-md" id="notif-tomorrow-target">Memuat...</p>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <!-- Futuristic Accent Line -->
+                            <div class="absolute bottom-0 left-0 w-full h-1 bg-gradient-to-r from-transparent via-davka-orange to-transparent opacity-50"></div>
+                        </div>
+                    </div>
+                </div>
+
             </div>
         </section>
         <section id="page-input" class="hidden fade-in pb-10 pt-4 relative">

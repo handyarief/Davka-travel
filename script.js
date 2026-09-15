@@ -73,6 +73,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 function initializeAppLogic() {
     updateDate();
     updateGreeting(); 
+    updateWarTicketReminder(); // REVISI: Memanggil fungsi perhitungan jadwal war tiket
     fetchOrders(); 
     setupRealtime(); 
     
@@ -202,7 +203,6 @@ window.switchTab = function(tabName) {
         }
     }
 }
-
 // --- CORE: FUNGSI RENDER FINANSIAL DINAMIS ---
 function renderDetailFinancials(mode) {
     if(!currentDetailOrder) return;
@@ -547,7 +547,6 @@ window.getPassengersFromForm = function() {
     
     return paxList;
 }
-
 window.calcTotalFromPax = function() {
     const adultCount = parseInt(document.getElementById('inpPaxCount').value) || 1;
     
@@ -830,7 +829,6 @@ window.navTo = function(pageId, fromPopState = false) {
         window.scrollTo({ top: 0, behavior: 'smooth' });
     }, 400); 
 }
-
 window.editOrder = function(id) {
     const index = orders.findIndex(o => o.id === id);
     if (index === -1) return;
@@ -968,6 +966,40 @@ window.updateSettlement = async function(id, newVal) {
         } catch(e) { console.error(e); } finally { toggleLoader(false); }
     } else toggleLoader(false);
 }
+
+// --- FEATURE: SMART NOTIFICATION WAR TIKET H-45 CALCULATOR ---
+function updateWarTicketReminder() {
+    const todayEl = document.getElementById('notif-today-date');
+    const todayTargetEl = document.getElementById('notif-today-target');
+    const tomorrowDateEl = document.getElementById('notif-tomorrow-date');
+    const tomorrowTargetEl = document.getElementById('notif-tomorrow-target');
+
+    if (!todayEl || !todayTargetEl || !tomorrowDateEl || !tomorrowTargetEl) return;
+
+    // Tanggal hari ini (mengikuti waktu sistem real-time)
+    const today = new Date();
+    
+    // Tanggal besok
+    const tomorrow = new Date(today);
+    tomorrow.setDate(today.getDate() + 1);
+
+    // Target keberangkatan untuk hari ini (Hari ini + 45 Hari)
+    const targetToday = new Date(today);
+    targetToday.setDate(today.getDate() + 45);
+
+    // Target keberangkatan untuk besok (Besok + 45 Hari)
+    const targetTomorrow = new Date(tomorrow);
+    targetTomorrow.setDate(tomorrow.getDate() + 45);
+
+    const options = { day: 'numeric', month: 'short', year: 'numeric' };
+
+    todayEl.innerText = today.toLocaleDateString('id-ID', options).toUpperCase();
+    todayTargetEl.innerText = targetToday.toLocaleDateString('id-ID', options).toUpperCase();
+
+    tomorrowDateEl.innerText = tomorrow.toLocaleDateString('id-ID', options).toUpperCase();
+    tomorrowTargetEl.innerText = targetTomorrow.toLocaleDateString('id-ID', options).toUpperCase();
+}
+
 // --- HELPER LAINNYA ---
 function toggleLoader(show) {
     const loader = document.getElementById('global-loader');

@@ -474,7 +474,7 @@ input:checked + .slider:before {
     border-radius: 50%;
 }
 
-/* === MULTI-STEP WIZARD PROGRESS INDICATOR (UPDATE 3D MODERN - Masalah 2) === */
+/* === MULTI-STEP WIZARD PROGRESS INDICATOR === */
 .step-indicator {
     width: 32px;
     height: 32px;
@@ -528,4 +528,30 @@ input:checked + .slider:before {
 
 .form-step {
     transition: all 0.4s ease-in-out;
+}
+
+/* === SMART NOTIFICATION 3D EFFECTS (WAR TIKET) === */
+.perspective-1000 {
+    perspective: 1000px;
+}
+
+.preserve-3d {
+    transform-style: preserve-3d;
+}
+
+.translate-z-10 {
+    transform: translateZ(10px);
+}
+
+.translate-z-20 {
+    transform: translateZ(20px);
+}
+
+.ticket-war-card {
+    transition: transform 0.6s cubic-bezier(0.23, 1, 0.32, 1), box-shadow 0.6s ease;
+}
+
+.ticket-war-wrapper:hover .ticket-war-card {
+    transform: rotateX(4deg) rotateY(-4deg) scale(1.02);
+    box-shadow: 0 15px 35px rgba(255, 84, 0, 0.25), 0 0 20px rgba(14, 165, 233, 0.15);
 }

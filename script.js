@@ -352,9 +352,10 @@ function updateWizardProgress() {
         const indicator = document.getElementById(`indicator-${i}`);
         if (!indicator) continue;
         
+        // REVISI: icon tetap asli, class disesuaikan, tidak merubah ke check
         if (i < currentStep) {
             indicator.className = 'step-indicator completed';
-            indicator.innerHTML = '<i class="fas fa-check"></i>';
+            indicator.innerHTML = `<i class="fas ${icons[i-1]}"></i>`;
         } else if (i === currentStep) {
             indicator.className = 'step-indicator active';
             indicator.innerHTML = `<i class="fas ${icons[i-1]}"></i>`;
@@ -397,7 +398,6 @@ function handleInputEnter(e, currentIndex, allElements) {
         if (nextIndex >= allElements.length) e.target.blur();
     }
 }
-
 // --- TAB PENUMPANG SAMA / BEDA ---
 window.togglePaxSame = function() {
     const isSame = document.getElementById('inpPaxSame').checked;
@@ -968,7 +968,6 @@ window.updateSettlement = async function(id, newVal) {
         } catch(e) { console.error(e); } finally { toggleLoader(false); }
     } else toggleLoader(false);
 }
-
 // --- HELPER LAINNYA ---
 function toggleLoader(show) {
     const loader = document.getElementById('global-loader');

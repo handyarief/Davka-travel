@@ -129,7 +129,6 @@ select:focus {
     z-index: 20;
 }
 
-/* FIX: Penetralan background native pada dropdown select & options (Masalah 1) */
 select option {
     background-color: #0b1221;
     color: #ffffff;
@@ -554,4 +553,47 @@ input:checked + .slider:before {
 .ticket-war-wrapper:hover .ticket-war-card {
     transform: rotateX(4deg) rotateY(-4deg) scale(1.02);
     box-shadow: 0 15px 35px rgba(255, 84, 0, 0.25), 0 0 20px rgba(14, 165, 233, 0.15);
+}
+
+/* === 3D DATA PELANGGAN (LIST) EFFECTS === */
+.list-card-3d {
+    transform-style: preserve-3d;
+    transition: transform 0.5s cubic-bezier(0.23, 1, 0.32, 1), box-shadow 0.5s ease, border-color 0.5s ease;
+    transform: translateZ(0);
+    position: relative;
+    cursor: pointer;
+}
+
+.list-card-3d:hover {
+    transform: translateZ(25px) rotateX(4deg) rotateY(-3deg) scale(1.02);
+    z-index: 20;
+}
+
+.list-card-3d:active {
+    transform: translateZ(10px) scale(0.98);
+}
+
+/* Hover Glow Spesifik Berdasarkan Status */
+.hover-glow-success:hover {
+    box-shadow: 0 15px 35px rgba(34, 197, 94, 0.25), 0 0 20px rgba(34, 197, 94, 0.15);
+    border-color: rgba(34, 197, 94, 0.5) !important;
+}
+
+.hover-glow-pending:hover {
+    box-shadow: 0 15px 35px rgba(255, 84, 0, 0.25), 0 0 20px rgba(255, 84, 0, 0.15);
+    border-color: rgba(255, 84, 0, 0.5) !important;
+}
+
+.hover-glow-cancel:hover {
+    box-shadow: 0 15px 35px rgba(239, 68, 68, 0.25), 0 0 20px rgba(239, 68, 68, 0.15);
+    border-color: rgba(239, 68, 68, 0.5) !important;
+}
+
+/* Elemen Internal yang Menonjol */
+.inner-3d-element {
+    transition: transform 0.5s cubic-bezier(0.23, 1, 0.32, 1);
+}
+
+.list-card-3d:hover .inner-3d-element {
+    transform: translateZ(20px);
 }

@@ -73,7 +73,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 function initializeAppLogic() {
     updateDate();
     updateGreeting(); 
-    updateWarTicketReminder(); // REVISI: Memanggil fungsi perhitungan jadwal war tiket
+    updateWarTicketReminder(); 
     fetchOrders(); 
     setupRealtime(); 
     
@@ -88,7 +88,6 @@ function initializeAppLogic() {
     enableSmoothInputUX();
     setupKeyboardListener();
 
-    // REVISI: SETUP HISTORY API UNTUK TOMBOL BACK HARDWARE
     window.history.replaceState({ view: 'dashboard' }, '', '#dashboard');
     window.addEventListener('popstate', (e) => {
         const modal = document.getElementById('imageModal');
@@ -296,7 +295,6 @@ window.switchUploadTab = function(tabName) {
 }
 // --- MULTI-STEP WIZARD LOGIC ---
 window.nextStep = function(step) {
-    // Validasi input required pada step saat ini
     const stepElement = document.getElementById(`step-${step}`);
     const inputs = stepElement.querySelectorAll('input[required], select[required], textarea[required]');
     
@@ -310,11 +308,9 @@ window.nextStep = function(step) {
 
     if (!isValid) return;
 
-    // Sembunyikan step saat ini
     stepElement.classList.remove('fade-in');
     stepElement.classList.add('hidden');
     
-    // Tampilkan step berikutnya
     currentStep = step + 1;
     const nextStepElement = document.getElementById(`step-${currentStep}`);
     nextStepElement.classList.remove('hidden');
@@ -327,11 +323,9 @@ window.nextStep = function(step) {
 window.prevStep = function(step) {
     const stepElement = document.getElementById(`step-${step}`);
     
-    // Sembunyikan step saat ini
     stepElement.classList.remove('fade-in');
     stepElement.classList.add('hidden');
     
-    // Tampilkan step sebelumnya
     currentStep = step - 1;
     const prevStepElement = document.getElementById(`step-${currentStep}`);
     prevStepElement.classList.remove('hidden');
@@ -352,7 +346,6 @@ function updateWizardProgress() {
         const indicator = document.getElementById(`indicator-${i}`);
         if (!indicator) continue;
         
-        // REVISI: icon tetap asli, class disesuaikan, tidak merubah ke check
         if (i < currentStep) {
             indicator.className = 'step-indicator completed';
             indicator.innerHTML = `<i class="fas ${icons[i-1]}"></i>`;
@@ -599,8 +592,9 @@ async function fetchOrders() {
     orders = data || [];
     renderStats();
     
+    // REVISI: Panggilan tanpa fitur search
     if (!document.getElementById('page-list').classList.contains('hidden')) {
-         renderOrderList(document.getElementById('searchInput').value);
+         renderOrderList();
     }
 }
 
@@ -616,7 +610,8 @@ async function fetchOrdersBg() {
     if(data) {
         orders = data;
         renderStats();
-        if (document.getElementById('searchInput').value === '') renderOrderList('');
+        // REVISI: Render otomatis tanpa filter search
+        renderOrderList();
         
         if(currentDetailOrder && !document.getElementById('page-detail').classList.contains('hidden')) {
             const updatedOrder = orders.find(o => o.id === currentDetailOrder.id);
@@ -739,8 +734,8 @@ orderForm.addEventListener('submit', async (e) => {
         existingOrder ? (orders[editIndex] = newOrder) : orders.push(newOrder); 
         
         renderStats();
-        document.getElementById('searchInput').value = ''; 
-        renderOrderList(''); 
+        // REVISI: Render order list tanpa fitur pencarian
+        renderOrderList(); 
         showToast("Data Tersimpan!");
         resetForm();
         navTo('list'); 
@@ -756,7 +751,8 @@ window.deleteOrder = async function(id) {
         orders = orders.filter(o => o.id !== id);
         
         if(!document.getElementById('page-detail').classList.contains('hidden')) closeDetailView();
-        renderOrderList(document.getElementById('searchInput').value);
+        // REVISI: Render otomatis tanpa filter search
+        renderOrderList();
         renderStats();
         showToast("Dihapus dari layar...");
 
@@ -775,7 +771,8 @@ window.toggleStatus = async function(id) {
     const next = current === 'pending' ? 'success' : (current === 'success' ? 'cancel' : 'pending');
     orders[index].status = next;
     
-    renderOrderList(document.getElementById('searchInput').value);
+    // REVISI: Render otomatis tanpa filter search
+    renderOrderList();
     if(!document.getElementById('page-detail').classList.contains('hidden')) openDetailView(id, true);
     renderStats();
 
@@ -801,7 +798,8 @@ window.navTo = function(pageId, fromPopState = false) {
         if(pageId === 'list') {
             const btn = document.getElementById('nav-list');
             if(btn) btn.classList.add('active-nav');
-            renderOrderList(document.getElementById('searchInput').value); 
+            // REVISI: Panggilan tanpa input search
+            renderOrderList(); 
         }
         if(pageId === 'input') {
             const btn = document.getElementById('nav-input');
@@ -956,7 +954,8 @@ window.updateSettlement = async function(id, newVal) {
         orders[index].settlementMethod = newVal;
         orders[index].status = nextStatus;
         
-        renderOrderList(document.getElementById('searchInput').value);
+        // REVISI: Render order list tanpa pencarian
+        renderOrderList();
         if(!document.getElementById('page-detail').classList.contains('hidden')) openDetailView(id, true); 
 
         renderStats(); 
@@ -1333,7 +1332,7 @@ window.clearImage = function(type) {
     }
     resetUploadZones(); 
 }
-window.searchOrders = function() { renderOrderList(document.getElementById('searchInput').value); }
+
 function formatRupiah(num) { return new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', minimumFractionDigits: 0 }).format(num); }
 function updateDate() { document.getElementById('current-date').innerText = new Date().toLocaleDateString('id-ID', { weekday: 'short', day: 'numeric', month: 'short' }); }
 function updateGreeting() {
@@ -1348,7 +1347,6 @@ window.showToast = function(msg) {
     setTimeout(() => t.classList.add('opacity-0', 'translate-y-[-20px]', 'pointer-events-none'), 3000);
 }
 
-// UPDATE showImageModal for History API
 window.showImageModal = function(src, dl=false) {
     document.getElementById('modalImg').src = src;
     const acts = document.getElementById('modalActions'); acts.innerHTML = '';
@@ -1361,14 +1359,13 @@ window.showImageModal = function(src, dl=false) {
     }
     document.getElementById('imageModal').classList.remove('hidden');
     
-    // Simpan history push state agar tombol back perangkat bisa menutup modal
     window.history.pushState({ view: 'modal' }, '', '#modal');
 }
 
 window.closeImageModal = function(fromPopState = false) { 
     document.getElementById('imageModal').classList.add('hidden'); 
     if(!fromPopState) {
-        window.history.back(); // Jika tombol silang di UI ditekan, panggil history.back() untuk sinkronisasi popstate
+        window.history.back(); 
     }
 }
 
@@ -1405,7 +1402,6 @@ window.resetForm = function() {
     resetUploadZones();
     enableSmoothInputUX();
 
-    // REVISI: Reset wizard kembali ke Step 1
     currentStep = 1;
     document.querySelectorAll('.form-step').forEach(el => {
         el.classList.add('hidden');
@@ -1429,7 +1425,6 @@ window.openDetailView = function(orderId, fromPopState = false) {
     document.getElementById('page-detail').classList.remove('hidden');
     document.getElementById('page-detail').classList.add('fade-in');
     
-    // REVISI: HISTORY API
     if (!fromPopState) {
         window.history.pushState({ view: 'detail', id: orderId }, '', `#detail-${orderId}`);
     }
@@ -1573,44 +1568,98 @@ window.closeDetailView = function() {
     window.history.back();
 }
 
-window.renderOrderList = function(filterText = '') {
+// REVISI: Fungsi render diubah menjadi full 3D card layout dan argumen search filter dihapus
+window.renderOrderList = function() {
     const container = document.getElementById('ordersContainer');
     container.innerHTML = '';
-    if(!orders) return;
+    
+    if(!orders || orders.length === 0) { 
+        document.getElementById('emptyState').classList.remove('hidden'); 
+        return; 
+    } 
+    document.getElementById('emptyState').classList.add('hidden');
     
     const sortedOrders = [...orders].sort((a, b) => new Date(b.created_at || b.id) - new Date(a.created_at || a.id));
-    const filtered = sortedOrders.filter(o => {
-        const name = o.contactName || o.name || '';
-        return name.toLowerCase().includes(filterText.toLowerCase());
-    });
 
-    if(filtered.length === 0) { document.getElementById('emptyState').classList.remove('hidden'); return; } 
-    else { document.getElementById('emptyState').classList.add('hidden'); }
+    sortedOrders.forEach((order, index) => {
+        let statusColorClass = ''; 
+        let indicatorColor = ''; 
+        let glowClass = '';
 
-    filtered.forEach((order, index) => {
-        let statusColorClass = ''; let indicatorColor = '';
-        if (order.status === 'success') { statusColorClass = 'bg-green-500/10 border-green-500/30 text-green-400'; indicatorColor = 'bg-green-500'; } 
-        else if (order.status === 'cancel') { statusColorClass = 'bg-red-500/10 border-red-500/30 text-red-400'; indicatorColor = 'bg-red-500'; } 
-        else { statusColorClass = 'bg-orange-500/10 border-orange-500/30 text-orange-400'; indicatorColor = 'bg-orange-500'; }
+        if (order.status === 'success') { 
+            statusColorClass = 'bg-green-500/10 border-green-500/30 text-green-400'; 
+            indicatorColor = 'bg-green-500'; 
+            glowClass = 'hover-glow-success';
+        } else if (order.status === 'cancel') { 
+            statusColorClass = 'bg-red-500/10 border-red-500/30 text-red-400'; 
+            indicatorColor = 'bg-red-500'; 
+            glowClass = 'hover-glow-cancel';
+        } else { 
+            statusColorClass = 'bg-orange-500/10 border-orange-500/30 text-orange-400'; 
+            indicatorColor = 'bg-orange-500'; 
+            glowClass = 'hover-glow-pending';
+        }
 
         const displayName = (order.contactName || order.name || 'No Name').toUpperCase();
-        const displayNo = filtered.length - index; 
+        const displayNo = sortedOrders.length - index; 
         const dateStr = order.date ? new Date(order.date).toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' }) : '-';
         
-        let routeHtml = `<div class="mt-1"><p class="text-[10px] text-gray-300 font-bold flex items-center"><i class="fas fa-train text-davka-orange mr-1.5 text-[10px]"></i> ${order.origin || '?'} <i class="fas fa-chevron-right text-[8px] mx-1 opacity-50"></i> ${order.dest || '?'}</p><p class="text-[10px] text-gray-500 pl-4 font-mono">${dateStr}</p></div>`;
+        let routeHtml = `
+            <div class="mt-2 inner-3d-element transform translate-z-10">
+                <p class="text-[11px] text-gray-300 font-bold flex items-center">
+                    <i class="fas fa-train text-davka-orange mr-1.5 text-[10px]"></i> ${order.origin || '?'} <i class="fas fa-chevron-right text-[8px] mx-1.5 opacity-50"></i> ${order.dest || '?'}
+                </p>
+                <p class="text-[10px] text-gray-500 pl-4 font-mono mt-0.5">${dateStr}</p>
+            </div>
+        `;
 
         if (order.tripType === 'round_trip') {
             const retDateStr = order.returnDate ? new Date(order.returnDate).toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' }) : '-';
             const retOrg = order.returnOrigin || order.dest || '?';
             const retDest = order.returnDest || order.origin || '?';
-            routeHtml += `<div class="mt-1 pt-1 border-t border-white/5 relative"><div class="absolute left-1.5 top-2 w-0.5 h-full bg-blue-500/20"></div><div class="flex justify-between items-start"><div><p class="text-[10px] text-gray-300 font-bold flex items-center"><i class="fas fa-exchange-alt text-blue-400 mr-1.5 text-[10px]"></i> ${retOrg} <i class="fas fa-chevron-right text-[8px] mx-1 opacity-50"></i> ${retDest}</p><p class="text-[10px] text-gray-500 pl-4 font-mono">${retDateStr}</p></div><div class="px-1.5 py-0.5 rounded bg-black/20 border border-white/5 self-center mt-1"><p class="text-[8px] ${statusColorClass.split(' ')[2]} font-bold uppercase tracking-wide">${order.status}</p></div></div></div>`;
+            routeHtml += `
+            <div class="mt-2 pt-2 border-t border-white/5 relative inner-3d-element transform translate-z-10">
+                <div class="absolute left-1.5 top-2 w-0.5 h-full bg-blue-500/20"></div>
+                <div class="flex justify-between items-start">
+                    <div>
+                        <p class="text-[11px] text-gray-300 font-bold flex items-center">
+                            <i class="fas fa-exchange-alt text-blue-400 mr-1.5 text-[10px]"></i> ${retOrg} <i class="fas fa-chevron-right text-[8px] mx-1.5 opacity-50"></i> ${retDest}
+                        </p>
+                        <p class="text-[10px] text-gray-500 pl-4 font-mono mt-0.5">${retDateStr}</p>
+                    </div>
+                    <div class="px-2 py-1 rounded-md bg-black/40 border border-white/5 self-center mt-1">
+                        <p class="text-[8px] ${statusColorClass.split(' ')[2]} font-bold uppercase tracking-wider">${order.status}</p>
+                    </div>
+                </div>
+            </div>`;
         }
 
         const item = document.createElement('div');
-        item.className = `rounded-xl border ${statusColorClass.split(' ')[1]} ${statusColorClass.split(' ')[0]} overflow-hidden mb-2 transition-all duration-300 active:scale-95`;
+        item.className = `list-card-3d preserve-3d rounded-2xl border ${statusColorClass.split(' ')[1]} ${statusColorClass.split(' ')[0]} mb-4 w-full bg-black/20 backdrop-blur-sm ${glowClass}`;
         item.onclick = function() { openDetailView(order.id); };
 
-        item.innerHTML = `<div class="flex items-start justify-between p-3 cursor-pointer select-none relative"><div class="absolute left-0 top-0 bottom-0 w-1 ${indicatorColor}"></div><div class="flex items-start gap-3 pl-2 overflow-hidden flex-1"><div class="w-7 h-7 rounded-lg bg-black/20 flex items-center justify-center font-mono text-xs font-bold ${statusColorClass.split(' ')[2]} shrink-0 border border-white/5 mt-0.5">${displayNo}</div><div class="min-w-0 flex-1"><div class="flex justify-between items-start"><h4 class="text-sm font-bold text-white truncate leading-tight">${displayName}</h4><div class="px-2 py-0.5 rounded border border-white/10 bg-black/20"><p class="text-[9px] ${statusColorClass.split(' ')[2]} font-bold uppercase tracking-wide">${order.status}</p></div></div>${routeHtml}</div></div><div class="pl-2 flex items-center self-center"><i class="fas fa-chevron-right text-white/30 text-xs"></i></div></div>`;
+        item.innerHTML = `
+        <div class="relative p-4 flex flex-col w-full overflow-hidden rounded-2xl">
+            <div class="absolute left-0 top-0 bottom-0 w-1.5 ${indicatorColor} shadow-[0_0_10px_currentColor]"></div>
+            
+            <div class="flex items-start justify-between mb-1 pl-2">
+                <div class="flex items-center gap-3 w-full">
+                    <div class="w-8 h-8 rounded-xl bg-black/40 flex items-center justify-center font-mono text-sm font-black ${statusColorClass.split(' ')[2]} border border-white/10 shadow-inner inner-3d-element transform translate-z-20 shrink-0">
+                        ${displayNo}
+                    </div>
+                    <div class="flex-1 min-w-0 inner-3d-element transform translate-z-20">
+                        <h4 class="text-base font-black text-white truncate leading-tight tracking-wide drop-shadow-md">${displayName}</h4>
+                    </div>
+                    <div class="px-3 py-1 rounded-lg border border-white/10 bg-black/40 shadow-inner inner-3d-element transform translate-z-20 shrink-0">
+                        <p class="text-[9px] ${statusColorClass.split(' ')[2]} font-black uppercase tracking-widest">${order.status}</p>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="pl-2 w-full">
+                ${routeHtml}
+            </div>
+        </div>`;
         container.appendChild(item);
     });
 }

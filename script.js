@@ -1573,8 +1573,8 @@ window.closeDetailView = function() {
 // =========================================================================
 // REVISI TOTAL: FUNGSI renderOrderList()
 // 1. UI Menjadi Format List Compact
-// 2. Struktur Vertikal: Rute -> Nama Kereta -> Tanggal
-// 3. Margin dan padding ditipiskan
+// 2. Struktur Vertikal: Rute -> Nama Kereta -> Tanggal (Diperbesar/Disesuaikan Warnanya)
+// 3. Margin dan padding ditipiskan, dipadukan dengan desain Elegant 3D
 // =========================================================================
 window.renderOrderList = function() {
     const container = document.getElementById('ordersContainer');
@@ -1623,14 +1623,14 @@ window.renderOrderList = function() {
         let routeHtml = `
             <div class="mt-2 flex flex-col gap-0.5">
                 <div class="flex items-center gap-1.5">
-                    <i class="fas fa-train text-davka-orange text-[10px] w-3 text-center"></i>
+                    <i class="fas fa-train text-davka-orange text-[10px] w-3 text-center drop-shadow-md"></i>
                     <p class="text-[11px] text-gray-200 font-bold tracking-wide">
                         ${origin} <i class="fas fa-chevron-right text-[8px] text-gray-500 mx-1"></i> ${dest}
                     </p>
                 </div>
                 <div class="pl-4 ml-1.5 border-l border-white/10 py-1">
                     <p class="text-[10px] text-gray-400 font-bold uppercase tracking-widest leading-none mb-1">${trainName}</p>
-                    <p class="text-[10px] text-davka-accent font-mono font-bold leading-none">${dateStr}</p>
+                    <p class="text-xs text-orange-400 font-mono font-bold leading-none drop-shadow-sm">${dateStr}</p>
                 </div>
             </div>
         `;
@@ -1644,14 +1644,14 @@ window.renderOrderList = function() {
             routeHtml += `
                 <div class="mt-1 pt-1.5 border-t border-dashed border-white/10 flex flex-col gap-0.5">
                     <div class="flex items-center gap-1.5">
-                        <i class="fas fa-exchange-alt text-blue-400 text-[10px] w-3 text-center"></i>
+                        <i class="fas fa-exchange-alt text-blue-400 text-[10px] w-3 text-center drop-shadow-md"></i>
                         <p class="text-[11px] text-gray-200 font-bold tracking-wide">
                             ${retOrg} <i class="fas fa-chevron-right text-[8px] text-gray-500 mx-1"></i> ${retDest}
                         </p>
                     </div>
                     <div class="pl-4 ml-1.5 border-l border-white/10 py-1">
                         <p class="text-[10px] text-gray-400 font-bold uppercase tracking-widest leading-none mb-1">${retTrain}</p>
-                        <p class="text-[10px] text-blue-400 font-mono font-bold leading-none">${retDateStr}</p>
+                        <p class="text-xs text-sky-400 font-mono font-bold leading-none drop-shadow-sm">${retDateStr}</p>
                     </div>
                 </div>
             `;
@@ -1662,11 +1662,11 @@ window.renderOrderList = function() {
         item.onclick = function() { openDetailView(order.id); };
 
         item.innerHTML = `
-        <div class="relative p-2.5 flex flex-col w-full overflow-hidden rounded-xl h-full bg-[#0f172a]/60 border border-white/5 shadow-[inset_0_1px_1px_rgba(255,255,255,0.05)] backdrop-blur-md">
+        <div class="relative p-2.5 flex flex-col w-full overflow-hidden rounded-xl h-full bg-[#0f172a]/60">
             
             <div class="absolute left-0 top-0 bottom-0 w-1 ${indicatorColor} shadow-[0_0_8px_currentColor] z-0 opacity-80"></div>
             
-            <div class="flex items-center justify-between pl-2 relative z-10 inner-3d-element transform translate-z-10 border-b border-white/5 pb-2">
+            <div class="flex items-center justify-between pl-2 relative z-10 inner-3d-element border-b border-white/5 pb-2">
                 <div class="flex items-center gap-2 min-w-0 flex-1">
                     <div class="w-6 h-6 rounded border ${statusColorClass} ${bgStatus} flex items-center justify-center font-mono text-[11px] font-black shrink-0 relative overflow-hidden shadow-inner">
                         ${displayNo}

@@ -1572,9 +1572,9 @@ window.closeDetailView = function() {
 
 // =========================================================================
 // REVISI TOTAL: FUNGSI renderOrderList()
-// 1. Padding di-compress agar card tidak kebesaran.
-// 2. Angka urutan (displayNo) diperbesar.
-// 3. Tanggal (dateStr) dibersihkan dan diperbesar.
+// 1. UI Menjadi Format List Compact
+// 2. Struktur Vertikal: Rute -> Nama Kereta -> Tanggal
+// 3. Margin dan padding ditipiskan
 // =========================================================================
 window.renderOrderList = function() {
     const container = document.getElementById('ordersContainer');
@@ -1592,17 +1592,21 @@ window.renderOrderList = function() {
         let statusColorClass = ''; 
         let indicatorColor = ''; 
         let glowClass = '';
+        let bgStatus = '';
 
         if (order.status === 'success') { 
-            statusColorClass = 'bg-green-500/20 border-green-500/50 text-green-400'; 
+            statusColorClass = 'border-green-500/40 text-green-400';
+            bgStatus = 'bg-green-500/10';
             indicatorColor = 'bg-green-500'; 
             glowClass = 'hover-glow-success';
         } else if (order.status === 'cancel') { 
-            statusColorClass = 'bg-red-500/20 border-red-500/50 text-red-400'; 
+            statusColorClass = 'border-red-500/40 text-red-400';
+            bgStatus = 'bg-red-500/10';
             indicatorColor = 'bg-red-500'; 
             glowClass = 'hover-glow-cancel';
         } else { 
-            statusColorClass = 'bg-orange-500/20 border-orange-500/50 text-orange-400'; 
+            statusColorClass = 'border-orange-500/40 text-orange-400';
+            bgStatus = 'bg-orange-500/10';
             indicatorColor = 'bg-orange-500'; 
             glowClass = 'hover-glow-pending';
         }
@@ -1610,74 +1614,71 @@ window.renderOrderList = function() {
         const displayName = (order.contactName || order.name || 'No Name').toUpperCase();
         const displayNo = sortedOrders.length - index; 
         
-        // --- REVISI: FORMAT TANGGAL CLEAN & RAPIH ---
         const dateOptions = { day: '2-digit', month: 'short', year: 'numeric' };
         const dateStr = order.date ? new Date(order.date).toLocaleDateString('id-ID', dateOptions) : '-';
+        const trainName = (order.train || 'KERETA').toUpperCase();
+        const origin = (order.origin || '?').toUpperCase();
+        const dest = (order.dest || '?').toUpperCase();
         
-        // --- LAYOUT RUTE (COMPACT BOX, TANGGAL DIPERBESAR) ---
         let routeHtml = `
-            <div class="mt-2 inner-3d-element transform translate-z-10 bg-[#060a14]/60 rounded-xl p-2.5 border border-white/5 flex flex-col gap-2 shadow-inner">
-                <div class="flex justify-between items-center w-full">
-                    <div class="flex items-center gap-2 flex-1 min-w-0 pr-2">
-                        <i class="fas fa-train text-davka-orange text-sm w-4 text-center drop-shadow-md"></i>
-                        <p class="text-[12px] text-gray-200 font-bold flex items-center flex-wrap gap-1.5">
-                            <span class="truncate max-w-[120px]">${order.origin || '?'}</span>
-                            <i class="fas fa-chevron-right text-[9px] text-gray-500"></i>
-                            <span class="truncate max-w-[120px]">${order.dest || '?'}</span>
-                        </p>
-                    </div>
-                    <!-- REVISI: Teks tanggal diperbesar dan dibuat enak dibaca -->
-                    <p class="text-xs text-gray-300 font-bold tracking-wider shrink-0 bg-white/5 px-2 py-1 rounded-md border border-white/10">${dateStr}</p>
+            <div class="mt-2 flex flex-col gap-0.5">
+                <div class="flex items-center gap-1.5">
+                    <i class="fas fa-train text-davka-orange text-[10px] w-3 text-center"></i>
+                    <p class="text-[11px] text-gray-200 font-bold tracking-wide">
+                        ${origin} <i class="fas fa-chevron-right text-[8px] text-gray-500 mx-1"></i> ${dest}
+                    </p>
                 </div>
+                <div class="pl-4 ml-1.5 border-l border-white/10 py-1">
+                    <p class="text-[10px] text-gray-400 font-bold uppercase tracking-widest leading-none mb-1">${trainName}</p>
+                    <p class="text-[10px] text-davka-accent font-mono font-bold leading-none">${dateStr}</p>
+                </div>
+            </div>
         `;
 
         if (order.tripType === 'round_trip') {
             const retDateStr = order.returnDate ? new Date(order.returnDate).toLocaleDateString('id-ID', dateOptions) : '-';
-            const retOrg = order.returnOrigin || order.dest || '?';
-            const retDest = order.returnDest || order.origin || '?';
+            const retTrain = (order.returnTrain || 'KERETA').toUpperCase();
+            const retOrg = (order.returnOrigin || order.dest || '?').toUpperCase();
+            const retDest = (order.returnDest || order.origin || '?').toUpperCase();
+            
             routeHtml += `
-                <div class="flex justify-between items-center w-full pt-2 border-t border-dashed border-white/10">
-                    <div class="flex items-center gap-2 flex-1 min-w-0 pr-2">
-                        <i class="fas fa-exchange-alt text-blue-400 text-sm w-4 text-center drop-shadow-md"></i>
-                        <p class="text-[12px] text-gray-200 font-bold flex items-center flex-wrap gap-1.5">
-                            <span class="truncate max-w-[120px]">${retOrg}</span>
-                            <i class="fas fa-chevron-right text-[9px] text-gray-500"></i>
-                            <span class="truncate max-w-[120px]">${retDest}</span>
+                <div class="mt-1 pt-1.5 border-t border-dashed border-white/10 flex flex-col gap-0.5">
+                    <div class="flex items-center gap-1.5">
+                        <i class="fas fa-exchange-alt text-blue-400 text-[10px] w-3 text-center"></i>
+                        <p class="text-[11px] text-gray-200 font-bold tracking-wide">
+                            ${retOrg} <i class="fas fa-chevron-right text-[8px] text-gray-500 mx-1"></i> ${retDest}
                         </p>
                     </div>
-                    <!-- REVISI: Teks tanggal PP diperbesar -->
-                    <p class="text-xs text-blue-300 font-bold tracking-wider shrink-0 bg-blue-500/10 px-2 py-1 rounded-md border border-blue-500/20">${retDateStr}</p>
+                    <div class="pl-4 ml-1.5 border-l border-white/10 py-1">
+                        <p class="text-[10px] text-gray-400 font-bold uppercase tracking-widest leading-none mb-1">${retTrain}</p>
+                        <p class="text-[10px] text-blue-400 font-mono font-bold leading-none">${retDateStr}</p>
+                    </div>
                 </div>
             `;
         }
-        routeHtml += `</div>`; 
 
         const item = document.createElement('div');
-        // REVISI: Margin bawah dikurangi agar lebih compact (mb-2 bukan mb-3)
-        item.className = `list-card-3d rounded-2xl mb-2.5 w-full ${glowClass}`;
+        item.className = `list-card-3d rounded-xl mb-2.5 w-full ${glowClass}`;
         item.onclick = function() { openDetailView(order.id); };
 
         item.innerHTML = `
-        <!-- REVISI: Padding dikurangi dari p-3 menjadi p-2.5 untuk mengurangi tinggi kotak -->
-        <div class="relative p-2.5 flex flex-col w-full overflow-hidden rounded-2xl h-full bg-[#0b1221]/80 border border-white/5 shadow-[0_5px_15px_rgba(0,0,0,0.5)]">
+        <div class="relative p-2.5 flex flex-col w-full overflow-hidden rounded-xl h-full bg-[#0f172a]/60 border border-white/5 shadow-[inset_0_1px_1px_rgba(255,255,255,0.05)] backdrop-blur-md">
             
-            <div class="absolute left-0 top-0 bottom-0 w-1.5 ${indicatorColor} shadow-[0_0_15px_currentColor] z-0 opacity-100"></div>
+            <div class="absolute left-0 top-0 bottom-0 w-1 ${indicatorColor} shadow-[0_0_8px_currentColor] z-0 opacity-80"></div>
             
-            <div class="flex items-center justify-between pl-3 relative z-10 inner-3d-element transform translate-z-20">
-                <div class="flex items-center gap-3 min-w-0 flex-1">
-                    <!-- REVISI: Ukuran Badge Angka diperbesar (w-10 h-10, text-lg) -->
-                    <div class="w-10 h-10 rounded-lg bg-black/60 flex items-center justify-center font-mono text-lg font-black ${statusColorClass.split(' ')[2]} border border-white/10 shadow-inner shrink-0 relative overflow-hidden">
+            <div class="flex items-center justify-between pl-2 relative z-10 inner-3d-element transform translate-z-10 border-b border-white/5 pb-2">
+                <div class="flex items-center gap-2 min-w-0 flex-1">
+                    <div class="w-6 h-6 rounded border ${statusColorClass} ${bgStatus} flex items-center justify-center font-mono text-[11px] font-black shrink-0 relative overflow-hidden shadow-inner">
                         ${displayNo}
                     </div>
-                    <!-- REVISI: Ukuran font nama sedikit diperbesar -->
-                    <h4 class="text-sm font-black text-white truncate leading-tight tracking-wider drop-shadow-md">${displayName}</h4>
+                    <h4 class="text-[13px] font-black text-white truncate leading-tight tracking-wider drop-shadow-sm">${displayName}</h4>
                 </div>
-                <div class="px-3 py-1.5 rounded-lg border ${statusColorClass} shadow-inner shrink-0 ml-2">
-                    <p class="text-[10px] font-black uppercase tracking-widest drop-shadow-[0_0_5px_currentColor]">${order.status}</p>
+                <div class="px-2 py-0.5 rounded border ${statusColorClass} ${bgStatus} shadow-inner shrink-0 ml-2">
+                    <p class="text-[8px] font-black uppercase tracking-widest">${order.status}</p>
                 </div>
             </div>
             
-            <div class="pl-2 w-full relative z-10">
+            <div class="pl-2 w-full relative z-10 inner-3d-element">
                 ${routeHtml}
             </div>
         </div>`;

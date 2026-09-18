@@ -1,3 +1,5 @@
+// script.js — BAGIAN 1
+
 // --- KONFIGURASI SUPABASE (WAJIB DIISI ULANG) ---
 const SUPABASE_URL = 'https://wdhfthzuihakjlygttcw.supabase.co'; 
 const SUPABASE_KEY = 'sb_publishable_8U8NeSn4aOZiRzLRS3KmxA_oz84fUAL';
@@ -334,7 +336,6 @@ window.prevStep = function(step) {
     updateWizardProgress();
     window.scrollTo({ top: 0, behavior: 'smooth' });
 };
-
 function updateWizardProgress() {
     const progressPercentage = ((currentStep - 1) / (totalSteps - 1)) * 100;
     const wizardBar = document.getElementById('wizard-bar');
@@ -358,6 +359,7 @@ function updateWizardProgress() {
         }
     }
 }
+// script.js — BAGIAN 2
 
 // --- UX ENGINE: SMOOTH SCROLL & ENTER KEY NAVIGATION ---
 function enableSmoothInputUX() {
@@ -577,7 +579,6 @@ window.calcRemaining = function() {
             : "bg-transparent text-right text-red-500 font-black text-lg outline-none w-40 cursor-default";
     }
 }
-
 async function fetchOrders() {
     const { data, error } = await supabase
         .from('orders')
@@ -998,6 +999,7 @@ function updateWarTicketReminder() {
     tomorrowDateEl.innerText = tomorrow.toLocaleDateString('id-ID', options).toUpperCase();
     tomorrowTargetEl.innerText = targetTomorrow.toLocaleDateString('id-ID', options).toUpperCase();
 }
+// script.js — BAGIAN 3
 
 // --- HELPER LAINNYA ---
 function toggleLoader(show) {
@@ -1570,8 +1572,9 @@ window.closeDetailView = function() {
 
 // =========================================================================
 // REVISI TOTAL: FUNGSI renderOrderList()
-// Layout dibuat rapi, kotak di-compress (compact), dan memanfaatkan 
-// hierarki layer 3D yang disediakan oleh CSS baru
+// 1. Padding di-compress agar card tidak kebesaran.
+// 2. Angka urutan (displayNo) diperbesar.
+// 3. Tanggal (dateStr) dibersihkan dan diperbesar.
 // =========================================================================
 window.renderOrderList = function() {
     const container = document.getElementById('ordersContainer');
@@ -1591,80 +1594,90 @@ window.renderOrderList = function() {
         let glowClass = '';
 
         if (order.status === 'success') { 
-            statusColorClass = 'bg-green-500/10 border-green-500/30 text-green-400'; 
+            statusColorClass = 'bg-green-500/20 border-green-500/50 text-green-400'; 
             indicatorColor = 'bg-green-500'; 
             glowClass = 'hover-glow-success';
         } else if (order.status === 'cancel') { 
-            statusColorClass = 'bg-red-500/10 border-red-500/30 text-red-400'; 
+            statusColorClass = 'bg-red-500/20 border-red-500/50 text-red-400'; 
             indicatorColor = 'bg-red-500'; 
             glowClass = 'hover-glow-cancel';
         } else { 
-            statusColorClass = 'bg-orange-500/10 border-orange-500/30 text-orange-400'; 
+            statusColorClass = 'bg-orange-500/20 border-orange-500/50 text-orange-400'; 
             indicatorColor = 'bg-orange-500'; 
             glowClass = 'hover-glow-pending';
         }
 
         const displayName = (order.contactName || order.name || 'No Name').toUpperCase();
         const displayNo = sortedOrders.length - index; 
-        const dateStr = order.date ? new Date(order.date).toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' }) : '-';
         
-        // --- LAYOUT RUTI (COMPACT BOX) ---
+        // --- REVISI: FORMAT TANGGAL CLEAN & RAPIH ---
+        const dateOptions = { day: '2-digit', month: 'short', year: 'numeric' };
+        const dateStr = order.date ? new Date(order.date).toLocaleDateString('id-ID', dateOptions) : '-';
+        
+        // --- LAYOUT RUTE (COMPACT BOX, TANGGAL DIPERBESAR) ---
         let routeHtml = `
-            <div class="mt-3 inner-3d-element transform translate-z-10 bg-black/40 rounded-xl p-2.5 border border-white/5 flex flex-col gap-2 shadow-inner">
+            <div class="mt-2 inner-3d-element transform translate-z-10 bg-[#060a14]/60 rounded-xl p-2.5 border border-white/5 flex flex-col gap-2 shadow-inner">
                 <div class="flex justify-between items-center w-full">
-                    <p class="text-[10px] text-gray-300 font-bold flex items-center flex-1 min-w-0 pr-2">
-                        <i class="fas fa-train text-davka-orange mr-1.5 w-3 text-center"></i>
-                        <span class="truncate max-w-[100px] sm:max-w-[150px] inline-block">${order.origin || '?'}</span>
-                        <i class="fas fa-chevron-right text-[7px] mx-1.5 opacity-40"></i>
-                        <span class="truncate max-w-[100px] sm:max-w-[150px] inline-block">${order.dest || '?'}</span>
-                    </p>
-                    <p class="text-[9px] text-davka-orange font-mono font-bold tracking-widest shrink-0">${dateStr}</p>
+                    <div class="flex items-center gap-2 flex-1 min-w-0 pr-2">
+                        <i class="fas fa-train text-davka-orange text-sm w-4 text-center drop-shadow-md"></i>
+                        <p class="text-[12px] text-gray-200 font-bold flex items-center flex-wrap gap-1.5">
+                            <span class="truncate max-w-[120px]">${order.origin || '?'}</span>
+                            <i class="fas fa-chevron-right text-[9px] text-gray-500"></i>
+                            <span class="truncate max-w-[120px]">${order.dest || '?'}</span>
+                        </p>
+                    </div>
+                    <!-- REVISI: Teks tanggal diperbesar dan dibuat enak dibaca -->
+                    <p class="text-xs text-gray-300 font-bold tracking-wider shrink-0 bg-white/5 px-2 py-1 rounded-md border border-white/10">${dateStr}</p>
                 </div>
         `;
 
         if (order.tripType === 'round_trip') {
-            const retDateStr = order.returnDate ? new Date(order.returnDate).toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' }) : '-';
+            const retDateStr = order.returnDate ? new Date(order.returnDate).toLocaleDateString('id-ID', dateOptions) : '-';
             const retOrg = order.returnOrigin || order.dest || '?';
             const retDest = order.returnDest || order.origin || '?';
             routeHtml += `
                 <div class="flex justify-between items-center w-full pt-2 border-t border-dashed border-white/10">
-                    <p class="text-[10px] text-gray-300 font-bold flex items-center flex-1 min-w-0 pr-2">
-                        <i class="fas fa-exchange-alt text-blue-400 mr-1.5 w-3 text-center"></i>
-                        <span class="truncate max-w-[100px] sm:max-w-[150px] inline-block">${retOrg}</span>
-                        <i class="fas fa-chevron-right text-[7px] mx-1.5 opacity-40"></i>
-                        <span class="truncate max-w-[100px] sm:max-w-[150px] inline-block">${retDest}</span>
-                    </p>
-                    <p class="text-[9px] text-blue-400 font-mono font-bold tracking-widest shrink-0">${retDateStr}</p>
+                    <div class="flex items-center gap-2 flex-1 min-w-0 pr-2">
+                        <i class="fas fa-exchange-alt text-blue-400 text-sm w-4 text-center drop-shadow-md"></i>
+                        <p class="text-[12px] text-gray-200 font-bold flex items-center flex-wrap gap-1.5">
+                            <span class="truncate max-w-[120px]">${retOrg}</span>
+                            <i class="fas fa-chevron-right text-[9px] text-gray-500"></i>
+                            <span class="truncate max-w-[120px]">${retDest}</span>
+                        </p>
+                    </div>
+                    <!-- REVISI: Teks tanggal PP diperbesar -->
+                    <p class="text-xs text-blue-300 font-bold tracking-wider shrink-0 bg-blue-500/10 px-2 py-1 rounded-md border border-blue-500/20">${retDateStr}</p>
                 </div>
             `;
         }
-        routeHtml += `</div>`; // Tutup Box Route
+        routeHtml += `</div>`; 
 
         const item = document.createElement('div');
-        item.className = `list-card-3d rounded-2xl mb-4 w-full ${glowClass}`;
+        // REVISI: Margin bawah dikurangi agar lebih compact (mb-2 bukan mb-3)
+        item.className = `list-card-3d rounded-2xl mb-2.5 w-full ${glowClass}`;
         item.onclick = function() { openDetailView(order.id); };
 
         item.innerHTML = `
-        <div class="relative p-3.5 flex flex-col w-full overflow-hidden rounded-2xl h-full">
-            <!-- Left Accent Light -->
-            <div class="absolute left-0 top-0 bottom-0 w-1.5 ${indicatorColor} shadow-[0_0_15px_currentColor] z-0 opacity-80"></div>
+        <!-- REVISI: Padding dikurangi dari p-3 menjadi p-2.5 untuk mengurangi tinggi kotak -->
+        <div class="relative p-2.5 flex flex-col w-full overflow-hidden rounded-2xl h-full bg-[#0b1221]/80 border border-white/5 shadow-[0_5px_15px_rgba(0,0,0,0.5)]">
             
-            <!-- Header Group -->
+            <div class="absolute left-0 top-0 bottom-0 w-1.5 ${indicatorColor} shadow-[0_0_15px_currentColor] z-0 opacity-100"></div>
+            
             <div class="flex items-center justify-between pl-3 relative z-10 inner-3d-element transform translate-z-20">
                 <div class="flex items-center gap-3 min-w-0 flex-1">
-                    <div class="w-7 h-7 rounded-lg bg-black/60 flex items-center justify-center font-mono text-[10px] font-black ${statusColorClass.split(' ')[2]} border border-white/10 shadow-inner shrink-0 relative overflow-hidden">
-                        <div class="absolute inset-0 bg-gradient-to-tr from-transparent via-white/5 to-transparent pointer-events-none"></div>
+                    <!-- REVISI: Ukuran Badge Angka diperbesar (w-10 h-10, text-lg) -->
+                    <div class="w-10 h-10 rounded-lg bg-black/60 flex items-center justify-center font-mono text-lg font-black ${statusColorClass.split(' ')[2]} border border-white/10 shadow-inner shrink-0 relative overflow-hidden">
                         ${displayNo}
                     </div>
-                    <h4 class="text-[13px] font-black text-white truncate leading-tight tracking-wider drop-shadow-md pb-0.5">${displayName}</h4>
+                    <!-- REVISI: Ukuran font nama sedikit diperbesar -->
+                    <h4 class="text-sm font-black text-white truncate leading-tight tracking-wider drop-shadow-md">${displayName}</h4>
                 </div>
-                <div class="px-2.5 py-1 rounded-md border border-white/10 bg-black/60 shadow-inner shrink-0 ml-2">
-                    <p class="text-[8px] ${statusColorClass.split(' ')[2]} font-bold uppercase tracking-widest drop-shadow-[0_0_2px_currentColor]">${order.status}</p>
+                <div class="px-3 py-1.5 rounded-lg border ${statusColorClass} shadow-inner shrink-0 ml-2">
+                    <p class="text-[10px] font-black uppercase tracking-widest drop-shadow-[0_0_5px_currentColor]">${order.status}</p>
                 </div>
             </div>
             
-            <!-- Route Group -->
-            <div class="pl-3 w-full relative z-10">
+            <div class="pl-2 w-full relative z-10">
                 ${routeHtml}
             </div>
         </div>`;

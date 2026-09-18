@@ -636,28 +636,24 @@ input:checked + .slider:before {
 /* REVISI: EFEK 3D FUTURISTIC UNTUK ICON KERETA NOTA/RECEIPT  */
 /* ========================================================== */
 
-/* Icon Kereta Pergi (Orange Elegan 3D) */
+/* Icon Kereta Pergi (Orange Kalem Full 3D Solid) */
 .icon-receipt-3d-depart {
-    background: linear-gradient(135deg, #fde68a 0%, #e67e22 40%, #c24100 100%);
-    -webkit-background-clip: text;
-    -webkit-text-fill-color: transparent;
-    filter: 
-        drop-shadow(0px 1px 1px rgba(255, 255, 255, 0.3)) 
-        drop-shadow(1px 2px 2px rgba(0, 0, 0, 0.8)) 
-        drop-shadow(2px 3px 4px rgba(0, 0, 0, 0.5))
-        drop-shadow(0px 0px 8px rgba(230, 126, 34, 0.4)); /* Outer Glow Soft */
+    color: #fb923c; /* Warna orange kalem */
+    text-shadow: 
+        1px 1px 0 #ea580c, 
+        2px 2px 0 #c24100, 
+        3px 3px 0 #9a3412,
+        4px 4px 6px rgba(0, 0, 0, 0.6);
     transform: translateZ(10px);
 }
 
-/* Icon Kereta Pulang (Biru Elegan 3D) */
+/* Icon Kereta Pulang (Biru Kalem Full 3D Solid) */
 .icon-receipt-3d-return {
-    background: linear-gradient(135deg, #93c5fd 0%, #3b82f6 40%, #1d4ed8 100%);
-    -webkit-background-clip: text;
-    -webkit-text-fill-color: transparent;
-    filter: 
-        drop-shadow(0px 1px 1px rgba(255, 255, 255, 0.3)) 
-        drop-shadow(1px 2px 2px rgba(0, 0, 0, 0.8)) 
-        drop-shadow(2px 3px 4px rgba(0, 0, 0, 0.5))
-        drop-shadow(0px 0px 8px rgba(59, 130, 246, 0.4)); /* Outer Glow Soft */
+    color: #60a5fa; /* Warna biru kalem */
+    text-shadow: 
+        1px 1px 0 #3b82f6, 
+        2px 2px 0 #2563eb, 
+        3px 3px 0 #1d4ed8,
+        4px 4px 6px rgba(0, 0, 0, 0.6);
     transform: translateZ(10px);
 }

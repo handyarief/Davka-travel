@@ -1568,7 +1568,11 @@ window.closeDetailView = function() {
     window.history.back();
 }
 
-// REVISI: Fungsi render diubah menjadi full 3D card layout dan argumen search filter dihapus
+// =========================================================================
+// REVISI TOTAL: FUNGSI renderOrderList()
+// Layout dibuat rapi, kotak di-compress (compact), dan memanfaatkan 
+// hierarki layer 3D yang disediakan oleh CSS baru
+// =========================================================================
 window.renderOrderList = function() {
     const container = document.getElementById('ordersContainer');
     container.innerHTML = '';
@@ -1604,13 +1608,18 @@ window.renderOrderList = function() {
         const displayNo = sortedOrders.length - index; 
         const dateStr = order.date ? new Date(order.date).toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' }) : '-';
         
+        // --- LAYOUT RUTI (COMPACT BOX) ---
         let routeHtml = `
-            <div class="mt-2 inner-3d-element transform translate-z-10">
-                <p class="text-[11px] text-gray-300 font-bold flex items-center">
-                    <i class="fas fa-train text-davka-orange mr-1.5 text-[10px]"></i> ${order.origin || '?'} <i class="fas fa-chevron-right text-[8px] mx-1.5 opacity-50"></i> ${order.dest || '?'}
-                </p>
-                <p class="text-[10px] text-gray-500 pl-4 font-mono mt-0.5">${dateStr}</p>
-            </div>
+            <div class="mt-3 inner-3d-element transform translate-z-10 bg-black/40 rounded-xl p-2.5 border border-white/5 flex flex-col gap-2 shadow-inner">
+                <div class="flex justify-between items-center w-full">
+                    <p class="text-[10px] text-gray-300 font-bold flex items-center flex-1 min-w-0 pr-2">
+                        <i class="fas fa-train text-davka-orange mr-1.5 w-3 text-center"></i>
+                        <span class="truncate max-w-[100px] sm:max-w-[150px] inline-block">${order.origin || '?'}</span>
+                        <i class="fas fa-chevron-right text-[7px] mx-1.5 opacity-40"></i>
+                        <span class="truncate max-w-[100px] sm:max-w-[150px] inline-block">${order.dest || '?'}</span>
+                    </p>
+                    <p class="text-[9px] text-davka-orange font-mono font-bold tracking-widest shrink-0">${dateStr}</p>
+                </div>
         `;
 
         if (order.tripType === 'round_trip') {
@@ -1618,45 +1627,44 @@ window.renderOrderList = function() {
             const retOrg = order.returnOrigin || order.dest || '?';
             const retDest = order.returnDest || order.origin || '?';
             routeHtml += `
-            <div class="mt-2 pt-2 border-t border-white/5 relative inner-3d-element transform translate-z-10">
-                <div class="absolute left-1.5 top-2 w-0.5 h-full bg-blue-500/20"></div>
-                <div class="flex justify-between items-start">
-                    <div>
-                        <p class="text-[11px] text-gray-300 font-bold flex items-center">
-                            <i class="fas fa-exchange-alt text-blue-400 mr-1.5 text-[10px]"></i> ${retOrg} <i class="fas fa-chevron-right text-[8px] mx-1.5 opacity-50"></i> ${retDest}
-                        </p>
-                        <p class="text-[10px] text-gray-500 pl-4 font-mono mt-0.5">${retDateStr}</p>
-                    </div>
-                    <div class="px-2 py-1 rounded-md bg-black/40 border border-white/5 self-center mt-1">
-                        <p class="text-[8px] ${statusColorClass.split(' ')[2]} font-bold uppercase tracking-wider">${order.status}</p>
-                    </div>
+                <div class="flex justify-between items-center w-full pt-2 border-t border-dashed border-white/10">
+                    <p class="text-[10px] text-gray-300 font-bold flex items-center flex-1 min-w-0 pr-2">
+                        <i class="fas fa-exchange-alt text-blue-400 mr-1.5 w-3 text-center"></i>
+                        <span class="truncate max-w-[100px] sm:max-w-[150px] inline-block">${retOrg}</span>
+                        <i class="fas fa-chevron-right text-[7px] mx-1.5 opacity-40"></i>
+                        <span class="truncate max-w-[100px] sm:max-w-[150px] inline-block">${retDest}</span>
+                    </p>
+                    <p class="text-[9px] text-blue-400 font-mono font-bold tracking-widest shrink-0">${retDateStr}</p>
                 </div>
-            </div>`;
+            `;
         }
+        routeHtml += `</div>`; // Tutup Box Route
 
         const item = document.createElement('div');
-        item.className = `list-card-3d preserve-3d rounded-2xl border ${statusColorClass.split(' ')[1]} ${statusColorClass.split(' ')[0]} mb-4 w-full bg-black/20 backdrop-blur-sm ${glowClass}`;
+        item.className = `list-card-3d rounded-2xl mb-4 w-full ${glowClass}`;
         item.onclick = function() { openDetailView(order.id); };
 
         item.innerHTML = `
-        <div class="relative p-4 flex flex-col w-full overflow-hidden rounded-2xl">
-            <div class="absolute left-0 top-0 bottom-0 w-1.5 ${indicatorColor} shadow-[0_0_10px_currentColor]"></div>
+        <div class="relative p-3.5 flex flex-col w-full overflow-hidden rounded-2xl h-full">
+            <!-- Left Accent Light -->
+            <div class="absolute left-0 top-0 bottom-0 w-1.5 ${indicatorColor} shadow-[0_0_15px_currentColor] z-0 opacity-80"></div>
             
-            <div class="flex items-start justify-between mb-1 pl-2">
-                <div class="flex items-center gap-3 w-full">
-                    <div class="w-8 h-8 rounded-xl bg-black/40 flex items-center justify-center font-mono text-sm font-black ${statusColorClass.split(' ')[2]} border border-white/10 shadow-inner inner-3d-element transform translate-z-20 shrink-0">
+            <!-- Header Group -->
+            <div class="flex items-center justify-between pl-3 relative z-10 inner-3d-element transform translate-z-20">
+                <div class="flex items-center gap-3 min-w-0 flex-1">
+                    <div class="w-7 h-7 rounded-lg bg-black/60 flex items-center justify-center font-mono text-[10px] font-black ${statusColorClass.split(' ')[2]} border border-white/10 shadow-inner shrink-0 relative overflow-hidden">
+                        <div class="absolute inset-0 bg-gradient-to-tr from-transparent via-white/5 to-transparent pointer-events-none"></div>
                         ${displayNo}
                     </div>
-                    <div class="flex-1 min-w-0 inner-3d-element transform translate-z-20">
-                        <h4 class="text-base font-black text-white truncate leading-tight tracking-wide drop-shadow-md">${displayName}</h4>
-                    </div>
-                    <div class="px-3 py-1 rounded-lg border border-white/10 bg-black/40 shadow-inner inner-3d-element transform translate-z-20 shrink-0">
-                        <p class="text-[9px] ${statusColorClass.split(' ')[2]} font-black uppercase tracking-widest">${order.status}</p>
-                    </div>
+                    <h4 class="text-[13px] font-black text-white truncate leading-tight tracking-wider drop-shadow-md pb-0.5">${displayName}</h4>
+                </div>
+                <div class="px-2.5 py-1 rounded-md border border-white/10 bg-black/60 shadow-inner shrink-0 ml-2">
+                    <p class="text-[8px] ${statusColorClass.split(' ')[2]} font-bold uppercase tracking-widest drop-shadow-[0_0_2px_currentColor]">${order.status}</p>
                 </div>
             </div>
             
-            <div class="pl-2 w-full">
+            <!-- Route Group -->
+            <div class="pl-3 w-full relative z-10">
                 ${routeHtml}
             </div>
         </div>`;

@@ -1,5 +1,3 @@
-// script.js — BAGIAN 1
-
 // --- KONFIGURASI SUPABASE (WAJIB DIISI ULANG) ---
 const SUPABASE_URL = 'https://wdhfthzuihakjlygttcw.supabase.co'; 
 const SUPABASE_KEY = 'sb_publishable_8U8NeSn4aOZiRzLRS3KmxA_oz84fUAL';
@@ -359,8 +357,6 @@ function updateWizardProgress() {
         }
     }
 }
-// script.js — BAGIAN 2
-
 // --- UX ENGINE: SMOOTH SCROLL & ENTER KEY NAVIGATION ---
 function enableSmoothInputUX() {
     const formElements = document.querySelectorAll('input, select, textarea');
@@ -999,8 +995,6 @@ function updateWarTicketReminder() {
     tomorrowDateEl.innerText = tomorrow.toLocaleDateString('id-ID', options).toUpperCase();
     tomorrowTargetEl.innerText = targetTomorrow.toLocaleDateString('id-ID', options).toUpperCase();
 }
-// script.js — BAGIAN 3
-
 // --- HELPER LAINNYA ---
 function toggleLoader(show) {
     const loader = document.getElementById('global-loader');
@@ -1214,7 +1208,8 @@ function renderReceiptToDOM(order) {
                     dobDisplayReceipt = `<div class="mt-2 pt-2 border-t border-dashed border-white/10 flex items-center gap-2"><i class="fas fa-calendar-alt text-davka-orange text-[12px] opacity-80"></i><span class="text-[12px] text-gray-400 uppercase tracking-widest">Lahir:</span><span class="text-[14px] text-white font-bold font-mono tracking-widest">${dobStr}</span></div>`;
                 }
             }
-            html += `<div class="flex flex-col bg-black/40 p-4 rounded-xl mb-3 border border-white/10 shadow-inner w-full"><p class="text-[18px] font-black text-white uppercase break-words leading-tight tracking-widest flex items-center">${p.name} ${paxTypeLabel}</p><p class="text-[18px] text-gray-200 font-bold font-mono mt-2 tracking-widest"><i class="fas fa-id-card text-gray-500 mr-2 text-[14px]"></i>ID: ${p.nik || '-'}</p>${dobDisplayReceipt}</div>`;
+            // REVISI: Menggunakan icon-id-3d untuk icon KTP dengan warna soft orange 3D
+            html += `<div class="flex flex-col bg-black/40 p-4 rounded-xl mb-3 border border-white/10 shadow-inner w-full"><p class="text-[18px] font-black text-white uppercase break-words leading-tight tracking-widest flex items-center">${p.name} ${paxTypeLabel}</p><p class="text-[18px] text-gray-200 font-bold font-mono mt-2 tracking-widest"><i class="fas fa-id-card icon-id-3d mr-2 text-[18px]"></i>ID: ${p.nik || '-'}</p>${dobDisplayReceipt}</div>`;
         });
         
         let countStr = `${adults} Dewasa`;

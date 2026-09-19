@@ -657,3 +657,18 @@ input:checked + .slider:before {
         4px 4px 6px rgba(0, 0, 0, 0.6);
     transform: translateZ(10px);
 }
+
+/* ========================================================== */
+/* REVISI: EFEK 3D FUTURISTIC UNTUK ICON KTP NOTA/RECEIPT     */
+/* ========================================================== */
+
+/* Icon KTP / ID Card (Orange Kalem Full 3D Solid) */
+.icon-id-3d {
+    color: #fb923c; /* Warna orange kalem */
+    text-shadow: 
+        1px 1px 0 #ea580c, 
+        2px 2px 0 #c24100, 
+        3px 3px 0 #9a3412,
+        4px 4px 6px rgba(0, 0, 0, 0.6);
+    transform: translateZ(10px);
+}

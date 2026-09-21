@@ -1616,15 +1616,15 @@ window.renderOrderList = function() {
         const dest = (order.dest || '?').toUpperCase();
         
         let routeHtml = `
-            <div class="mt-2 flex flex-col gap-0.5">
+            <div class="mt-1 flex flex-col gap-0.5">
                 <div class="flex items-center gap-1.5">
                     <i class="fas fa-train text-davka-orange text-[10px] w-3 text-center drop-shadow-md"></i>
                     <p class="text-[11px] text-gray-200 font-bold tracking-wide">
                         ${origin} <i class="fas fa-chevron-right text-[8px] text-gray-500 mx-1"></i> ${dest}
                     </p>
                 </div>
-                <div class="pl-4 ml-1.5 border-l border-white/10 py-1">
-                    <p class="text-[10px] text-gray-400 font-bold uppercase tracking-widest leading-none mb-1">${trainName}</p>
+                <div class="pl-4 ml-1.5 border-l border-white/10 py-1.5 flex flex-col justify-center gap-1.5">
+                    <p class="text-[10px] text-gray-400 font-bold uppercase tracking-widest leading-none">${trainName}</p>
                     <p class="text-xs text-orange-400 font-mono font-bold leading-none drop-shadow-sm">${dateStr}</p>
                 </div>
             </div>
@@ -1644,8 +1644,8 @@ window.renderOrderList = function() {
                             ${retOrg} <i class="fas fa-chevron-right text-[8px] text-gray-500 mx-1"></i> ${retDest}
                         </p>
                     </div>
-                    <div class="pl-4 ml-1.5 border-l border-white/10 py-1">
-                        <p class="text-[10px] text-gray-400 font-bold uppercase tracking-widest leading-none mb-1">${retTrain}</p>
+                    <div class="pl-4 ml-1.5 border-l border-white/10 py-1.5 flex flex-col justify-center gap-1.5">
+                        <p class="text-[10px] text-gray-400 font-bold uppercase tracking-widest leading-none">${retTrain}</p>
                         <p class="text-xs text-sky-400 font-mono font-bold leading-none drop-shadow-sm">${retDateStr}</p>
                     </div>
                 </div>
@@ -1661,9 +1661,9 @@ window.renderOrderList = function() {
             
             <div class="absolute left-0 top-0 bottom-0 w-1 ${indicatorColor} shadow-[0_0_8px_currentColor] z-0 opacity-80"></div>
             
-            <div class="flex items-center justify-between pl-2 relative z-10 inner-3d-element border-b border-white/5 pb-2">
+            <div class="flex items-center justify-between pl-2 relative z-10 inner-3d-element border-b border-white/5 pb-1">
                 <div class="flex items-center gap-2 min-w-0 flex-1">
-                    <div class="w-6 h-6 rounded border ${statusColorClass} ${bgStatus} flex items-center justify-center font-mono text-[11px] font-black shrink-0 relative overflow-hidden shadow-inner">
+                    <div class="w-8 h-8 rounded-lg border ${statusColorClass} ${bgStatus} flex items-center justify-center font-mono text-sm font-black shrink-0 relative overflow-hidden shadow-inner">
                         ${displayNo}
                     </div>
                     <h4 class="text-[13px] font-black text-white truncate leading-tight tracking-wider drop-shadow-sm">${displayName}</h4>

@@ -1,3 +1,5 @@
+// script.js — BAGIAN 1
+
 // --- KONFIGURASI SUPABASE (WAJIB DIISI ULANG) ---
 const SUPABASE_URL = 'https://wdhfthzuihakjlygttcw.supabase.co'; 
 const SUPABASE_KEY = 'sb_publishable_8U8NeSn4aOZiRzLRS3KmxA_oz84fUAL';
@@ -293,6 +295,8 @@ window.switchUploadTab = function(tabName) {
         containerReturn.classList.remove('hidden');
     }
 }
+// script.js — BAGIAN 2
+
 // --- MULTI-STEP WIZARD LOGIC ---
 window.nextStep = function(step) {
     const stepElement = document.getElementById(`step-${step}`);
@@ -538,6 +542,8 @@ window.getPassengersFromForm = function() {
     
     return paxList;
 }
+// script.js — BAGIAN 3
+
 window.calcTotalFromPax = function() {
     const adultCount = parseInt(document.getElementById('inpPaxCount').value) || 1;
     
@@ -824,6 +830,8 @@ window.navTo = function(pageId, fromPopState = false) {
         window.scrollTo({ top: 0, behavior: 'smooth' });
     }, 400); 
 }
+// script.js — BAGIAN 4
+
 window.editOrder = function(id) {
     const index = orders.findIndex(o => o.id === id);
     if (index === -1) return;
@@ -1411,6 +1419,7 @@ window.resetForm = function() {
     }
     if (typeof updateWizardProgress === 'function') updateWizardProgress();
 }
+// script.js — BAGIAN 5 (TERAKHIR)
 
 window.openDetailView = function(orderId, fromPopState = false) {
     const order = orders.find(o => o.id === orderId);
@@ -1569,7 +1578,8 @@ window.closeDetailView = function() {
 // REVISI TOTAL: FUNGSI renderOrderList()
 // 1. UI Menjadi Format List Compact
 // 2. Struktur Vertikal: Rute -> Nama Kereta -> Tanggal (Diperbesar/Disesuaikan Warnanya)
-// 3. Margin dan padding ditipiskan, dipadukan dengan desain Elegant 3D
+// 3. Spacing (Padding/Margin) Dirapatkan
+// 4. Nomor Urut Ditampilkan Clean (Tanpa Kotak/Border)
 // =========================================================================
 window.renderOrderList = function() {
     const container = document.getElementById('ordersContainer');
@@ -1588,22 +1598,26 @@ window.renderOrderList = function() {
         let indicatorColor = ''; 
         let glowClass = '';
         let bgStatus = '';
+        let textNumColor = ''; // REVISI: Variabel warna nomor
 
         if (order.status === 'success') { 
             statusColorClass = 'border-green-500/40 text-green-400';
             bgStatus = 'bg-green-500/10';
             indicatorColor = 'bg-green-500'; 
             glowClass = 'hover-glow-success';
+            textNumColor = 'text-green-500'; // REVISI
         } else if (order.status === 'cancel') { 
             statusColorClass = 'border-red-500/40 text-red-400';
             bgStatus = 'bg-red-500/10';
             indicatorColor = 'bg-red-500'; 
             glowClass = 'hover-glow-cancel';
+            textNumColor = 'text-red-500'; // REVISI
         } else { 
             statusColorClass = 'border-orange-500/40 text-orange-400';
             bgStatus = 'bg-orange-500/10';
             indicatorColor = 'bg-orange-500'; 
             glowClass = 'hover-glow-pending';
+            textNumColor = 'text-orange-500'; // REVISI
         }
 
         const displayName = (order.contactName || order.name || 'No Name').toUpperCase();
@@ -1623,9 +1637,9 @@ window.renderOrderList = function() {
                         ${origin} <i class="fas fa-chevron-right text-[8px] text-gray-500 mx-1"></i> ${dest}
                     </p>
                 </div>
-                <div class="pl-4 ml-1.5 border-l border-white/10 py-1.5 flex flex-col justify-center gap-1.5">
+                <div class="pl-4 ml-1.5 border-l border-white/10 py-1 flex flex-col justify-center gap-1">
                     <p class="text-[10px] text-gray-400 font-bold uppercase tracking-widest leading-none">${trainName}</p>
-                    <p class="text-xs text-orange-400 font-mono font-bold leading-none drop-shadow-sm">${dateStr}</p>
+                    <p class="text-[11px] text-orange-400 font-mono font-bold leading-none drop-shadow-sm">${dateStr}</p>
                 </div>
             </div>
         `;
@@ -1637,35 +1651,37 @@ window.renderOrderList = function() {
             const retDest = (order.returnDest || order.origin || '?').toUpperCase();
             
             routeHtml += `
-                <div class="mt-1 pt-1.5 border-t border-dashed border-white/10 flex flex-col gap-0.5">
+                <div class="mt-0.5 pt-1 border-t border-dashed border-white/10 flex flex-col gap-0.5">
                     <div class="flex items-center gap-1.5">
                         <i class="fas fa-exchange-alt text-blue-400 text-[10px] w-3 text-center drop-shadow-md"></i>
                         <p class="text-[11px] text-gray-200 font-bold tracking-wide">
                             ${retOrg} <i class="fas fa-chevron-right text-[8px] text-gray-500 mx-1"></i> ${retDest}
                         </p>
                     </div>
-                    <div class="pl-4 ml-1.5 border-l border-white/10 py-1.5 flex flex-col justify-center gap-1.5">
+                    <div class="pl-4 ml-1.5 border-l border-white/10 py-1 flex flex-col justify-center gap-1">
                         <p class="text-[10px] text-gray-400 font-bold uppercase tracking-widest leading-none">${retTrain}</p>
-                        <p class="text-xs text-sky-400 font-mono font-bold leading-none drop-shadow-sm">${retDateStr}</p>
+                        <p class="text-[11px] text-sky-400 font-mono font-bold leading-none drop-shadow-sm">${retDateStr}</p>
                     </div>
                 </div>
             `;
         }
 
         const item = document.createElement('div');
-        item.className = `list-card-3d rounded-xl mb-2.5 w-full ${glowClass}`;
+        item.className = `list-card-3d rounded-xl mb-2 w-full ${glowClass}`;
         item.onclick = function() { openDetailView(order.id); };
 
+        // REVISI: Mengubah padding (p-2.5 -> py-1.5 px-2.5) dan menghilangkan kotak pembungkus angka
         item.innerHTML = `
-        <div class="relative p-2.5 flex flex-col w-full overflow-hidden rounded-xl h-full bg-[#0f172a]/60">
+        <div class="relative py-1.5 px-2.5 flex flex-col w-full overflow-hidden rounded-xl h-full bg-[#0f172a]/60">
             
             <div class="absolute left-0 top-0 bottom-0 w-1 ${indicatorColor} shadow-[0_0_8px_currentColor] z-0 opacity-80"></div>
             
             <div class="flex items-center justify-between pl-2 relative z-10 inner-3d-element border-b border-white/5 pb-1">
-                <div class="flex items-center gap-2 min-w-0 flex-1">
-                    <div class="w-8 h-8 rounded-lg border ${statusColorClass} ${bgStatus} flex items-center justify-center font-mono text-sm font-black shrink-0 relative overflow-hidden shadow-inner">
-                        ${displayNo}
-                    </div>
+                <div class="flex items-baseline gap-1 min-w-0 flex-1 pt-0.5">
+                    <!-- REVISI: Angka ditampilkan sederhana tanpa bg/border -->
+                    <span class="font-mono text-[13px] font-black shrink-0 ${textNumColor} drop-shadow-md mr-1">
+                        ${displayNo}.
+                    </span>
                     <h4 class="text-[13px] font-black text-white truncate leading-tight tracking-wider drop-shadow-sm">${displayName}</h4>
                 </div>
                 <div class="px-2 py-0.5 rounded border ${statusColorClass} ${bgStatus} shadow-inner shrink-0 ml-2">

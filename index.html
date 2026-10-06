@@ -1,3 +1,4 @@
+<!-- index.html — BAGIAN 1 -->
 <!DOCTYPE html>
 <html lang="id">
 <head>
@@ -268,14 +269,16 @@
                         </div>
                     </div>
                     
-                    <div class="mt-6">
-                        <button type="button" onclick="nextStep(1)" class="w-full relative px-6 py-4 font-black text-white rounded-2xl shadow-[0_6px_0_#c24100] bg-gradient-to-b from-[#ff7a33] to-davka-orange active:shadow-[0_0px_0_#c24100] active:translate-y-[6px] transition-all duration-150 flex items-center justify-center gap-2 text-sm tracking-widest overflow-hidden group">
+                    <div class="mt-8 flex justify-center pb-2">
+                        <!-- REVISI: Ukuran dibuat proporsional dan class efek 3D (btn-3d-modern) ditambahkan -->
+                        <button type="button" onclick="nextStep(1)" class="btn-3d-modern relative px-10 py-3.5 font-black text-white rounded-2xl flex items-center justify-center gap-2 text-xs sm:text-sm tracking-widest overflow-hidden group w-[85%] max-w-[300px]">
                             <div class="absolute inset-0 bg-white/20 translate-y-[-100%] group-hover:translate-y-0 transition-transform duration-300"></div>
-                            LANJUT KE PERJALANAN <i class="fas fa-arrow-right"></i>
+                            <span class="relative z-10 drop-shadow-md">LANJUT KE PERJALANAN</span> 
+                            <i class="fas fa-arrow-right relative z-10 drop-shadow-md ml-1"></i>
                         </button>
                     </div>
                 </div>
-
+<!-- index.html — BAGIAN 2 -->
                 <div id="step-2" class="form-step hidden">
                     <div class="glass p-5 rounded-3xl space-y-4 shadow-[0_10px_30px_rgba(0,0,0,0.5)] border-t-2 border-white/20">
                         <div class="flex items-center gap-2 mb-4 border-b border-white/10 pb-3">
@@ -605,6 +608,7 @@
                         </button>
                     </div>
                 </div>
+<!-- index.html — BAGIAN 3 -->
                 <!-- ==================== STEP 5: PEMBAYARAN & SUBMIT ==================== -->
                 <div id="step-5" class="form-step hidden">
                     <div class="glass p-5 rounded-3xl space-y-4 shadow-[0_10px_30px_rgba(0,0,0,0.5)] border-t-4 border-davka-orange">
@@ -731,6 +735,7 @@
                 </div>
             </div>
         </section>
+<!-- index.html — BAGIAN 4 -->
         <section id="page-detail" class="hidden fade-in pb-32">
             <div class="pt-16 px-1">
                 <div class="flex items-center gap-3 mb-6">
@@ -935,7 +940,6 @@
                     <img src="logo.jpg" crossorigin="anonymous" class="relative w-40 h-40 mx-auto rounded-full border border-gray-600 shadow-md object-cover">
                 </div>
                 
-                <!-- REVISI: Spacing h1 di-adjust dengan margin top negatif agar lebih rapat ke logo -->
                 <h1 class="text-3xl font-black tracking-[0.2em] text-white uppercase font-serif -mt-2">DAVKA TRAVEL</h1>
                 
                 <div class="flex justify-center items-center gap-3 mt-1 mb-1">
@@ -953,7 +957,6 @@
                     
                     <div class="p-4">
                         <div class="flex justify-between items-center mb-2 border-b border-dashed border-gray-600 pb-2">
-                            <!-- Implementasi class icon-receipt-3d-depart pada icon kereta -->
                             <span class="text-[14px] text-davka-orange font-bold uppercase tracking-widest flex items-center mt-1"><i class="fas fa-train mr-2 text-lg icon-receipt-3d-depart"></i> Keberangkatan</span>
                             <span class="text-xl font-black text-white font-sans tracking-wide" id="rec-date-depart">DD MMM YYYY</span>
                         </div>
@@ -972,12 +975,10 @@
                             <div class="relative mb-3">
                                 <div class="ml-4 flex justify-between items-center bg-gray-800 rounded-xl p-3 border border-gray-600 shadow-inner">
                                     <div>
-                                        <!-- Warna Headline Orange Elegan (Pergi) -->
                                         <p class="text-[10px] text-[#e67e22] uppercase font-bold tracking-wider mb-1">Nama Kereta</p>
                                         <p class="text-[16px] font-black text-white uppercase tracking-wide" id="rec-train-name">TRAIN</p>
                                     </div>
                                     <div class="text-right">
-                                        <!-- Warna Headline Orange Elegan (Pergi) -->
                                         <p class="text-[10px] text-[#e67e22] uppercase font-bold tracking-wider mb-1">Tgl War Tiket</p>
                                         <p class="text-[16px] font-black text-white uppercase font-mono tracking-wide" id="rec-war-date">DD MMM YYYY</p>
                                     </div>
@@ -999,7 +1000,6 @@
                 <div class="bg-[#0f172a] border border-gray-700 rounded-2xl p-4 relative flex flex-col gap-2 shadow-md">
                     <div class="flex justify-between border-b border-dashed border-gray-600 pb-2">
                         <div class="w-[60%] pr-3">
-                            <!-- Warna Headline Orange Elegan (Pergi) -->
                             <p class="text-[12px] text-[#e67e22] uppercase font-bold mb-1 tracking-wider">Data Pemesan</p>
                             <p class="text-[18px] font-black text-white uppercase break-words leading-tight" id="rec-contact-name">NAME</p>
                             <p class="text-[14px] text-gray-300 font-mono mt-1 mb-2 font-bold tracking-wider" id="rec-contact-phone">08XX</p>
@@ -1007,7 +1007,6 @@
                             <p class="text-[14px] text-white font-bold leading-snug break-words" id="rec-address">ALAMAT</p>
                         </div>
                         <div class="text-right w-[40%] border-l border-gray-600 pl-3 flex flex-col justify-start">
-                            <!-- Warna Headline Orange Elegan (Pergi) -->
                             <p class="text-[12px] text-[#e67e22] uppercase font-bold mb-2 tracking-wider">Pembayaran</p>
                             <div class="inline-block bg-gray-800 border border-gray-600 px-4 py-2.5 rounded-lg">
                                 <p class="text-[16px] font-black text-white uppercase break-words" id="rec-payment-method">METHOD</p>
@@ -1016,7 +1015,6 @@
                     </div>
                     <div>
                          <div class="flex justify-between items-center mb-3 mt-1">
-                             <!-- Warna Headline Orange Elegan (Pergi) -->
                              <p class="text-[14px] text-[#e67e22] uppercase font-bold tracking-widest"><i class="fas fa-users mr-1"></i> Data Penumpang</p>
                              <p class="text-[14px] font-bold text-gray-300 bg-gray-800 px-4 py-2 rounded-lg border border-gray-600" id="rec-pax-count">1 Dewasa</p>
                          </div>
@@ -1033,7 +1031,6 @@
                     
                      <div class="p-4">
                         <div class="flex justify-between items-center mb-2 border-b border-dashed border-gray-600 pb-2">
-                            <!-- Implementasi class icon-receipt-3d-return pada icon kereta -->
                             <span class="text-[14px] text-blue-400 font-bold uppercase tracking-widest flex items-center mt-1"><i class="fas fa-exchange-alt mr-2 text-lg icon-receipt-3d-return"></i> Kepulangan (PP)</span>
                             <span class="text-xl font-black text-white font-sans tracking-wide" id="rec-return-date-depart">DD MMM YYYY</span>
                         </div>
@@ -1052,12 +1049,10 @@
                             <div class="relative mb-3">
                                 <div class="ml-4 flex justify-between items-center bg-gray-800 rounded-xl p-3 border border-gray-600 shadow-inner">
                                     <div>
-                                        <!-- Warna Headline Biru Elegan (Pulang) -->
                                         <p class="text-[10px] text-[#3b82f6] uppercase font-bold tracking-wider mb-1">Nama Kereta</p>
                                         <p class="text-[16px] font-black text-white uppercase tracking-wide" id="rec-return-train-name">TRAIN</p>
                                     </div>
                                     <div class="text-right">
-                                        <!-- Warna Headline Biru Elegan (Pulang) -->
                                         <p class="text-[10px] text-[#3b82f6] uppercase font-bold tracking-wider mb-1">Tgl War Tiket</p>
                                         <p class="text-[16px] font-black text-white uppercase font-mono tracking-wide" id="rec-return-war-date">DD MMM YYYY</p>
                                     </div>
@@ -1079,7 +1074,6 @@
                 <div class="bg-[#0f172a] border border-gray-700 rounded-2xl p-4 relative flex flex-col gap-2 shadow-md">
                      <div class="flex justify-between border-b border-dashed border-gray-600 pb-2">
                         <div class="w-[60%] pr-3">
-                            <!-- Warna Headline Biru Elegan (Pulang) -->
                             <p class="text-[12px] text-[#3b82f6] uppercase font-bold mb-1 tracking-wider">Data Pemesan</p>
                             <p class="text-[18px] font-black text-white uppercase break-words leading-tight" id="rec-return-contact-name">NAME</p>
                             <p class="text-[14px] text-gray-300 font-mono mt-1 mb-2 font-bold tracking-wider" id="rec-return-contact-phone">08XX</p>
@@ -1087,7 +1081,6 @@
                             <p class="text-[14px] text-white font-bold leading-snug break-words" id="rec-return-address">ALAMAT</p>
                         </div>
                         <div class="text-right w-[40%] border-l border-gray-600 pl-3 flex flex-col justify-start">
-                            <!-- Warna Headline Biru Elegan (Pulang) -->
                             <p class="text-[12px] text-[#3b82f6] uppercase font-bold mb-2 tracking-wider">Pembayaran</p>
                             <div class="inline-block bg-gray-800 border border-gray-600 px-4 py-2.5 rounded-lg">
                                 <p class="text-[16px] font-black text-white uppercase break-words" id="rec-return-payment-method">METHOD</p>
@@ -1096,7 +1089,6 @@
                     </div>
                     <div>
                          <div class="flex justify-between items-center mb-3 mt-1">
-                             <!-- Warna Headline Biru Elegan (Pulang) -->
                              <p class="text-[14px] text-[#3b82f6] uppercase font-bold tracking-widest"><i class="fas fa-users mr-1"></i> Data Penumpang</p>
                              <p class="text-[14px] font-bold text-gray-300 bg-gray-800 px-4 py-2 rounded-lg border border-gray-600" id="rec-return-pax-count">1 Dewasa</p>
                          </div>
@@ -1105,41 +1097,34 @@
                 </div>
             </div>
 
-            <!-- REVISI: padding-bottom container (pb-1) dan padding-top (pt-2) dirapatkan -->
             <div class="px-6 pb-1 relative z-10 mt-auto pt-2">
                 <div class="bg-[#0f172a] rounded-2xl p-4 border border-gray-700 shadow-md relative overflow-hidden">
                     <div class="flex justify-between items-end mb-3 border-b border-dashed border-gray-600 pb-2">
                         <div>
-                            <!-- Warna Headline Orange Elegan -->
                             <p class="text-[12px] text-[#e67e22] font-bold uppercase tracking-[0.2em] mb-1">ID Transaksi</p>
                             <p class="text-xl font-mono font-black text-white tracking-widest" id="rec-id">#000000</p>
                         </div>
                         <div class="text-right">
-                            <!-- Centang Lunas diubah menjadi Hijau Solid -->
                             <i class="fas fa-check-circle text-[#10b981] text-3xl drop-shadow-md"></i>
                         </div>
                     </div>
                     
                     <div class="space-y-1.5">
                         <div class="flex justify-between items-center">
-                            <!-- Warna Headline Orange Elegan -->
                             <p class="text-[14px] text-[#e67e22] font-bold uppercase tracking-widest">Total Tagihan</p>
                             <p class="text-[18px] font-bold text-white font-mono" id="rec-price-total">Rp 0</p>
                         </div>
                         <div class="flex justify-between items-center">
-                            <!-- Warna Headline Orange Elegan -->
                             <p class="text-[14px] text-[#e67e22] font-bold uppercase tracking-widest">Telah Dibayar</p>
                             <p class="text-[18px] font-bold text-white font-mono" id="rec-price-dp">Rp 0</p>
                         </div>
                         <div class="flex justify-between items-center pt-2 mt-2 border-t border-gray-600">
-                            <!-- Warna Headline Orange Elegan -->
                             <p class="text-[16px] text-[#e67e22] font-bold uppercase tracking-widest">Sisa Tagihan</p>
                             <p class="text-[28px] font-black text-white font-mono" id="rec-price-remaining">Rp 0</p>
                         </div>
                     </div>
                 </div>
 
-                <!-- REVISI: margin-top diperkecil (mt-1) pada container barcode -->
                 <div class="mt-1 flex flex-col items-center">
                     <div class="barcode-mockup mb-1.5 opacity-60 scale-110"></div>
                     <p class="text-[10px] text-gray-500 font-mono tracking-[0.5em] uppercase">SCAN FOR AUTHENTICITY</p>

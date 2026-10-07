@@ -595,7 +595,7 @@ async function fetchOrders() {
     orders = data || [];
     renderStats();
     
-    // REVISI: Panggilan tanpa fitur search
+    // Panggilan tanpa fitur search
     if (!document.getElementById('page-list').classList.contains('hidden')) {
          renderOrderList();
     }
@@ -613,7 +613,7 @@ async function fetchOrdersBg() {
     if(data) {
         orders = data;
         renderStats();
-        // REVISI: Render otomatis tanpa filter search
+        // Render otomatis tanpa filter search
         renderOrderList();
         
         if(currentDetailOrder && !document.getElementById('page-detail').classList.contains('hidden')) {
@@ -737,7 +737,7 @@ orderForm.addEventListener('submit', async (e) => {
         existingOrder ? (orders[editIndex] = newOrder) : orders.push(newOrder); 
         
         renderStats();
-        // REVISI: Render order list tanpa fitur pencarian
+        // Render order list tanpa fitur pencarian
         renderOrderList(); 
         showToast("Data Tersimpan!");
         resetForm();
@@ -754,7 +754,7 @@ window.deleteOrder = async function(id) {
         orders = orders.filter(o => o.id !== id);
         
         if(!document.getElementById('page-detail').classList.contains('hidden')) closeDetailView();
-        // REVISI: Render otomatis tanpa filter search
+        // Render otomatis tanpa filter search
         renderOrderList();
         renderStats();
         showToast("Dihapus dari layar...");
@@ -774,7 +774,7 @@ window.toggleStatus = async function(id) {
     const next = current === 'pending' ? 'success' : (current === 'success' ? 'cancel' : 'pending');
     orders[index].status = next;
     
-    // REVISI: Render otomatis tanpa filter search
+    // Render otomatis tanpa filter search
     renderOrderList();
     if(!document.getElementById('page-detail').classList.contains('hidden')) openDetailView(id, true);
     renderStats();
@@ -783,7 +783,7 @@ window.toggleStatus = async function(id) {
     catch(e) { console.error(e); }
 }
 
-// REVISI: MODIFIKASI FUNGSI navTo UNTUK MENDUKUNG HISTORY API & RESET WIZARD
+// MODIFIKASI FUNGSI navTo UNTUK MENDUKUNG HISTORY API & RESET WIZARD
 window.navTo = function(pageId, fromPopState = false) {
     const currentPages = document.querySelectorAll('main > section:not(.hidden)');
     currentPages.forEach(page => { page.classList.add('fade-out'); page.classList.remove('fade-in'); });
@@ -801,7 +801,7 @@ window.navTo = function(pageId, fromPopState = false) {
         if(pageId === 'list') {
             const btn = document.getElementById('nav-list');
             if(btn) btn.classList.add('active-nav');
-            // REVISI: Panggilan tanpa input search
+            // Panggilan tanpa input search
             renderOrderList(); 
         }
         if(pageId === 'input') {
@@ -959,7 +959,7 @@ window.updateSettlement = async function(id, newVal) {
         orders[index].settlementMethod = newVal;
         orders[index].status = nextStatus;
         
-        // REVISI: Render order list tanpa pencarian
+        // Render order list tanpa pencarian
         renderOrderList();
         if(!document.getElementById('page-detail').classList.contains('hidden')) openDetailView(id, true); 
 
@@ -1216,7 +1216,6 @@ function renderReceiptToDOM(order) {
                     dobDisplayReceipt = `<div class="mt-2 pt-2 border-t border-dashed border-white/10 flex items-center gap-2"><i class="fas fa-calendar-alt text-davka-orange text-[12px] opacity-80"></i><span class="text-[12px] text-gray-400 uppercase tracking-widest">Lahir:</span><span class="text-[14px] text-white font-bold font-mono tracking-widest">${dobStr}</span></div>`;
                 }
             }
-            // REVISI: Menggunakan icon-id-3d untuk icon KTP dengan warna soft orange 3D
             html += `<div class="flex flex-col bg-black/40 p-4 rounded-xl mb-3 border border-white/10 shadow-inner w-full"><p class="text-[18px] font-black text-white uppercase break-words leading-tight tracking-widest flex items-center">${p.name} ${paxTypeLabel}</p><p class="text-[18px] text-gray-200 font-bold font-mono mt-2 tracking-widest"><i class="fas fa-id-card icon-id-3d mr-2 text-[18px]"></i>ID: ${p.nik || '-'}</p>${dobDisplayReceipt}</div>`;
         });
         
@@ -1577,9 +1576,9 @@ window.closeDetailView = function() {
 // =========================================================================
 // REVISI TOTAL: FUNGSI renderOrderList()
 // 1. UI Menjadi Format List Compact
-// 2. Struktur Vertikal: Rute -> Nama Kereta -> Tanggal (Diperbesar/Disesuaikan Warnanya)
-// 3. Spacing (Padding/Margin) Dirapatkan
-// 4. Nomor Urut Ditampilkan Clean (Tanpa Kotak/Border)
+// 2. Terdapat informasi "War Tiket / Beli"
+// 3. List diurutkan menurut tanggal beli tiket (warDate) - Ascending
+// 4. Desain 3D Rapi, tidak membuang space, menggunakan inset shadow
 // =========================================================================
 window.renderOrderList = function() {
     const container = document.getElementById('ordersContainer');
@@ -1591,37 +1590,43 @@ window.renderOrderList = function() {
     } 
     document.getElementById('emptyState').classList.add('hidden');
     
-    const sortedOrders = [...orders].sort((a, b) => new Date(b.created_at || b.id) - new Date(a.created_at || a.id));
+    // REVISI: Urutkan list berdasarkan warDate (terdekat berada di atas).
+    // Jika tidak ada warDate, fallback menggunakan waktu pemesanan.
+    const sortedOrders = [...orders].sort((a, b) => {
+        const dateA = a.warDate ? new Date(a.warDate) : new Date(a.created_at || a.id);
+        const dateB = b.warDate ? new Date(b.warDate) : new Date(b.created_at || b.id);
+        return dateA - dateB; // Ascending Order
+    });
 
     sortedOrders.forEach((order, index) => {
         let statusColorClass = ''; 
         let indicatorColor = ''; 
         let glowClass = '';
         let bgStatus = '';
-        let textNumColor = ''; // REVISI: Variabel warna nomor
+        let textNumColor = ''; 
 
         if (order.status === 'success') { 
             statusColorClass = 'border-green-500/40 text-green-400';
             bgStatus = 'bg-green-500/10';
             indicatorColor = 'bg-green-500'; 
             glowClass = 'hover-glow-success';
-            textNumColor = 'text-green-500'; // REVISI
+            textNumColor = 'text-green-500'; 
         } else if (order.status === 'cancel') { 
             statusColorClass = 'border-red-500/40 text-red-400';
             bgStatus = 'bg-red-500/10';
             indicatorColor = 'bg-red-500'; 
             glowClass = 'hover-glow-cancel';
-            textNumColor = 'text-red-500'; // REVISI
+            textNumColor = 'text-red-500'; 
         } else { 
             statusColorClass = 'border-orange-500/40 text-orange-400';
             bgStatus = 'bg-orange-500/10';
             indicatorColor = 'bg-orange-500'; 
             glowClass = 'hover-glow-pending';
-            textNumColor = 'text-orange-500'; // REVISI
+            textNumColor = 'text-orange-500'; 
         }
 
         const displayName = (order.contactName || order.name || 'No Name').toUpperCase();
-        const displayNo = sortedOrders.length - index; 
+        const displayNo = index + 1; // Ubah ke ascending order numbering
         
         const dateOptions = { day: '2-digit', month: 'short', year: 'numeric' };
         const dateStr = order.date ? new Date(order.date).toLocaleDateString('id-ID', dateOptions) : '-';
@@ -1629,17 +1634,29 @@ window.renderOrderList = function() {
         const origin = (order.origin || '?').toUpperCase();
         const dest = (order.dest || '?').toUpperCase();
         
+        // REVISI: Format War Date String
+        const warDateStr = order.warDate ? new Date(order.warDate).toLocaleDateString('id-ID', dateOptions) : '-';
+
         let routeHtml = `
             <div class="mt-1 flex flex-col gap-0.5">
-                <div class="flex items-center gap-1.5">
-                    <i class="fas fa-train text-davka-orange text-[10px] w-3 text-center drop-shadow-md"></i>
-                    <p class="text-[11px] text-gray-200 font-bold tracking-wide">
-                        ${origin} <i class="fas fa-chevron-right text-[8px] text-gray-500 mx-1"></i> ${dest}
-                    </p>
+                <div class="flex items-center justify-between">
+                    <div class="flex items-center gap-1.5">
+                        <i class="fas fa-train text-davka-orange text-[10px] w-3 text-center drop-shadow-md"></i>
+                        <p class="text-[11px] text-gray-200 font-bold tracking-wide">
+                            ${origin} <i class="fas fa-chevron-right text-[8px] text-gray-500 mx-1"></i> ${dest}
+                        </p>
+                    </div>
+                    <!-- REVISI: 3D Badge Tanggal Beli Tiket (Compact) -->
+                    <div class="bg-davka-bg border border-davka-orange/30 px-2 py-0.5 rounded shadow-[inset_0_1px_3px_rgba(0,0,0,0.8),0_0_8px_rgba(255,84,0,0.2)] flex items-center gap-1">
+                        <i class="fas fa-fire text-[8px] text-davka-orange animate-pulse"></i>
+                        <span class="text-[8px] font-black text-davka-orange tracking-widest uppercase">Beli: ${warDateStr}</span>
+                    </div>
                 </div>
-                <div class="pl-4 ml-1.5 border-l border-white/10 py-1 flex flex-col justify-center gap-1">
+                <div class="pl-4 ml-1.5 border-l border-white/10 py-1 flex justify-between items-center pr-1">
                     <p class="text-[10px] text-gray-400 font-bold uppercase tracking-widest leading-none">${trainName}</p>
-                    <p class="text-[11px] text-orange-400 font-mono font-bold leading-none drop-shadow-sm">${dateStr}</p>
+                    <p class="text-[10px] text-orange-400 font-mono font-bold leading-none drop-shadow-sm flex items-center gap-1">
+                        <i class="fas fa-calendar-day text-[8px] opacity-70"></i> ${dateStr}
+                    </p>
                 </div>
             </div>
         `;
@@ -1650,17 +1667,29 @@ window.renderOrderList = function() {
             const retOrg = (order.returnOrigin || order.dest || '?').toUpperCase();
             const retDest = (order.returnDest || order.origin || '?').toUpperCase();
             
+            // REVISI: Format Return War Date String
+            const retWarDateStr = order.returnWarDate ? new Date(order.returnWarDate).toLocaleDateString('id-ID', dateOptions) : '-';
+            
             routeHtml += `
                 <div class="mt-0.5 pt-1 border-t border-dashed border-white/10 flex flex-col gap-0.5">
-                    <div class="flex items-center gap-1.5">
-                        <i class="fas fa-exchange-alt text-blue-400 text-[10px] w-3 text-center drop-shadow-md"></i>
-                        <p class="text-[11px] text-gray-200 font-bold tracking-wide">
-                            ${retOrg} <i class="fas fa-chevron-right text-[8px] text-gray-500 mx-1"></i> ${retDest}
-                        </p>
+                    <div class="flex items-center justify-between">
+                        <div class="flex items-center gap-1.5">
+                            <i class="fas fa-exchange-alt text-blue-400 text-[10px] w-3 text-center drop-shadow-md"></i>
+                            <p class="text-[11px] text-gray-200 font-bold tracking-wide">
+                                ${retOrg} <i class="fas fa-chevron-right text-[8px] text-gray-500 mx-1"></i> ${retDest}
+                            </p>
+                        </div>
+                        <!-- REVISI: 3D Badge Tanggal Beli Tiket Pulang (Compact) -->
+                        <div class="bg-davka-bg border border-blue-400/30 px-2 py-0.5 rounded shadow-[inset_0_1px_3px_rgba(0,0,0,0.8),0_0_8px_rgba(96,165,250,0.2)] flex items-center gap-1">
+                            <i class="fas fa-fire text-[8px] text-blue-400 animate-pulse"></i>
+                            <span class="text-[8px] font-black text-blue-400 tracking-widest uppercase">Beli: ${retWarDateStr}</span>
+                        </div>
                     </div>
-                    <div class="pl-4 ml-1.5 border-l border-white/10 py-1 flex flex-col justify-center gap-1">
+                    <div class="pl-4 ml-1.5 border-l border-white/10 py-1 flex justify-between items-center pr-1">
                         <p class="text-[10px] text-gray-400 font-bold uppercase tracking-widest leading-none">${retTrain}</p>
-                        <p class="text-[11px] text-sky-400 font-mono font-bold leading-none drop-shadow-sm">${retDateStr}</p>
+                        <p class="text-[10px] text-sky-400 font-mono font-bold leading-none drop-shadow-sm flex items-center gap-1">
+                            <i class="fas fa-calendar-day text-[8px] opacity-70"></i> ${retDateStr}
+                        </p>
                     </div>
                 </div>
             `;
@@ -1670,7 +1699,6 @@ window.renderOrderList = function() {
         item.className = `list-card-3d rounded-xl mb-2 w-full ${glowClass}`;
         item.onclick = function() { openDetailView(order.id); };
 
-        // REVISI: Mengubah padding (p-2.5 -> py-1.5 px-2.5) dan menghilangkan kotak pembungkus angka
         item.innerHTML = `
         <div class="relative py-1.5 px-2.5 flex flex-col w-full overflow-hidden rounded-xl h-full bg-[#0f172a]/60">
             
@@ -1678,7 +1706,6 @@ window.renderOrderList = function() {
             
             <div class="flex items-center justify-between pl-2 relative z-10 inner-3d-element border-b border-white/5 pb-1">
                 <div class="flex items-baseline gap-1 min-w-0 flex-1 pt-0.5">
-                    <!-- REVISI: Angka ditampilkan sederhana tanpa bg/border -->
                     <span class="font-mono text-[13px] font-black shrink-0 ${textNumColor} drop-shadow-md mr-1">
                         ${displayNo}.
                     </span>
